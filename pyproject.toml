@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "networking-ai"
-version = "0.4.0"
-description = "AI-native professional networking platform with multi-agent system, RAG, privacy-first knowledge management, and anti-hallucination controls"
+version = "0.5.0"
+description = "AI-native professional networking platform with autonomous Master Agent system, multi-agent orchestration, privacy-first RAG, and anti-hallucination controls"
 readme = "README.md"
 requires-python = ">=3.9"
 license = {file = "LICENSE"}
