@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "networking-ai"
-version = "0.1.0"
-description = "AI-native professional networking platform – connecting people through intelligent agents and semantic discovery"
+version = "0.3.0"
+description = "AI-native professional networking platform with LangChain agents, RAG, and privacy-first knowledge management"
 readme = "README.md"
 requires-python = ">=3.9"
 license = {file = "LICENSE"}
@@ -34,6 +34,14 @@ dependencies = [
     "numpy>=1.24.0",
     "scikit-learn>=1.3.0",
     "python-dotenv>=1.0.0",
+    "langchain>=0.1.0",
+    "langchain-anthropic>=0.1.0",
+    "langchain-community>=0.0.20",
+    "chromadb>=0.4.22",
+    "tiktoken>=0.5.2",
+    "cryptography>=41.0.0",
+    "bcrypt>=4.1.0",
+    "redis>=5.0.0",
 ]
 
 [project.optional-dependencies]
