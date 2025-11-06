@@ -61,43 +61,101 @@ pip install -e ".[dev,ai]"
 
 ## Quick Start
 
-```python
-from networking_ai.core import UserProfile, NetworkingAgent
+### Basic Setup
 
-# Create a user profile
-profile = UserProfile(
-    user_id="user123",
-    name="Jane Doe",
-    skills=["Python", "Machine Learning", "Data Science"]
+```bash
+# Set your Anthropic API key (optional, for AI features)
+export ANTHROPIC_API_KEY=your_api_key_here
+```
+
+### Example Usage
+
+```python
+from networking_ai import (
+    UserProfile,
+    NetworkingAgent,
+    ConnectionRecommender,
 )
 
-# Initialize an AI agent
-agent = NetworkingAgent(name="ConnectorBot")
+# Create user profiles
+alice = UserProfile(
+    user_id="alice123",
+    name="Alice Johnson",
+    skills=["Python", "Machine Learning", "Data Science"],
+    interests=["AI Research", "Deep Learning"],
+    bio="ML Engineer passionate about AI",
+    goals="Build innovative AI products"
+)
 
-# Discover connections
-connections = agent.discover_connections(profile.to_dict())
+bob = UserProfile(
+    user_id="bob456",
+    name="Bob Smith",
+    skills=["Python", "AI", "Neural Networks"],
+    interests=["Computer Vision", "NLP"],
+)
+
+# Use NetworkingAgent for discovery
+agent = NetworkingAgent(name="ConnectorBot")
+candidates = [bob]
+
+connections = agent.discover_connections(
+    alice.to_dict(),
+    [c.to_dict() for c in candidates],
+    top_n=5
+)
+
+# Use ConnectionRecommender for advanced matching
+recommender = ConnectionRecommender()
+recommendations = recommender.recommend_connections(
+    alice,
+    candidates,
+    include_explanations=True,  # Requires API key
+    include_introductions=True
+)
+
+for rec in recommendations:
+    print(f"{rec['name']} - {rec['match_strength']} match")
+    print(f"Score: {rec['match_scores']['weighted_score']:.2f}")
+    if 'explanation' in rec:
+        print(f"Why: {rec['explanation']}")
 ```
+
+See [examples/basic_usage.py](examples/basic_usage.py) for a complete example.
 
 ## Project Structure
 
 ```
 networking-ai/
 ├── src/
-│   └── networking_ai/      # Main package
-│       ├── __init__.py
-│       └── core.py          # Core functionality
-├── tests/                   # Test suite
+│   └── networking_ai/          # Main package
+│       ├── __init__.py         # Package exports
+│       ├── core.py             # Core classes (UserProfile, NetworkingAgent)
+│       ├── semantic.py         # Semantic matching & embeddings
+│       ├── ai_agent.py         # Anthropic Claude integration
+│       ├── recommender.py      # Connection recommendation engine
+│       └── config.py           # Configuration management
+├── tests/                      # Test suite
 │   ├── __init__.py
-│   ├── conftest.py         # Pytest fixtures
-│   └── test_core.py        # Core tests
-├── docs/                    # Documentation
-│   └── architecture.md     # Architecture overview
-├── pyproject.toml          # Project configuration
-├── requirements.txt        # Production dependencies
-├── requirements-dev.txt    # Development dependencies
-├── pytest.ini             # Pytest configuration
-├── .coveragerc            # Coverage configuration
-└── README.md              # This file
+│   ├── conftest.py            # Pytest fixtures
+│   ├── test_core.py           # Core functionality tests
+│   ├── test_semantic.py       # Semantic matching tests
+│   ├── test_config.py         # Configuration tests
+│   └── test_recommender.py    # Recommender tests
+├── examples/                   # Usage examples
+│   └── basic_usage.py         # Complete usage example
+├── docs/                       # Documentation
+│   └── architecture.md        # Architecture overview
+├── .github/
+│   └── workflows/             # CI/CD pipelines
+│       ├── ci.yml             # Continuous integration
+│       ├── release.yml        # Release automation
+│       └── codeql.yml         # Security scanning
+├── pyproject.toml             # Project configuration
+├── requirements.txt           # Production dependencies
+├── requirements-dev.txt       # Development dependencies
+├── pytest.ini                 # Pytest configuration
+├── .env.example               # Environment variables template
+└── README.md                  # This file
 ```
 
 ## Development
@@ -156,19 +214,21 @@ See [docs/architecture.md](docs/architecture.md) for detailed architecture docum
 
 ## Roadmap
 
-### Phase 1: Foundation (Current)
+### Phase 1: Foundation (Completed ✓)
 - [x] Project structure
 - [x] Core classes (UserProfile, NetworkingAgent)
 - [x] Testing infrastructure
 - [x] Development tooling
 
-### Phase 2: Core Features
-- [ ] Semantic profile matching algorithm
-- [ ] Integration with AI models (OpenAI/Anthropic)
-- [ ] Profile similarity scoring
-- [ ] Connection recommendation engine
+### Phase 2: Core Features (Completed ✓)
+- [x] Semantic profile matching algorithm with sentence transformers
+- [x] Integration with Anthropic Claude for AI-powered analysis
+- [x] Profile similarity scoring (skill-based and semantic)
+- [x] Connection recommendation engine with batch processing
+- [x] AI-generated introductions and explanations
+- [x] Comprehensive test suite
 
-### Phase 3: API & Database
+### Phase 3: API & Database (Current)
 - [ ] RESTful API with FastAPI
 - [ ] Database models and migrations
 - [ ] User authentication
@@ -179,6 +239,8 @@ See [docs/architecture.md](docs/architecture.md) for detailed architecture docum
 - [ ] AI conversation assistance
 - [ ] Analytics dashboard
 - [ ] Integration with LinkedIn/other platforms
+- [ ] Conversation starter suggestions
+- [ ] Profile enrichment with external data
 
 ## Contributing
 
