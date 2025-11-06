@@ -20,6 +20,13 @@ Networking AI is a revolutionary platform that leverages cutting-edge artificial
 
 #### Advanced AI System (Phase 3-5)
 - **Master Agent (AI CEO)**: Supreme orchestrator that monitors, rewards, and manages the entire AI ecosystem
+- **🚨 Platform Health System (CRITICAL)**:
+  - **69% Threshold**: Below this = platform shutdown risk
+  - **Automated Reporting**: Daily, Weekly, Monthly, and Quarterly health reports
+  - **5 Key Metrics**: User interaction (25%), Organic growth (20%), User/company balance (15%), Matching success (25%), Post-work impact (15%)
+  - **Emergency Alerts**: Automatic warnings when approaching critical threshold
+  - **Master AI's Primary Responsibility**: Keep the network alive and manageable
+  - **Recovery Plans**: Automated emergency interventions when health drops
 - **Autonomous Marketing**: AI Marketing Agent creates campaigns and brings new users autonomously
 - **Master's Sub-Agents**:
   - Traffic Analyzer: Monitors platform traffic and predicts load
@@ -167,10 +174,11 @@ networking-ai/
 │       ├── fact_checker_agent.py   # Fact-checking agent for all outputs
 │       ├── training_arena.py       # Training & testing environment
 │       # Master Agent System (Phase 5)
-│       ├── master_agent.py         # Master Agent (AI CEO) + governance
-│       ├── marketing_agent.py      # Autonomous marketing campaigns
-│       ├── master_sub_agents.py    # Traffic, Audit, Security, Perf, R&D
-│       └── admin_interface.py      # Human admin control panel
+│       ├── master_agent.py            # Master Agent (AI CEO) + governance
+│       ├── platform_health_system.py  # Critical health monitoring (69% threshold)
+│       ├── marketing_agent.py         # Autonomous marketing campaigns
+│       ├── master_sub_agents.py       # Traffic, Audit, Security, Perf, R&D
+│       └── admin_interface.py         # Human admin control panel
 ├── tests/                          # Test suite (100+ tests)
 │   ├── conftest.py                # Pytest fixtures
 │   ├── test_core.py               # Core functionality tests
@@ -186,7 +194,8 @@ networking-ai/
 │   ├── basic_usage.py             # Basic networking example
 │   ├── multi_agent_usage.py       # Multi-agent system demo
 │   ├── anti_hallucination_demo.py # Anti-hallucination demo
-│   └── master_agent_demo.py       # Complete Master Agent system demo
+│   ├── master_agent_demo.py       # Complete Master Agent system demo
+│   └── platform_health_demo.py    # Platform health & 69% threshold demo
 ├── docs/                           # Documentation
 │   └── architecture.md            # Architecture overview
 ├── data/                           # Data directory
