@@ -6,12 +6,13 @@ and maintains the network knowledge base.
 """
 
 from .rag_manager import MasterRAGManager, create_master_rag
-from .master_agent import MasterAgent
-from .knowledge_aggregator import KnowledgeAggregator
+# Phase 2:
+# from .master_agent import MasterAgent
+# from .knowledge_aggregator import KnowledgeAggregator
 
 __all__ = [
     "MasterRAGManager",
     "create_master_rag",
-    "MasterAgent",
-    "KnowledgeAggregator",
+    # "MasterAgent",  # Phase 2
+    # "KnowledgeAggregator",  # Phase 2
 ]

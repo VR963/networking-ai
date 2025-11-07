@@ -32,7 +32,7 @@ class InterviewSession(Base):
 
     # Ownership
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    recruiter_agent_id = Column(Integer, ForeignKey("personal_ai_agents.id"), nullable=False)
+    recruiter_agent_id = Column(Integer, ForeignKey("personal_ai_agents.id"), nullable=True)  # Recruiter is ephemeral
 
     # Uploaded document
     cv_file_path = Column(String(500))  # Path to uploaded CV
@@ -72,7 +72,7 @@ class InterviewSession(Base):
     detected_skills = Column(JSON)  # Primary skills detected
 
     # Conversation
-    conversation_id = Column(Integer, ForeignKey("agent_conversations.id"), nullable=False)
+    conversation_id = Column(Integer, ForeignKey("agent_conversations.id"), nullable=True)  # Set after conversation created
 
     # Interview data
     questions_asked = Column(JSON, default=list)  # Array of questions
