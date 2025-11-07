@@ -74,6 +74,9 @@ class User(Base):
     conversations_received = relationship("Conversation", foreign_keys="Conversation.user2_id", back_populates="user2")
     ai_agent = relationship("AIAgent", back_populates="user", uselist=False, cascade="all, delete-orphan")
 
+    # New: Personal AI Agent for agent marketplace
+    personal_agent = relationship("PersonalAIAgent", back_populates="user", uselist=False, cascade="all, delete-orphan")
+
     def __repr__(self):
         return f"<User {self.email} ({self.role.value})>"
 

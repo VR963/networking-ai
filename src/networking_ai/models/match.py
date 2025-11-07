@@ -69,6 +69,7 @@ class Match(Base):
     # Relationships
     profile = relationship("UserProfile", foreign_keys=[profile_id], back_populates="matches")
     job = relationship("Job", foreign_keys=[job_id], back_populates="matches")
+    agent_conversation = relationship("AgentConversation", back_populates="match", uselist=False)
 
     def __repr__(self):
         return f"<Match profile_id={self.profile_id} job_id={self.job_id} score={self.match_score:.2f}>"

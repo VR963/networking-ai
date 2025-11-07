@@ -13,6 +13,15 @@ from .match import Match, MatchStatus
 from .message import Conversation, Message, MessageStatus
 from .ai_agent import AIAgent, AgentType, AgentStatus as AIAgentStatus
 
+# New: Agent Marketplace Models
+from .personal_ai_agent import PersonalAIAgent, AgentType as PersonalAgentType
+from .agent_conversation import AgentConversation, ConversationType, ConversationStatus
+from .interview_session import InterviewSession, InterviewStatus
+from .sub_agent_activation import SubAgentActivation, SubAgentType
+from .user_knowledge import UserKnowledge, KnowledgeCategory
+from .network_knowledge import NetworkKnowledge
+from .audit_log import AuditLog
+
 __all__ = [
     # User
     'User',
@@ -40,8 +49,22 @@ __all__ = [
     'Conversation',
     'Message',
     'MessageStatus',
-    # AI Agent
+    # AI Agent (legacy)
     'AIAgent',
     'AgentType',
     'AIAgentStatus',
+    # Personal AI Agent (new)
+    'PersonalAIAgent',
+    'PersonalAgentType',
+    'AgentConversation',
+    'ConversationType',
+    'ConversationStatus',
+    'InterviewSession',
+    'InterviewStatus',
+    'SubAgentActivation',
+    'SubAgentType',
+    'UserKnowledge',
+    'KnowledgeCategory',
+    'NetworkKnowledge',
+    'AuditLog',
 ]
