@@ -1,0 +1,61 @@
+John Doe
+Senior System Engineer
+john.doe@email.com | +1-555-0123 | New York, NY
+
+PROFESSIONAL SUMMARY
+Results-driven Senior System Engineer with 8 years of experience in financial technology.
+Specialized in building high-performance trading systems and real-time data processing pipelines.
+Strong background in system architecture, performance optimization, and regulatory compliance.
+
+WORK EXPERIENCE
+
+Senior System Engineer | Goldman Sachs | New York, NY
+June 2018 - Present (5.5 years)
+- Designed and implemented low-latency trading system handling 100k+ transactions/second
+- Led migration of legacy systems to microservices architecture, reducing deployment time by 60%
+- Implemented real-time risk monitoring dashboard used by 200+ traders
+- Mentored team of 4 junior engineers on system design and best practices
+- Ensured SOC2 and PCI-DSS compliance across all systems
+- Technologies: Python, Java, C++, Kafka, Redis, PostgreSQL, AWS
+
+System Engineer | Morgan Stanley | New York, NY
+January 2016 - May 2018 (2.4 years)
+- Built automated testing framework that reduced QA time by 40%
+- Developed internal tools for trade reconciliation and reporting
+- Collaborated with cross-functional teams on system integration projects
+- Technologies: Python, SQL, Linux, Docker
+
+Junior Developer | Tech Startup Inc | San Francisco, CA
+June 2015 - December 2015 (7 months)
+- Built web applications using Django and React
+- Participated in code reviews and agile sprint planning
+- Technologies: Python, JavaScript, React, PostgreSQL
+
+EDUCATION
+
+Bachelor of Science in Computer Science
+Massachusetts Institute of Technology (MIT)
+Graduated: May 2015
+GPA: 3.8/4.0
+
+TECHNICAL SKILLS
+- Languages: Python (Expert), Java (Advanced), C++ (Advanced), SQL (Advanced), JavaScript (Intermediate)
+- Frameworks: Django, FastAPI, Spring Boot, React
+- Databases: PostgreSQL, MySQL, Redis, MongoDB
+- Tools: Docker, Kubernetes, Jenkins, Git, JIRA
+- Cloud: AWS (EC2, S3, Lambda, RDS), Azure (Basic)
+- Specialized: Low-latency systems, Real-time data processing, Trading systems, Microservices
+
+CERTIFICATIONS
+- AWS Certified Solutions Architect - Associate (2022)
+- Certified Kubernetes Administrator (2021)
+
+ACHIEVEMENTS
+- Received "Innovation Award" at Goldman Sachs for trading system optimization (2022)
+- Speaker at FinTech Conference on "Building Low-Latency Trading Systems" (2021)
+- Published paper on system performance optimization in IEEE journal (2020)
+
+PERSONAL
+- Actively contribute to open-source projects (5k+ GitHub stars)
+- Mentor students through Tech Career Network
+- Enjoy hiking, reading technical books, and playing chess
