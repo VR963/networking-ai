@@ -5,7 +5,7 @@ This is the entry point for the REST API.
 Provides access to all platform features via HTTP endpoints.
 """
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import time
@@ -16,6 +16,7 @@ from .users import router as users_router
 from .jobs import router as jobs_router
 from .matches import router as matches_router
 from .messages import router as messages_router
+from ..services.background_tasks import task_manager
 
 
 # Create FastAPI app
@@ -76,10 +77,15 @@ async def internal_error_handler(request: Request, exc):
 # Startup event
 @app.on_event("startup")
 async def startup_event():
-    """Initialize database on startup."""
+    """Initialize database and background services on startup."""
     # Create tables (in production, use Alembic migrations instead)
     Base.metadata.create_all(bind=engine)
     print("[API] Database tables created")
+
+    # Start background task manager
+    task_manager.start()
+    print("[API] Background task manager started")
+
     print("[API] FastAPI application started")
 
 
@@ -87,6 +93,9 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     """Cleanup on shutdown."""
+    # Stop background task manager
+    task_manager.stop()
+    print("[API] Background task manager stopped")
     print("[API] FastAPI application shutting down")
 
 
@@ -110,7 +119,28 @@ async def health_check():
         "timestamp": time.time(),
         "database": "connected",
         "ai_system": "ready",
+        "background_tasks": "running" if task_manager.running else "stopped",
     }
+
+
+@app.get("/api/tasks/{task_id}", tags=["Background Tasks"])
+async def get_task_status(task_id: str):
+    """Get status of a background task."""
+    task_status = task_manager.get_task_status(task_id)
+
+    if not task_status:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Task {task_id} not found"
+        )
+
+    return task_status
+
+
+@app.get("/api/tasks", tags=["Background Tasks"])
+async def list_all_tasks():
+    """List all background tasks (admin endpoint)."""
+    return task_manager.get_all_tasks()
 
 
 # Include routers

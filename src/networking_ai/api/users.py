@@ -8,7 +8,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
 
-from ..database import get_db
+from ..database import get_db, SessionLocal
 from ..models.user import User, UserRole
 from ..models.profile import UserProfile
 from ..models.company import Company
@@ -22,6 +22,7 @@ from ..schemas.profile import (
 )
 from ..schemas.user import UserResponse
 from ..api.auth import get_current_user, get_current_active_user
+from ..services.background_tasks import task_manager, run_matching_for_profile
 
 
 router = APIRouter()
@@ -72,6 +73,13 @@ async def create_my_profile(
 
     print(f"[PROFILE] Created profile for user {current_user.id}")
 
+    # Trigger background matching for this profile
+    task_id = task_manager.submit_task(
+        func=run_matching_for_profile,
+        args=(profile.id, SessionLocal)
+    )
+    print(f"[PROFILE] Submitted matching task {task_id} for profile {profile.id}")
+
     return profile
 
 
@@ -120,6 +128,13 @@ async def update_my_profile(
 
     print(f"[PROFILE] Updated profile for user {current_user.id}")
 
+    # Trigger background matching to refresh matches with updated profile
+    task_id = task_manager.submit_task(
+        func=run_matching_for_profile,
+        args=(profile.id, SessionLocal)
+    )
+    print(f"[PROFILE] Submitted matching task {task_id} for updated profile {profile.id}")
+
     return profile
 
 
@@ -144,6 +159,13 @@ async def update_work_experience(
 
     db.commit()
     db.refresh(profile)
+
+    # Trigger background matching for updated profile
+    task_id = task_manager.submit_task(
+        func=run_matching_for_profile,
+        args=(profile.id, SessionLocal)
+    )
+    print(f"[PROFILE] Submitted matching task {task_id} for profile {profile.id} (work experience updated)")
 
     return profile
 

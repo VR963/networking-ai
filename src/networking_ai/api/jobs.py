@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_
 
-from ..database import get_db
+from ..database import get_db, SessionLocal
 from ..models.user import User, UserRole
 from ..models.company import Company
 from ..models.job import Job, JobStatus
@@ -25,6 +25,7 @@ from ..schemas.job import (
     JobListResponse,
 )
 from ..api.auth import get_current_user, get_current_active_user
+from ..services.background_tasks import task_manager, run_matching_for_job
 
 
 router = APIRouter()
@@ -89,6 +90,14 @@ async def create_job(
     db.refresh(job)
 
     print(f"[JOB] Created job {job.id} for company {company.id}")
+
+    # Trigger background matching if job is active
+    if job.status == JobStatus.ACTIVE:
+        task_id = task_manager.submit_task(
+            func=run_matching_for_job,
+            args=(job.id, SessionLocal)
+        )
+        print(f"[JOB] Submitted matching task {task_id} for job {job.id}")
 
     return job
 
@@ -202,6 +211,13 @@ async def update_job(
             detail="You don't have permission to update this job.",
         )
 
+    # Track if status is changing to active
+    is_newly_published = (
+        job_data.status == JobStatus.ACTIVE and
+        job.status != JobStatus.ACTIVE and
+        not job.published_at
+    )
+
     # Update fields
     update_data = job_data.dict(exclude_unset=True)
     for field, value in update_data.items():
@@ -216,6 +232,14 @@ async def update_job(
     db.refresh(job)
 
     print(f"[JOB] Updated job {job_id}")
+
+    # Trigger background matching if job is newly published
+    if is_newly_published:
+        task_id = task_manager.submit_task(
+            func=run_matching_for_job,
+            args=(job.id, SessionLocal)
+        )
+        print(f"[JOB] Submitted matching task {task_id} for newly published job {job.id}")
 
     return job
 
