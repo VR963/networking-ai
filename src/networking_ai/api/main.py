@@ -12,10 +12,10 @@ import time
 
 from ..database import engine, Base
 from .auth import router as auth_router
-# Import other routers as they're created
-# from .users import router as users_router
-# from .jobs import router as jobs_router
-# from .matches import router as matches_router
+from .users import router as users_router
+from .jobs import router as jobs_router
+from .matches import router as matches_router
+from .messages import router as messages_router
 
 
 # Create FastAPI app
@@ -115,9 +115,10 @@ async def health_check():
 
 # Include routers
 app.include_router(auth_router, prefix="/api/auth", tags=["Authentication"])
-# app.include_router(users_router, prefix="/api/users", tags=["Users"])
-# app.include_router(jobs_router, prefix="/api/jobs", tags=["Jobs"])
-# app.include_router(matches_router, prefix="/api/matches", tags=["Matches"])
+app.include_router(users_router, prefix="/api/users", tags=["Users & Profiles"])
+app.include_router(jobs_router, prefix="/api/jobs", tags=["Jobs & Applications"])
+app.include_router(matches_router, prefix="/api/matches", tags=["AI Matches"])
+app.include_router(messages_router, prefix="/api/conversations", tags=["Messaging"])
 
 
 if __name__ == "__main__":
