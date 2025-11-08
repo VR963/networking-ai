@@ -91,6 +91,12 @@ class User(Base):
     # Phase 8: AI features
     parsed_resume = relationship("ParsedResume", back_populates="user", uselist=False)
 
+    # Phase 10: Mobile API
+    mobile_devices = relationship("MobileDevice", back_populates="user", cascade="all, delete-orphan")
+    refresh_tokens = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
+    saved_jobs = relationship("SavedJob", back_populates="user", cascade="all, delete-orphan")
+    push_notifications = relationship("PushNotification", back_populates="user", cascade="all, delete-orphan")
+
     def __repr__(self):
         return f"<User {self.email} ({self.role.value})>"
 
