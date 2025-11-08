@@ -15,7 +15,8 @@ from .auth import router as auth_router
 from .registration import router as registration_router
 from .users import router as users_router
 from .jobs import router as jobs_router
-from .matches import router as matches_router
+from .matches import router as matches_router  # Phase 1 (legacy)
+from .matching import router as matching_router  # Phase 2 (new)
 from .messages import router as messages_router
 from .onboarding import router as onboarding_router
 from .agents import router as agents_router
@@ -157,9 +158,10 @@ app.include_router(hm_onboarding_router, prefix="/api/hiring-manager", tags=["Hi
 app.include_router(agents_router, prefix="/api/agents", tags=["Personal AI Agents"])
 app.include_router(companies_router, prefix="/api/companies", tags=["Companies & Subscriptions"])
 app.include_router(job_postings_router, prefix="/api/job-postings", tags=["Job Postings (Company AI Agents)"])
+app.include_router(matching_router, prefix="/api/matching", tags=["AI Matching (Phase 2)"])
 app.include_router(users_router, prefix="/api/users", tags=["Users & Profiles"])
 app.include_router(jobs_router, prefix="/api/jobs", tags=["Jobs & Applications (Legacy)"])
-app.include_router(matches_router, prefix="/api/matches", tags=["AI Matches"])
+app.include_router(matches_router, prefix="/api/matches", tags=["AI Matches (Legacy)"])
 app.include_router(messages_router, prefix="/api/conversations", tags=["Messaging"])
 
 
