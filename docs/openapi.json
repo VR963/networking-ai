@@ -1,0 +1,962 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Networking AI Platform API",
+    "description": "AI-native professional networking platform with intelligent matching and mobile-first API",
+    "version": "0.5.0",
+    "contact": {
+      "name": "Networking AI Support",
+      "email": "support@networking-ai.com",
+      "url": "https://networking-ai.com/support"
+    },
+    "license": {
+      "name": "Proprietary"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8000",
+      "description": "Development server"
+    },
+    {
+      "url": "https://api.networking-ai.com",
+      "description": "Production server"
+    },
+    {
+      "url": "https://staging.networking-ai.com",
+      "description": "Staging server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Mobile API - Authentication",
+      "description": "Mobile app authentication endpoints with JWT tokens"
+    },
+    {
+      "name": "Mobile API - Jobs",
+      "description": "Job search and management for mobile clients"
+    },
+    {
+      "name": "Mobile API - Applications",
+      "description": "Job application management"
+    },
+    {
+      "name": "Mobile API - Profile",
+      "description": "User profile management"
+    },
+    {
+      "name": "Mobile API - Notifications",
+      "description": "Push notifications and preferences"
+    },
+    {
+      "name": "Mobile API - Messages",
+      "description": "In-app messaging system"
+    },
+    {
+      "name": "Mobile API - Devices",
+      "description": "Device management for push notifications"
+    }
+  ],
+  "paths": {
+    "/api/v1/mobile/auth/register": {
+      "post": {
+        "tags": ["Mobile API - Authentication"],
+        "summary": "Register new user with device",
+        "description": "Create a new user account and register device for push notifications",
+        "operationId": "register_user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              },
+              "example": {
+                "email": "user@example.com",
+                "password": "SecurePass123!",
+                "full_name": "John Doe",
+                "role": "jobseeker",
+                "device": {
+                  "platform": "ios",
+                  "device_id": "ABC123",
+                  "push_token": "fcm_token_here",
+                  "app_version": "1.0.0",
+                  "os_version": "iOS 17.0"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User registered successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Email already registered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/auth/login": {
+      "post": {
+        "tags": ["Mobile API - Authentication"],
+        "summary": "Login user",
+        "description": "Authenticate user and return JWT tokens",
+        "operationId": "login_user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/auth/refresh": {
+      "post": {
+        "tags": ["Mobile API - Authentication"],
+        "summary": "Refresh access token",
+        "description": "Get new access token using refresh token",
+        "operationId": "refresh_token",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["refresh_token"],
+                "properties": {
+                  "refresh_token": {
+                    "type": "string",
+                    "description": "30-day refresh token"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token refreshed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "access_token": {"type": "string"},
+                        "token_type": {"type": "string"},
+                        "expires_in": {"type": "integer"}
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or expired refresh token"
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/auth/logout": {
+      "post": {
+        "tags": ["Mobile API - Authentication"],
+        "summary": "Logout user",
+        "description": "Revoke refresh token and logout device",
+        "operationId": "logout_user",
+        "security": [{"BearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["device_id"],
+                "properties": {
+                  "device_id": {"type": "string"}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {"description": "Logout successful"},
+          "401": {"description": "Unauthorized"}
+        }
+      }
+    },
+    "/api/v1/mobile/jobs": {
+      "get": {
+        "tags": ["Mobile API - Jobs"],
+        "summary": "Search jobs",
+        "description": "Search and filter jobs with cursor pagination",
+        "operationId": "search_jobs",
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {"type": "string"},
+            "description": "Search query (title, company, description)"
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "schema": {"type": "string"},
+            "description": "Job location"
+          },
+          {
+            "name": "job_type",
+            "in": "query",
+            "required": false,
+            "schema": {"type": "string", "enum": ["full_time", "part_time", "contract", "internship"]},
+            "description": "Job type filter"
+          },
+          {
+            "name": "experience_level",
+            "in": "query",
+            "required": false,
+            "schema": {"type": "string", "enum": ["entry", "mid", "senior", "lead"]},
+            "description": "Experience level filter"
+          },
+          {
+            "name": "min_salary",
+            "in": "query",
+            "required": false,
+            "schema": {"type": "integer"},
+            "description": "Minimum salary"
+          },
+          {
+            "name": "max_salary",
+            "in": "query",
+            "required": false,
+            "schema": {"type": "integer"},
+            "description": "Maximum salary"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {"type": "string"},
+            "description": "Pagination cursor"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {"type": "integer", "minimum": 1, "maximum": 50, "default": 20},
+            "description": "Results per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Jobs retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobListResponse"
+                }
+              }
+            }
+          },
+          "401": {"description": "Unauthorized"}
+        }
+      }
+    },
+    "/api/v1/mobile/jobs/{job_id}": {
+      "get": {
+        "tags": ["Mobile API - Jobs"],
+        "summary": "Get job details",
+        "description": "Retrieve detailed information about a specific job",
+        "operationId": "get_job_detail",
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "integer"}
+          }
+        ],
+        "responses": {
+          "200": {"description": "Job details retrieved"},
+          "404": {"description": "Job not found"}
+        }
+      }
+    },
+    "/api/v1/mobile/jobs/{job_id}/save": {
+      "post": {
+        "tags": ["Mobile API - Jobs"],
+        "summary": "Save job",
+        "description": "Bookmark a job for later",
+        "operationId": "save_job",
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "integer"}
+          }
+        ],
+        "responses": {
+          "204": {"description": "Job saved successfully"},
+          "409": {"description": "Job already saved"}
+        }
+      },
+      "delete": {
+        "tags": ["Mobile API - Jobs"],
+        "summary": "Unsave job",
+        "description": "Remove job from saved list",
+        "operationId": "unsave_job",
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "integer"}
+          }
+        ],
+        "responses": {
+          "204": {"description": "Job unsaved successfully"}
+        }
+      }
+    },
+    "/api/v1/mobile/applications": {
+      "get": {
+        "tags": ["Mobile API - Applications"],
+        "summary": "List applications",
+        "description": "Get user's job applications with optional status filter",
+        "operationId": "list_applications",
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {"type": "string", "enum": ["applied", "reviewing", "interviewing", "offered", "rejected"]},
+            "description": "Filter by status"
+          }
+        ],
+        "responses": {
+          "200": {"description": "Applications retrieved"}
+        }
+      },
+      "post": {
+        "tags": ["Mobile API - Applications"],
+        "summary": "Submit application",
+        "description": "Apply to a job posting",
+        "operationId": "submit_application",
+        "security": [{"BearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplicationSubmit"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {"description": "Application submitted"},
+          "409": {"description": "Already applied to this job"}
+        }
+      }
+    },
+    "/api/v1/mobile/applications/{application_id}": {
+      "get": {
+        "tags": ["Mobile API - Applications"],
+        "summary": "Get application details",
+        "description": "Retrieve application with timeline and interview information",
+        "operationId": "get_application_detail",
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "application_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "integer"}
+          }
+        ],
+        "responses": {
+          "200": {"description": "Application details retrieved"},
+          "404": {"description": "Application not found"}
+        }
+      }
+    },
+    "/api/v1/mobile/profile": {
+      "get": {
+        "tags": ["Mobile API - Profile"],
+        "summary": "Get profile",
+        "description": "Retrieve user profile with completeness score",
+        "operationId": "get_profile",
+        "security": [{"BearerAuth": []}],
+        "responses": {
+          "200": {"description": "Profile retrieved"}
+        }
+      },
+      "patch": {
+        "tags": ["Mobile API - Profile"],
+        "summary": "Update profile",
+        "description": "Update user profile fields",
+        "operationId": "update_profile",
+        "security": [{"BearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "Profile updated"},
+          "422": {"description": "Validation error"}
+        }
+      }
+    },
+    "/api/v1/mobile/profile/avatar": {
+      "post": {
+        "tags": ["Mobile API - Profile"],
+        "summary": "Upload avatar",
+        "description": "Upload profile picture",
+        "operationId": "upload_avatar",
+        "security": [{"BearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "Avatar uploaded"},
+          "400": {"description": "Invalid file"}
+        }
+      }
+    },
+    "/api/v1/mobile/profile/resume": {
+      "post": {
+        "tags": ["Mobile API - Profile"],
+        "summary": "Upload resume",
+        "description": "Upload resume document (PDF)",
+        "operationId": "upload_resume",
+        "security": [{"BearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "Resume uploaded"},
+          "400": {"description": "Invalid file"}
+        }
+      }
+    },
+    "/api/v1/mobile/notifications": {
+      "get": {
+        "tags": ["Mobile API - Notifications"],
+        "summary": "List notifications",
+        "description": "Get user notifications with unread count",
+        "operationId": "list_notifications",
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "unread_only",
+            "in": "query",
+            "required": false,
+            "schema": {"type": "boolean"},
+            "description": "Show only unread notifications"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {"type": "integer", "default": 20}
+          }
+        ],
+        "responses": {
+          "200": {"description": "Notifications retrieved"}
+        }
+      }
+    },
+    "/api/v1/mobile/notifications/{notification_id}/read": {
+      "post": {
+        "tags": ["Mobile API - Notifications"],
+        "summary": "Mark as read",
+        "description": "Mark single notification as read",
+        "operationId": "mark_notification_read",
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "notification_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "integer"}
+          }
+        ],
+        "responses": {
+          "204": {"description": "Marked as read"},
+          "404": {"description": "Notification not found"}
+        }
+      }
+    },
+    "/api/v1/mobile/notifications/read-all": {
+      "post": {
+        "tags": ["Mobile API - Notifications"],
+        "summary": "Mark all as read",
+        "description": "Mark all user notifications as read",
+        "operationId": "mark_all_notifications_read",
+        "security": [{"BearerAuth": []}],
+        "responses": {
+          "204": {"description": "All marked as read"}
+        }
+      }
+    },
+    "/api/v1/mobile/notifications/settings": {
+      "get": {
+        "tags": ["Mobile API - Notifications"],
+        "summary": "Get notification preferences",
+        "description": "Retrieve notification settings for email and push",
+        "operationId": "get_notification_settings",
+        "security": [{"BearerAuth": []}],
+        "responses": {
+          "200": {"description": "Settings retrieved"}
+        }
+      },
+      "patch": {
+        "tags": ["Mobile API - Notifications"],
+        "summary": "Update notification preferences",
+        "description": "Update email and push notification preferences",
+        "operationId": "update_notification_settings",
+        "security": [{"BearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationSettings"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "Settings updated"}
+        }
+      }
+    },
+    "/api/v1/mobile/messages/conversations": {
+      "get": {
+        "tags": ["Mobile API - Messages"],
+        "summary": "List conversations",
+        "description": "Get user's conversations with last message preview",
+        "operationId": "list_conversations",
+        "security": [{"BearerAuth": []}],
+        "responses": {
+          "200": {"description": "Conversations retrieved"}
+        }
+      }
+    },
+    "/api/v1/mobile/messages/conversations/{conversation_id}": {
+      "get": {
+        "tags": ["Mobile API - Messages"],
+        "summary": "Get conversation messages",
+        "description": "Retrieve all messages in a conversation (auto-marks as read)",
+        "operationId": "get_conversation_messages",
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "integer"}
+          }
+        ],
+        "responses": {
+          "200": {"description": "Messages retrieved"},
+          "403": {"description": "Not participant in conversation"}
+        }
+      }
+    },
+    "/api/v1/mobile/messages/conversations/{conversation_id}/messages": {
+      "post": {
+        "tags": ["Mobile API - Messages"],
+        "summary": "Send message",
+        "description": "Send a message in a conversation",
+        "operationId": "send_message",
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "integer"}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["text"],
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 5000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {"description": "Message sent"},
+          "403": {"description": "Not participant in conversation"}
+        }
+      }
+    },
+    "/api/v1/mobile/devices": {
+      "get": {
+        "tags": ["Mobile API - Devices"],
+        "summary": "List devices",
+        "description": "Get all registered devices for user",
+        "operationId": "list_devices",
+        "security": [{"BearerAuth": []}],
+        "responses": {
+          "200": {"description": "Devices retrieved"}
+        }
+      },
+      "patch": {
+        "tags": ["Mobile API - Devices"],
+        "summary": "Update device",
+        "description": "Update device push token or app version",
+        "operationId": "update_device",
+        "security": [{"BearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeviceUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "Device updated"}
+        }
+      }
+    },
+    "/api/v1/mobile/devices/{device_id}": {
+      "delete": {
+        "tags": ["Mobile API - Devices"],
+        "summary": "Deactivate device",
+        "description": "Remove device from active list",
+        "operationId": "deactivate_device",
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "device_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "204": {"description": "Device deactivated"}
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT Bearer token authentication. Obtain token via /api/v1/mobile/auth/login. Include in Authorization header as: Bearer <token>. Access tokens expire after 15 minutes. Use refresh token to get new access token."
+      }
+    },
+    "schemas": {
+      "RegisterRequest": {
+        "type": "object",
+        "required": ["email", "password", "full_name", "role", "device"],
+        "properties": {
+          "email": {"type": "string", "format": "email"},
+          "password": {"type": "string", "minLength": 8, "maxLength": 100},
+          "full_name": {"type": "string", "minLength": 1, "maxLength": 255},
+          "role": {"type": "string", "enum": ["jobseeker", "hiring_manager", "recruiter"]},
+          "device": {"$ref": "#/components/schemas/DeviceInfo"}
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": ["email", "password", "device"],
+        "properties": {
+          "email": {"type": "string", "format": "email"},
+          "password": {"type": "string"},
+          "device": {"$ref": "#/components/schemas/DeviceInfo"}
+        }
+      },
+      "DeviceInfo": {
+        "type": "object",
+        "required": ["platform", "device_id"],
+        "properties": {
+          "platform": {"type": "string", "enum": ["ios", "android"]},
+          "device_id": {"type": "string"},
+          "push_token": {"type": "string", "nullable": true},
+          "app_version": {"type": "string", "nullable": true},
+          "os_version": {"type": "string", "nullable": true}
+        }
+      },
+      "AuthResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "user": {"$ref": "#/components/schemas/UserCompact"},
+              "tokens": {
+                "type": "object",
+                "properties": {
+                  "access_token": {"type": "string", "description": "15-minute JWT access token"},
+                  "refresh_token": {"type": "string", "description": "30-day refresh token"},
+                  "token_type": {"type": "string", "example": "bearer"},
+                  "expires_in": {"type": "integer", "description": "Seconds until access token expires"}
+                }
+              }
+            }
+          }
+        }
+      },
+      "UserCompact": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "integer"},
+          "email": {"type": "string"},
+          "full_name": {"type": "string"},
+          "role": {"type": "string"},
+          "avatar_url": {"type": "string", "nullable": true}
+        }
+      },
+      "JobListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {"$ref": "#/components/schemas/JobCompact"}
+              },
+              "meta": {
+                "type": "object",
+                "properties": {
+                  "total": {"type": "integer"},
+                  "cursor": {"type": "string", "nullable": true},
+                  "has_more": {"type": "boolean"}
+                }
+              }
+            }
+          }
+        }
+      },
+      "JobCompact": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "integer"},
+          "title": {"type": "string"},
+          "company": {"$ref": "#/components/schemas/CompanyCompact"},
+          "location": {"type": "string", "nullable": true},
+          "salary_range": {"type": "string", "nullable": true},
+          "job_type": {"type": "string"},
+          "is_saved": {"type": "boolean"},
+          "is_applied": {"type": "boolean"},
+          "match_score": {"type": "number", "nullable": true}
+        }
+      },
+      "CompanyCompact": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "integer"},
+          "name": {"type": "string"},
+          "logo_url": {"type": "string", "nullable": true}
+        }
+      },
+      "ApplicationSubmit": {
+        "type": "object",
+        "required": ["job_id"],
+        "properties": {
+          "job_id": {"type": "integer"},
+          "cover_letter": {"type": "string", "nullable": true},
+          "answers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "question": {"type": "string"},
+                "answer": {"type": "string"}
+              }
+            }
+          }
+        }
+      },
+      "ProfileUpdate": {
+        "type": "object",
+        "properties": {
+          "headline": {"type": "string", "nullable": true},
+          "location": {"type": "string", "nullable": true},
+          "bio": {"type": "string", "nullable": true},
+          "skills": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "experience_years": {"type": "integer", "minimum": 0, "nullable": true}
+        }
+      },
+      "NotificationSettings": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "object",
+            "properties": {
+              "application_updates": {"type": "boolean"},
+              "interview_reminders": {"type": "boolean"},
+              "new_matches": {"type": "boolean"},
+              "messages": {"type": "boolean"}
+            }
+          },
+          "push": {
+            "type": "object",
+            "properties": {
+              "application_updates": {"type": "boolean"},
+              "interview_reminders": {"type": "boolean"},
+              "new_matches": {"type": "boolean"},
+              "messages": {"type": "boolean"}
+            }
+          }
+        }
+      },
+      "DeviceUpdate": {
+        "type": "object",
+        "required": ["device_id"],
+        "properties": {
+          "device_id": {"type": "string"},
+          "push_token": {"type": "string", "nullable": true},
+          "app_version": {"type": "string", "nullable": true},
+          "os_version": {"type": "string", "nullable": true}
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {"type": "string"},
+              "message": {"type": "string"},
+              "details": {"type": "object", "nullable": true}
+            }
+          }
+        }
+      },
+      "ValidationError": {
+        "type": "object",
+        "properties": {
+          "detail": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "loc": {"type": "array", "items": {"type": "string"}},
+                "msg": {"type": "string"},
+                "type": {"type": "string"}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
