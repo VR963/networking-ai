@@ -21,6 +21,7 @@ from ..models.audit_log import AuditLog
 from ..api.auth import get_current_active_user
 from ..agents.hiring_manager_interview_agent import create_hiring_manager_interview_agent
 from ..services.company_agent_factory import CompanyAgentFactory
+from ..services.chromadb_service import create_chromadb_service
 
 
 router = APIRouter()
@@ -417,8 +418,37 @@ async def activate_hm_agent(
         db=db
     )
 
-    # TODO: Populate Personal HM Agent RAG
-    # (Similar to PersonalAgentFactory.create_from_interview)
+    # Phase 2: Populate Personal HM Agent RAG
+    try:
+        chromadb_service = create_chromadb_service()
+
+        # Create HM RAG collection
+        collection_name = chromadb_service.create_hm_rag(
+            agent_id=hm_agent.id,
+            user_id=current_user.id,
+            company_id=hm_role.company_id
+        )
+
+        # Update agent with RAG collection ID
+        hm_agent.rag_collection_id = collection_name
+
+        # Populate HM RAG with interview knowledge
+        chromadb_service.populate_hm_rag(
+            collection_name=collection_name,
+            interview_data=knowledge
+        )
+
+        print(f"[HM_ONBOARDING] Populated HM RAG '{collection_name}' with hiring preferences and style")
+
+    except ImportError as e:
+        # ChromaDB not installed - graceful degradation
+        print(f"[HM_ONBOARDING] ChromaDB not available, skipping RAG population: {e}")
+        print(f"[HM_ONBOARDING] Agent will use fallback data for job posting")
+
+    except Exception as e:
+        # Other errors - log but continue
+        print(f"[HM_ONBOARDING] Error populating HM RAG: {e}")
+        print(f"[HM_ONBOARDING] Agent will use fallback data")
 
     db.commit()
 

@@ -23,6 +23,7 @@ from ..models.company_admin_agent import CompanyAdminAgent
 from ..models.audit_log import AuditLog
 from ..api.auth import get_current_active_user
 from ..services.company_agent_factory import CompanyAgentFactory
+from ..services.chromadb_service import create_chromadb_service
 
 
 router = APIRouter()
@@ -299,11 +300,55 @@ async def publish_job_posting(
         db=db
     )
 
-    # TODO: Create and populate job-specific RAG collection
-    # This would include:
+    # Phase 2: Create and populate job-specific RAG collection
+    # Job RAG includes:
     # - Job requirements and description
-    # - HM's hiring preferences (from Personal HM Agent RAG)
-    # - Company culture and values (from Company Admin Agent RAG)
+    # - Dual access to HM's hiring preferences (from Personal HM Agent RAG)
+    # - Dual access to Company culture and values (from Company Admin Agent RAG)
+    try:
+        chromadb_service = create_chromadb_service()
+
+        # Create Job RAG collection
+        collection_name = chromadb_service.create_job_rag(
+            job_id=job.id,
+            company_id=job.company_id,
+            hiring_manager_id=job.hiring_manager_id
+        )
+
+        # Update job with RAG collection ID
+        job.job_rag_collection_id = collection_name
+
+        # Get HM agent for dual access
+        hm_agent = db.query(PersonalAIAgent).filter(
+            PersonalAIAgent.id == job.hiring_manager_agent_id
+        ).first()
+
+        # Get company admin agent for dual access
+        company_admin_agent = db.query(CompanyAdminAgent).filter(
+            CompanyAdminAgent.id == job.company_admin_agent_id
+        ).first()
+
+        # Populate Job RAG with job data and dual access links
+        chromadb_service.populate_job_rag(
+            collection_name=collection_name,
+            job_data=job_data,
+            hm_rag_collection=hm_agent.rag_collection_id if hm_agent else None,
+            company_rag_collection=company_admin_agent.rag_collection_id if company_admin_agent else None
+        )
+
+        print(f"[JOB_POSTING] Created and populated Job RAG '{collection_name}'")
+        print(f"[JOB_POSTING] Dual access to HM RAG: {hm_agent.rag_collection_id if hm_agent else 'None'}")
+        print(f"[JOB_POSTING] Dual access to Company RAG: {company_admin_agent.rag_collection_id if company_admin_agent else 'None'}")
+
+    except ImportError as e:
+        # ChromaDB not installed - graceful degradation
+        print(f"[JOB_POSTING] ChromaDB not available, skipping RAG creation: {e}")
+        print(f"[JOB_POSTING] Job will use fallback data for matching")
+
+    except Exception as e:
+        # Other errors - log but continue
+        print(f"[JOB_POSTING] Error creating Job RAG: {e}")
+        print(f"[JOB_POSTING] Job will use fallback data")
 
     # Publish job
     job.status = JobStatus.ACTIVE

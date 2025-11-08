@@ -15,12 +15,13 @@ from pydantic import BaseModel
 
 from ..database import get_db
 from ..models.user import User
-from ..models.personal_ai_agent import PersonalAIAgent, AgentType
+from ..models.personal_ai_agent import PersonalAIAgent, AgentType, AgentStatus
 from ..models.interview_session import InterviewSession, InterviewStatus
 from ..models.agent_conversation import AgentConversation, ConversationType, ConversationStatus
 from ..models.audit_log import AuditLog
 from ..api.auth import get_current_active_user
 from ..services.cv_parser import create_cv_parser
+from ..services.chromadb_service import create_chromadb_service
 from ..agents.recruiter_agent import create_recruiter_agent
 from ..master_ai import create_master_rag
 
@@ -440,7 +441,14 @@ async def complete_interview(
     """
     Complete interview and activate personal AI agent.
 
-    Step 3: Create personal agent with learned knowledge.
+    Step 3: Create personal agent with learned knowledge and populate RAG.
+
+    Flow:
+    1. Mark interview session as completed
+    2. Create Talent Personal AI Agent
+    3. Create Talent RAG collection in ChromaDB
+    4. Populate RAG with interview knowledge and CV data
+    5. Activate agent for matching
     """
     session = db.query(InterviewSession).filter(
         InterviewSession.id == session_id,
@@ -453,17 +461,105 @@ async def complete_interview(
             detail="Interview session not found"
         )
 
+    if session.status == InterviewStatus.COMPLETED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Interview already completed"
+        )
+
     # Mark session as completed
     session.mark_completed()
 
-    # TODO: Create Personal AI Agent (Phase 2)
-    # TODO: Build Personal RAG from knowledge_extracted (Phase 2)
-    # TODO: Activate agent for matching (Phase 2)
+    # Phase 2: Create Personal AI Agent
+    # Check if agent already exists
+    talent_agent = db.query(PersonalAIAgent).filter(
+        PersonalAIAgent.user_id == current_user.id,
+        PersonalAIAgent.agent_type == AgentType.TALENT
+    ).first()
+
+    if not talent_agent:
+        # Create new Talent Personal Agent
+        talent_agent = PersonalAIAgent(
+            user_id=current_user.id,
+            agent_type=AgentType.TALENT,
+            status=AgentStatus.PENDING,
+            industry=session.detected_industry,
+            role=session.detected_role,
+            created_at=datetime.utcnow()
+        )
+        db.add(talent_agent)
+        db.flush()  # Get agent ID
+
+        print(f"[ONBOARDING] Created Talent Personal Agent {talent_agent.id} for user {current_user.id}")
+
+    # Phase 2: Build Personal RAG from knowledge_extracted
+    try:
+        chromadb_service = create_chromadb_service()
+
+        # Create Talent RAG collection
+        collection_name = chromadb_service.create_talent_rag(
+            agent_id=talent_agent.id,
+            user_id=current_user.id
+        )
+
+        # Update agent with RAG collection ID
+        talent_agent.rag_collection_id = collection_name
+
+        # Populate RAG with interview knowledge and CV data
+        interview_data = session.knowledge_extracted or {}
+        cv_data = session.cv_parsed_data or {}
+
+        chromadb_service.populate_talent_rag(
+            collection_name=collection_name,
+            interview_data=interview_data,
+            cv_data=cv_data
+        )
+
+        print(f"[ONBOARDING] Populated Talent RAG '{collection_name}' with interview and CV data")
+
+        # Phase 2: Activate agent for matching
+        talent_agent.status = AgentStatus.ACTIVE
+        talent_agent.activated_at = datetime.utcnow()
+
+        print(f"[ONBOARDING] Activated Talent Personal Agent {talent_agent.id}")
+
+    except ImportError as e:
+        # ChromaDB not installed - graceful degradation
+        print(f"[ONBOARDING] ChromaDB not available, skipping RAG population: {e}")
+        print(f"[ONBOARDING] Agent will use placeholder data for matching")
+
+        # Still activate agent (matching service has fallback)
+        talent_agent.status = AgentStatus.ACTIVE
+        talent_agent.activated_at = datetime.utcnow()
+
+    except Exception as e:
+        # Other errors - log but continue
+        print(f"[ONBOARDING] Error populating RAG: {e}")
+        print(f"[ONBOARDING] Agent will use placeholder data for matching")
+
+        # Still activate agent
+        talent_agent.status = AgentStatus.ACTIVE
+        talent_agent.activated_at = datetime.utcnow()
 
     db.commit()
 
+    # Audit log
+    audit = AuditLog(
+        user_id=current_user.id,
+        action="talent_agent_activated",
+        details={
+            "agent_id": talent_agent.id,
+            "session_id": session_id,
+            "rag_collection": talent_agent.rag_collection_id
+        }
+    )
+    db.add(audit)
+    db.commit()
+
     return {
-        "message": "Interview completed! Your personal AI agent will be activated soon.",
+        "message": "Interview completed! Your personal AI agent has been activated and is ready for matching.",
+        "agent_id": talent_agent.id,
         "completion_percentage": session.completion_percentage,
-        "knowledge_extracted": session.knowledge_extracted
+        "knowledge_extracted": session.knowledge_extracted,
+        "rag_collection": talent_agent.rag_collection_id
     }
