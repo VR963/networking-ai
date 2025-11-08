@@ -1,10 +1,13 @@
 """Semantic matching and similarity scoring for user profiles."""
 
-from typing import List, Dict, Tuple, Optional
-import numpy as np
-from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
+from typing import List, Dict, Tuple, Optional, TYPE_CHECKING
 from .config import config
+
+# Lazy imports for heavy ML dependencies
+if TYPE_CHECKING:
+    import numpy as np
+    from sentence_transformers import SentenceTransformer
+    from sklearn.metrics.pairwise import cosine_similarity
 
 
 class SemanticMatcher:
@@ -19,17 +22,18 @@ class SemanticMatcher:
                        Defaults to config.EMBEDDING_MODEL
         """
         self.model_name = model_name or config.EMBEDDING_MODEL
-        self._model: Optional[SentenceTransformer] = None
-        self._cache: Dict[str, np.ndarray] = {}
+        self._model = None
+        self._cache: Dict[str, "np.ndarray"] = {}
 
     @property
-    def model(self) -> SentenceTransformer:
+    def model(self):
         """Lazy load the sentence transformer model."""
         if self._model is None:
+            from sentence_transformers import SentenceTransformer
             self._model = SentenceTransformer(self.model_name)
         return self._model
 
-    def generate_embedding(self, text: str, use_cache: bool = True) -> np.ndarray:
+    def generate_embedding(self, text: str, use_cache: bool = True):
         """
         Generate embedding for a text string.
 
@@ -40,6 +44,8 @@ class SemanticMatcher:
         Returns:
             Numpy array representing the embedding
         """
+        import numpy as np
+
         if use_cache and config.ENABLE_CACHING and text in self._cache:
             return self._cache[text]
 
@@ -82,7 +88,7 @@ class SemanticMatcher:
         return " | ".join(parts)
 
     def calculate_similarity(
-        self, embedding1: np.ndarray, embedding2: np.ndarray
+        self, embedding1, embedding2
     ) -> float:
         """
         Calculate cosine similarity between two embeddings.
@@ -94,6 +100,8 @@ class SemanticMatcher:
         Returns:
             Similarity score between 0 and 1
         """
+        from sklearn.metrics.pairwise import cosine_similarity
+
         # Reshape for sklearn
         emb1 = embedding1.reshape(1, -1)
         emb2 = embedding2.reshape(1, -1)
