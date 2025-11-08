@@ -115,6 +115,21 @@ from .integrations import (
     IntegrationStatus
 )
 
+# Phase 8: Advanced AI Features
+from .ai_features import (
+    ParsedResume,
+    AIScreening,
+    AIPrediction,
+    SkillTaxonomy,
+    AIModelMetrics,
+    CandidateInsight,
+    JobInsight,
+    ResumeParseStatus,
+    ScreeningDecision,
+    PredictionType,
+    ModelType
+)
+
 __all__ = [
     # User
     'User',
@@ -240,4 +255,16 @@ __all__ = [
     'IntegrationType',
     'IntegrationProvider',
     'IntegrationStatus',
+    # Phase 8: AI Features
+    'ParsedResume',
+    'AIScreening',
+    'AIPrediction',
+    'SkillTaxonomy',
+    'AIModelMetrics',
+    'CandidateInsight',
+    'JobInsight',
+    'ResumeParseStatus',
+    'ScreeningDecision',
+    'PredictionType',
+    'ModelType',
 ]
