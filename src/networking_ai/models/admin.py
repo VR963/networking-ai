@@ -71,6 +71,8 @@ class AdminUser(Base):
     Tracks admin users with elevated permissions.
     """
     __tablename__ = "admin_users"
+    __table_args__ = {'extend_existing': True}
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -122,6 +124,8 @@ class AuditLog(Base):
     Comprehensive logging for compliance and security.
     """
     __tablename__ = "audit_logs"
+    __table_args__ = {'extend_existing': True}
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -155,7 +159,7 @@ class AuditLog(Base):
     error_message = Column(Text, nullable=True)
 
     # Metadata
-    metadata = Column(JSON, default=dict)
+    extra_data = Column(JSON, default=dict)
 
     # Timestamps
     timestamp = Column(DateTime, default=datetime.utcnow, index=True)
@@ -187,6 +191,8 @@ class PlatformConfiguration(Base):
     Stores configurable platform settings.
     """
     __tablename__ = "platform_configurations"
+    __table_args__ = {'extend_existing': True}
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -223,6 +229,8 @@ class SystemMetrics(Base):
     Tracks platform health and usage metrics.
     """
     __tablename__ = "system_metrics"
+    __table_args__ = {'extend_existing': True}
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -256,6 +264,8 @@ class UserActionLog(Base):
     Tracks user behavior for product analytics.
     """
     __tablename__ = "user_action_logs"
+    __table_args__ = {'extend_existing': True}
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -289,7 +299,7 @@ class UserActionLog(Base):
     page_load_time = Column(Integer, nullable=True)  # milliseconds
 
     # Metadata
-    metadata = Column(JSON, default=dict)
+    extra_data = Column(JSON, default=dict)
 
     # Timestamps
     timestamp = Column(DateTime, default=datetime.utcnow, index=True)
@@ -305,6 +315,8 @@ class FeatureFlag(Base):
     Enables/disables features for specific users or groups.
     """
     __tablename__ = "feature_flags"
+    __table_args__ = {'extend_existing': True}
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -371,6 +383,8 @@ class DataExport(Base):
     Tracks user data export requests for GDPR compliance.
     """
     __tablename__ = "data_exports"
+    __table_args__ = {'extend_existing': True}
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -399,7 +413,7 @@ class DataExport(Base):
 
     # Metadata
     requested_by_ip = Column(String(45), nullable=True)
-    metadata = Column(JSON, default=dict)
+    extra_data = Column(JSON, default=dict)
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
@@ -417,6 +431,8 @@ class ComplianceRecord(Base):
     Tracks compliance-related actions and records.
     """
     __tablename__ = "compliance_records"
+    __table_args__ = {'extend_existing': True}
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -448,7 +464,7 @@ class ComplianceRecord(Base):
     completed_at = Column(DateTime, nullable=True)
 
     # Metadata
-    metadata = Column(JSON, default=dict)
+    extra_data = Column(JSON, default=dict)
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, index=True)

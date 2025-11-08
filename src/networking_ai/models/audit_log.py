@@ -19,6 +19,7 @@ class AuditLog(Base):
     Users can view their audit trail to see how they're being represented.
     """
     __tablename__ = "audit_logs"
+    __table_args__ = {'extend_existing': True}
 
     # Primary key
     id = Column(Integer, primary_key=True, index=True)

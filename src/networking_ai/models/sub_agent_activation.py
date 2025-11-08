@@ -32,6 +32,7 @@ class SubAgentActivation(Base):
     Provides audit trail of agent reasoning.
     """
     __tablename__ = "sub_agent_activations"
+    __table_args__ = {'extend_existing': True}
 
     # Primary key
     id = Column(Integer, primary_key=True, index=True)

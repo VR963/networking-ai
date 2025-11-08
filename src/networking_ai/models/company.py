@@ -38,6 +38,7 @@ class Company(Base):
     Companies post jobs and use AI agents to find matching candidates.
     """
     __tablename__ = "companies"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)

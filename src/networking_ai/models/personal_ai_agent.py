@@ -38,6 +38,7 @@ class PersonalAIAgent(Base):
     conducts conversations, and learns from interactions.
     """
     __tablename__ = "personal_ai_agents"
+    __table_args__ = {'extend_existing': True}
 
     # Primary key
     id = Column(Integer, primary_key=True, index=True)

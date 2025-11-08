@@ -126,8 +126,7 @@ from .ai_features import (
     JobInsight,
     ResumeParseStatus,
     ScreeningDecision,
-    PredictionType,
-    ModelType
+    PredictionType
 )
 
 # Phase 9: Employee Onboarding
@@ -294,7 +293,6 @@ __all__ = [
     'ResumeParseStatus',
     'ScreeningDecision',
     'PredictionType',
-    'ModelType',
     # Phase 9: Employee Onboarding
     'Employee',
     'OnboardingChecklist',

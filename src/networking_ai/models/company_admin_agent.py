@@ -31,6 +31,7 @@ class CompanyAdminAgent(Base):
     - Provides company-wide insights
     """
     __tablename__ = "company_admin_agents"
+    __table_args__ = {'extend_existing': True}
 
     # Primary key
     id = Column(Integer, primary_key=True, index=True)

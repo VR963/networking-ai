@@ -14,7 +14,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 
-from .base import Base
+from ..database import Base
 
 
 # ==================== Enums ====================
@@ -178,6 +178,7 @@ class Employee(Base):
     Extended profile with employment details, compensation, and department info.
     """
     __tablename__ = "employees"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False, unique=True)
@@ -234,7 +235,7 @@ class Employee(Base):
     emergency_contact_relationship = Column(String(100), nullable=True)
 
     notes = Column(Text, nullable=True)
-    metadata = Column(JSON, default=dict)
+    extra_data = Column(JSON, default=dict)
 
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
@@ -262,6 +263,7 @@ class OnboardingChecklist(Base):
     Defines standard onboarding tasks for a role or department.
     """
     __tablename__ = "onboarding_checklists"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     company_id = Column(Integer, ForeignKey('companies.id'), nullable=False)
@@ -296,6 +298,7 @@ class OnboardingTask(Base):
     Tracks completion of paperwork, setup, training, and orientation activities.
     """
     __tablename__ = "onboarding_tasks"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     employee_id = Column(Integer, ForeignKey('employees.id'), nullable=False)
@@ -343,6 +346,7 @@ class TrainingProgram(Base):
     Defines training content, requirements, and scheduling.
     """
     __tablename__ = "training_programs"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     company_id = Column(Integer, ForeignKey('companies.id'), nullable=False)
@@ -387,6 +391,7 @@ class EmployeeTraining(Base):
     Tracks individual progress through training programs.
     """
     __tablename__ = "employee_trainings"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     employee_id = Column(Integer, ForeignKey('employees.id'), nullable=False)
@@ -429,6 +434,7 @@ class Equipment(Base):
     Tracks laptops, phones, monitors, and other assets.
     """
     __tablename__ = "equipment"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     company_id = Column(Integer, ForeignKey('companies.id'), nullable=False)
@@ -477,6 +483,7 @@ class EmployeeDocument(Base):
     Contracts, NDAs, policies, tax forms, and other employee documents.
     """
     __tablename__ = "employee_documents"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     employee_id = Column(Integer, ForeignKey('employees.id'), nullable=False)
@@ -523,6 +530,7 @@ class TimeOffRequest(Base):
     PTO, sick leave, vacation, and other leave requests.
     """
     __tablename__ = "time_off_requests"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     employee_id = Column(Integer, ForeignKey('employees.id'), nullable=False)
@@ -559,6 +567,7 @@ class EmployeeReview(Base):
     Tracks employee performance reviews, feedback, and goals.
     """
     __tablename__ = "employee_reviews"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     employee_id = Column(Integer, ForeignKey('employees.id'), nullable=False)

@@ -29,6 +29,7 @@ class UserProfile(Base):
     Used by AI agents to match with job opportunities.
     """
     __tablename__ = "user_profiles"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)

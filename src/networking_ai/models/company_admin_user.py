@@ -29,6 +29,7 @@ class CompanyAdminUser(Base):
     - sarah@company.com (Admin) - Key: ADMIN_abc456
     """
     __tablename__ = "company_admin_users"
+    __table_args__ = {'extend_existing': True}
 
     # Primary key
     id = Column(Integer, primary_key=True, index=True)

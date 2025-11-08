@@ -45,6 +45,7 @@ class HiringMetrics(Base):
     Stores aggregated metrics for a specific time period.
     """
     __tablename__ = "hiring_metrics"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -151,6 +152,7 @@ class JobAnalytics(Base):
     Tracks detailed metrics per job.
     """
     __tablename__ = "job_analytics"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -285,6 +287,7 @@ class CandidateAnalytics(Base):
     Tracks individual candidate metrics for their dashboard.
     """
     __tablename__ = "candidate_analytics"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -398,6 +401,7 @@ class AIPerformanceMetrics(Base):
     Tracks effectiveness of AI matching, screening, and recommendations.
     """
     __tablename__ = "ai_performance_metrics"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)

@@ -52,6 +52,7 @@ class JobOffer(Base):
     Represents a formal job offer made to a candidate.
     """
     __tablename__ = "job_offers"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -230,6 +231,7 @@ class OfferNegotiation(Base):
     Records back-and-forth negotiations between candidate and company.
     """
     __tablename__ = "offer_negotiations"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)

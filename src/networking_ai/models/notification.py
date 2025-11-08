@@ -90,6 +90,7 @@ class Notification(Base):
     Supports in-app, email, SMS, and push notifications.
     """
     __tablename__ = "notifications"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -236,6 +237,7 @@ class NotificationPreferences(Base):
     Controls what notifications user receives and through which channels.
     """
     __tablename__ = "notification_preferences"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)

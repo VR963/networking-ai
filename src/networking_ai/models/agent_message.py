@@ -51,6 +51,7 @@ class AgentMessage(Base):
     Each message belongs to a conversation thread with context.
     """
     __tablename__ = "agent_messages"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)

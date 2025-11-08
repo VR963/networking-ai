@@ -37,6 +37,7 @@ class Company(Base):
     Has Admin Agent for knowledge retention and seat licensing.
     """
     __tablename__ = "companies"
+    __table_args__ = {'extend_existing': True}
 
     # Primary key
     id = Column(Integer, primary_key=True, index=True)

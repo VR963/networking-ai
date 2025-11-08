@@ -54,6 +54,8 @@ class PaymentMethod(Base):
     Stores Stripe payment method information for recurring charges.
     """
     __tablename__ = "payment_methods"
+    __table_args__ = {'extend_existing': True}
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -106,6 +108,8 @@ class SubscriptionPlan(Base):
     Defines available subscription tiers and pricing.
     """
     __tablename__ = "subscription_plans"
+    __table_args__ = {'extend_existing': True}
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -156,6 +160,8 @@ class BillingSubscription(Base):
     Tracks current subscription status and billing cycle.
     """
     __tablename__ = "billing_subscriptions"
+    __table_args__ = {'extend_existing': True}
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -193,8 +199,8 @@ class BillingSubscription(Base):
     ai_matches_this_period = Column(Integer, default=0)
     interviews_this_period = Column(Integer, default=0)
 
-    # Metadata
-    metadata = Column(JSON, default=dict)
+    # Additional data
+    extra_data = Column(JSON, default=dict)
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
@@ -238,6 +244,8 @@ class Invoice(Base):
     Tracks billing invoices sent to customers.
     """
     __tablename__ = "invoices"
+    __table_args__ = {'extend_existing': True}
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -285,8 +293,8 @@ class Invoice(Base):
     description = Column(Text, nullable=True)
     notes = Column(Text, nullable=True)
 
-    # Metadata
-    metadata = Column(JSON, default=dict)
+    # Additional data
+    extra_data = Column(JSON, default=dict)
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
@@ -325,6 +333,8 @@ class Payment(Base):
     Tracks all payment attempts and completions.
     """
     __tablename__ = "payments"
+    __table_args__ = {'extend_existing': True}
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -362,8 +372,8 @@ class Payment(Base):
     refund_amount = Column(Integer, default=0)
     refunded_at = Column(DateTime, nullable=True)
 
-    # Metadata
-    metadata = Column(JSON, default=dict)
+    # Additional data
+    extra_data = Column(JSON, default=dict)
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
@@ -403,6 +413,8 @@ class UsageRecord(Base):
     Tracks API calls, AI matches, and other metered features.
     """
     __tablename__ = "usage_records"
+    __table_args__ = {'extend_existing': True}
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -418,10 +430,10 @@ class UsageRecord(Base):
     unit_price = Column(Integer, default=0)  # In cents
     total_amount = Column(Integer, default=0)  # In cents
 
-    # Metadata
+    # Additional data
     resource_id = Column(Integer, nullable=True)  # ID of the resource (job_id, application_id, etc.)
     resource_type = Column(String(100), nullable=True)  # job, application, match, etc.
-    metadata = Column(JSON, default=dict)
+    usage_metadata = Column(JSON, default=dict)
 
     # Timestamps
     timestamp = Column(DateTime, default=datetime.utcnow, index=True)
@@ -440,6 +452,8 @@ class BillingEvent(Base):
     Tracks all billing-related events for audit purposes.
     """
     __tablename__ = "billing_events"
+    __table_args__ = {'extend_existing': True}
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)

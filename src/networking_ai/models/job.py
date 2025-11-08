@@ -49,6 +49,7 @@ class Job(Base):
     Each job has an AI agent created automatically to find matching candidates.
     """
     __tablename__ = "jobs"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)

@@ -28,6 +28,7 @@ class HiringManagerRole(Base):
     - Company retains knowledge in Admin Agent
     """
     __tablename__ = "hiring_manager_roles"
+    __table_args__ = {'extend_existing': True}
 
     # Primary key
     id = Column(Integer, primary_key=True, index=True)

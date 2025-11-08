@@ -41,6 +41,7 @@ class User(Base):
     Job seekers will have a UserProfile, companies will have a Company record.
     """
     __tablename__ = "users"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)

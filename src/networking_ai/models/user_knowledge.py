@@ -32,6 +32,7 @@ class UserKnowledge(Base):
     Enables "never ask twice" functionality.
     """
     __tablename__ = "user_knowledge"
+    __table_args__ = {'extend_existing': True}
 
     # Primary key
     id = Column(Integer, primary_key=True, index=True)

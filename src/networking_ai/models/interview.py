@@ -69,6 +69,7 @@ class Interview(Base):
     Tracks scheduled interviews between candidates and hiring teams.
     """
     __tablename__ = "interviews"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -225,6 +226,7 @@ class InterviewAvailability(Base):
     Used for automated scheduling.
     """
     __tablename__ = "interview_availability"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -271,6 +273,7 @@ class InterviewFeedback(Base):
     Collected after each interview stage.
     """
     __tablename__ = "interview_feedbacks"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -365,6 +368,7 @@ class InterviewPipeline(Base):
     One pipeline per application.
     """
     __tablename__ = "interview_pipelines"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)

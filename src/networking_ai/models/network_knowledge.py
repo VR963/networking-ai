@@ -19,6 +19,7 @@ class NetworkKnowledge(Base):
     Enables cross-learning: agents benefit from collective intelligence.
     """
     __tablename__ = "network_knowledge"
+    __table_args__ = {'extend_existing': True}
 
     # Primary key
     id = Column(Integer, primary_key=True, index=True)

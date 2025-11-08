@@ -39,6 +39,7 @@ class AIAgent(Base):
     The Master Agent manages all these agents.
     """
     __tablename__ = "ai_agents"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)

@@ -26,6 +26,7 @@ class InterviewSession(Base):
     Tracks the onboarding interview where recruiter agent learns about user.
     """
     __tablename__ = "interview_sessions"
+    __table_args__ = {'extend_existing': True}
 
     # Primary key
     id = Column(Integer, primary_key=True, index=True)

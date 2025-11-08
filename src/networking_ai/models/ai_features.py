@@ -47,6 +47,7 @@ class ParsedResume(Base):
     Stores structured data extracted from resume documents.
     """
     __tablename__ = "parsed_resumes"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -138,6 +139,7 @@ class AIScreening(Base):
     Stores AI-powered screening analysis and recommendations.
     """
     __tablename__ = "ai_screenings"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -218,6 +220,7 @@ class AIPrediction(Base):
     Machine learning predictions for hiring success.
     """
     __tablename__ = "ai_predictions"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -281,6 +284,7 @@ class SkillTaxonomy(Base):
     Hierarchical skill structure with synonyms and relationships.
     """
     __tablename__ = "skill_taxonomy"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -320,6 +324,7 @@ class AIModelMetrics(Base):
     Tracks accuracy and performance of AI models over time.
     """
     __tablename__ = "ai_model_metrics"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -366,6 +371,7 @@ class CandidateInsight(Base):
     Comprehensive AI analysis of candidate potential.
     """
     __tablename__ = "candidate_insights"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -416,6 +422,7 @@ class JobInsight(Base):
     Analysis of job requirements and market positioning.
     """
     __tablename__ = "job_insights"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)

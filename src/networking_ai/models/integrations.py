@@ -77,6 +77,7 @@ class Integration(Base):
     Stores OAuth tokens and configuration for external services.
     """
     __tablename__ = "integrations"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -146,6 +147,7 @@ class CalendarEvent(Base):
     Stores events from external calendar providers.
     """
     __tablename__ = "calendar_events"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -206,6 +208,7 @@ class VideoMeeting(Base):
     Stores video meeting links and details.
     """
     __tablename__ = "video_meetings"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -271,6 +274,7 @@ class ATSSync(Base):
     Tracks sync operations with external ATS systems.
     """
     __tablename__ = "ats_syncs"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -299,7 +303,7 @@ class ATSSync(Base):
     errors = Column(JSON, default=list)  # List of error messages
 
     # Metadata
-    metadata = Column(JSON, default=dict)
+    extra_data = Column(JSON, default=dict)
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
@@ -316,6 +320,7 @@ class CommunicationLog(Base):
     Tracks emails, messages, and SMS sent through integrations.
     """
     __tablename__ = "communication_logs"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -357,7 +362,7 @@ class CommunicationLog(Base):
     error_message = Column(Text, nullable=True)
 
     # Metadata
-    metadata = Column(JSON, default=dict)
+    extra_data = Column(JSON, default=dict)
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
@@ -376,6 +381,7 @@ class BackgroundCheck(Base):
     Tracks background check orders through integration providers.
     """
     __tablename__ = "background_checks"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -423,7 +429,7 @@ class BackgroundCheck(Base):
     adjudication_notes = Column(Text, nullable=True)
 
     # Metadata
-    metadata = Column(JSON, default=dict)
+    extra_data = Column(JSON, default=dict)
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
@@ -444,6 +450,7 @@ class LinkedInProfile(Base):
     Stores LinkedIn profile information from integration.
     """
     __tablename__ = "linkedin_profiles"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -488,6 +495,7 @@ class WebhookEndpoint(Base):
     Tracks registered webhooks and their events.
     """
     __tablename__ = "webhook_endpoints"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -527,6 +535,7 @@ class WebhookEvent(Base):
     Tracks all webhook events received from integrations.
     """
     __tablename__ = "webhook_events"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)

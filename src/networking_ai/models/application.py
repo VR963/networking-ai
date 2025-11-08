@@ -48,6 +48,7 @@ class Application(Base):
     Tracks applications from job seekers to jobs with AI-powered screening.
     """
     __tablename__ = "applications"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)

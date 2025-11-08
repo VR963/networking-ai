@@ -35,6 +35,7 @@ class Match(Base):
     - Job RAG with dual access (HM Personal RAG + Company Admin RAG)
     """
     __tablename__ = "matches"
+    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)

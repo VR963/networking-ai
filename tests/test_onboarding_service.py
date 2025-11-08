@@ -10,12 +10,12 @@ from datetime import date, datetime, timedelta
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
-from networking_ai.models.base import Base
-from networking_ai.models.user import User, UserRole
-from networking_ai.models.company import Company, CompanyStatus
-from networking_ai.models.job import Job, JobStatus
-from networking_ai.models.application import Application, ApplicationStatus
-from networking_ai.models.onboarding import (
+from src.networking_ai.models.base import Base
+from src.networking_ai.models.user import User, UserRole
+from src.networking_ai.models.company import Company, CompanyStatus
+from src.networking_ai.models.job import Job, JobStatus
+from src.networking_ai.models.application import Application, ApplicationStatus
+from src.networking_ai.models.onboarding import (
     Employee, OnboardingChecklist, OnboardingTask, TrainingProgram,
     EmployeeTraining, Equipment, EmployeeDocument, TimeOffRequest,
     EmployeeReview,
@@ -24,7 +24,7 @@ from networking_ai.models.onboarding import (
     EquipmentStatus, DocumentType, DocumentStatus, TimeOffType,
     TimeOffStatus, ReviewType, ReviewStatus
 )
-from networking_ai.services.onboarding_service import OnboardingService
+from src.networking_ai.services.onboarding_service import OnboardingService
 
 
 # ==================== Fixtures ====================

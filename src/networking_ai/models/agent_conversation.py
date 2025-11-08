@@ -36,6 +36,7 @@ class AgentConversation(Base):
     Stores all types of conversations: interviews, agent-to-agent negotiations, clarifications.
     """
     __tablename__ = "agent_conversations"
+    __table_args__ = {'extend_existing': True}
 
     # Primary key
     id = Column(Integer, primary_key=True, index=True)
