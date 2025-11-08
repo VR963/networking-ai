@@ -24,6 +24,7 @@ from ..models.personal_ai_agent import PersonalAIAgent, AgentType
 from ..models.job import Job, JobStatus
 from ..models.match import Match, MatchStatus
 from ..models.company_v2 import Company
+from .chromadb_service import create_chromadb_service, ChromaDBService
 
 
 class AgentMatchingService:
@@ -35,8 +36,20 @@ class AgentMatchingService:
     - Job RAG: Requirements + HM preferences + company culture
     """
 
-    def __init__(self, anthropic_api_key: Optional[str] = None):
-        """Initialize matching service."""
+    def __init__(
+        self,
+        anthropic_api_key: Optional[str] = None,
+        chromadb_service: Optional[ChromaDBService] = None,
+        use_rag: bool = True
+    ):
+        """
+        Initialize matching service.
+
+        Args:
+            anthropic_api_key: Anthropic API key for Claude
+            chromadb_service: ChromaDB service instance (optional)
+            use_rag: Whether to use RAG queries (True) or placeholders (False)
+        """
         api_key = anthropic_api_key or os.getenv("ANTHROPIC_API_KEY")
 
         if not api_key:
@@ -48,6 +61,13 @@ class AgentMatchingService:
             api_key=api_key,
             temperature=0.7
         )
+
+        # Initialize ChromaDB service
+        self.use_rag = use_rag
+        if use_rag:
+            self.chromadb = chromadb_service or create_chromadb_service()
+        else:
+            self.chromadb = None
 
     def find_matches_for_talent(
         self,
@@ -243,17 +263,36 @@ class AgentMatchingService:
         """
         Get talent profile from Personal Agent RAG.
 
-        TODO: Query ChromaDB collection for talent knowledge.
-        For now, return placeholder data.
-        """
-        # TODO: Query talent_agent.rag_collection_id in ChromaDB
-        # This would return:
-        # - Skills (technical and soft)
-        # - Career preferences (remote, salary range, growth areas)
-        # - Experience level
-        # - Career goals
-        # - Work environment preferences
+        Queries ChromaDB collection for talent knowledge:
+        - Skills (technical and soft)
+        - Career preferences (remote, salary range, growth areas)
+        - Experience level
+        - Career goals
+        - Work environment preferences
 
+        Args:
+            talent_agent: Talent Personal AI Agent
+
+        Returns:
+            Dict with profile data
+        """
+        # Use RAG if available and enabled
+        if self.use_rag and self.chromadb and talent_agent.rag_collection_id:
+            try:
+                profile = self.chromadb.query_talent_profile(
+                    collection_name=talent_agent.rag_collection_id,
+                    query="What are the candidate's skills, preferences, and career goals?",
+                    n_results=10
+                )
+
+                if profile and profile.get("skills"):
+                    print(f"[Matching] Loaded talent profile from RAG: {len(profile.get('skills', []))} skills")
+                    return profile
+
+            except Exception as e:
+                print(f"[Matching] RAG query failed, using placeholder: {e}")
+
+        # Fallback to placeholder data
         return {
             "skills": ["Python", "FastAPI", "Machine Learning", "SQL"],
             "experience_level": "mid_level",
@@ -272,15 +311,62 @@ class AgentMatchingService:
         """
         Get job requirements from Job RAG.
 
-        TODO: Query Job RAG collection (includes HM + Company knowledge).
-        For now, extract from job model.
-        """
-        # TODO: Query job.job_rag_collection_id in ChromaDB
-        # This would return:
-        # - Job requirements
-        # - HM's hiring preferences (from Personal HM Agent RAG)
-        # - Company culture and values (from Company Admin Agent RAG)
+        Queries Job RAG collection with dual access:
+        - Job requirements
+        - HM's hiring preferences (from Personal HM Agent RAG)
+        - Company culture and values (from Company Admin Agent RAG)
 
+        Args:
+            job: Job posting
+
+        Returns:
+            Dict with job requirements and context
+        """
+        # Use RAG if available and enabled
+        if self.use_rag and self.chromadb and job.job_rag_collection_id:
+            try:
+                # Query job RAG
+                job_results = self.chromadb.query_collection(
+                    collection_name=job.job_rag_collection_id,
+                    query_texts=["What are the job requirements, skills, and experience needed?"],
+                    n_results=10
+                )
+
+                # Extract skills from RAG
+                required_skills = []
+                preferred_skills = []
+
+                for doc in job_results.get("documents", [[]])[0]:
+                    if "Required skills:" in doc:
+                        skills_text = doc.split("Required skills:")[1].strip()
+                        required_skills = [s.strip() for s in skills_text.split(",")]
+                    elif "Preferred skills:" in doc:
+                        skills_text = doc.split("Preferred skills:")[1].strip()
+                        preferred_skills = [s.strip() for s in skills_text.split(",")]
+
+                if required_skills or preferred_skills:
+                    print(f"[Matching] Loaded job requirements from RAG: {len(required_skills)} required skills")
+
+                    # Combine RAG data with job model data
+                    return {
+                        "required_skills": required_skills or (job.required_skills or []),
+                        "preferred_skills": preferred_skills or (job.preferred_skills or []),
+                        "experience_level": job.experience_level.value if job.experience_level else "mid_level",
+                        "job_type": job.job_type.value if job.job_type else "full_time",
+                        "is_remote": job.is_remote,
+                        "salary_range": {
+                            "min": job.salary_min,
+                            "max": job.salary_max
+                        },
+                        "description": job.description,
+                        "department": job.department,
+                        "rag_context": job_results.get("documents", [[]])[0]  # Additional context
+                    }
+
+            except Exception as e:
+                print(f"[Matching] Job RAG query failed, using job model data: {e}")
+
+        # Fallback to job model data
         return {
             "required_skills": job.required_skills or [],
             "preferred_skills": job.preferred_skills or [],
@@ -479,6 +565,24 @@ Be encouraging but honest about any skill gaps."""
                    f"It offers growth opportunities in areas you're interested in."
 
 
-def create_agent_matching_service(anthropic_api_key: Optional[str] = None) -> AgentMatchingService:
-    """Factory function to create matching service."""
-    return AgentMatchingService(anthropic_api_key=anthropic_api_key)
+def create_agent_matching_service(
+    anthropic_api_key: Optional[str] = None,
+    chromadb_service: Optional[ChromaDBService] = None,
+    use_rag: bool = True
+) -> AgentMatchingService:
+    """
+    Factory function to create matching service.
+
+    Args:
+        anthropic_api_key: Anthropic API key
+        chromadb_service: ChromaDB service instance (optional)
+        use_rag: Whether to use RAG queries (default: True)
+
+    Returns:
+        AgentMatchingService instance
+    """
+    return AgentMatchingService(
+        anthropic_api_key=anthropic_api_key,
+        chromadb_service=chromadb_service,
+        use_rag=use_rag
+    )
