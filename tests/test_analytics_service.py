@@ -15,10 +15,11 @@ from src.networking_ai.models import (
     User, UserRole, Company, CompanySize,
     Job, JobStatus, JobType, ExperienceLevel,
     Application, ApplicationStatus,
-    Interview, InterviewStatus, JobOffer, OfferStatus,
+    Interview, InterviewStatus, InterviewStage, JobOffer, OfferStatus,
     HiringMetrics, JobAnalytics, CandidateAnalytics, AIPerformanceMetrics,
     MetricType, ReportType, Match, MatchStatus
 )
+from src.networking_ai.models.personal_ai_agent import PersonalAIAgent, AgentType
 from src.networking_ai.services.analytics_service import AnalyticsService, create_analytics_service
 
 
@@ -100,6 +101,20 @@ def test_candidate(db_session: Session):
     db_session.commit()
     db_session.refresh(user)
     return user
+
+
+@pytest.fixture
+def test_talent_agent(db_session: Session, test_candidate):
+    """Create a test talent agent."""
+    agent = PersonalAIAgent(
+        user_id=test_candidate.id,
+        agent_type=AgentType.JOBSEEKER,
+        personal_rag_collection_id=f"rag_candidate_{test_candidate.id}"
+    )
+    db_session.add(agent)
+    db_session.commit()
+    db_session.refresh(agent)
+    return agent
 
 
 @pytest.fixture
@@ -185,7 +200,7 @@ def test_calculate_hiring_metrics_conversions(
         company_id=test_company.id,
         candidate_user_id=test_candidate.id,
         interviewer_user_id=test_hiring_manager.id,
-        interview_stage="technical",
+        stage=InterviewStage.TECHNICAL,
         scheduled_at=datetime.now() + timedelta(days=1),
         duration_minutes=60,
         status=InterviewStatus.COMPLETED
@@ -199,8 +214,10 @@ def test_calculate_hiring_metrics_conversions(
         company_id=test_company.id,
         candidate_user_id=test_candidate.id,
         hiring_manager_id=test_hiring_manager.id,
+        created_by_user_id=test_hiring_manager.id,
         position_title="Senior Software Engineer",
         base_salary=150000,
+        employment_type="full_time",
         status=OfferStatus.ACCEPTED
     )
     db_session.add(offer)
@@ -244,8 +261,10 @@ def test_calculate_hiring_metrics_time_to_hire(
         company_id=test_company.id,
         candidate_user_id=test_candidate.id,
         hiring_manager_id=test_hiring_manager.id,
+        created_by_user_id=test_hiring_manager.id,
         position_title="Senior Software Engineer",
         base_salary=150000,
+        employment_type="full_time",
         status=OfferStatus.ACCEPTED,
         accepted_at=datetime.now()
     )
@@ -400,6 +419,8 @@ def test_calculate_candidate_analytics_basic(
     db_session: Session,
     test_candidate,
     test_application
+,
+    test_talent_agent
 ):
     """Test basic candidate analytics calculation."""
     analytics = analytics_service.calculate_candidate_analytics(
@@ -419,6 +440,8 @@ def test_calculate_candidate_analytics_with_interviews(
     test_application,
     test_job,
     test_hiring_manager
+,
+    test_talent_agent
 ):
     """Test candidate analytics with interviews."""
     # Create interview
@@ -428,7 +451,7 @@ def test_calculate_candidate_analytics_with_interviews(
         company_id=test_job.company_id,
         candidate_user_id=test_candidate.id,
         interviewer_user_id=test_hiring_manager.id,
-        interview_stage="technical",
+        stage=InterviewStage.TECHNICAL,
         scheduled_at=datetime.now() + timedelta(days=1),
         duration_minutes=60,
         status=InterviewStatus.COMPLETED
@@ -452,6 +475,8 @@ def test_calculate_candidate_analytics_with_offers(
     test_application,
     test_job,
     test_hiring_manager
+,
+    test_talent_agent
 ):
     """Test candidate analytics with job offers."""
     # Create offer
@@ -461,8 +486,10 @@ def test_calculate_candidate_analytics_with_offers(
         company_id=test_job.company_id,
         candidate_user_id=test_candidate.id,
         hiring_manager_id=test_hiring_manager.id,
+        created_by_user_id=test_hiring_manager.id,
         position_title="Senior Software Engineer",
         base_salary=150000,
+        employment_type="full_time",
         status=OfferStatus.PENDING
     )
     db_session.add(offer)
@@ -481,17 +508,21 @@ def test_candidate_analytics_match_score(
     db_session: Session,
     test_candidate,
     test_job
+,
+    test_talent_agent
 ):
     """Test candidate analytics match score calculation."""
     # Create matches
     match1 = Match(
         talent_user_id=test_candidate.id,
+        talent_agent_id=test_talent_agent.id,
         job_id=test_job.id,
         match_score=85.5,
         status=MatchStatus.PENDING
     )
     match2 = Match(
         talent_user_id=test_candidate.id,
+        talent_agent_id=test_talent_agent.id,
         job_id=test_job.id,
         match_score=92.0,
         status=MatchStatus.ACCEPTED
@@ -516,12 +547,14 @@ def test_calculate_ai_performance_basic(
     db_session: Session,
     test_company,
     test_candidate,
-    test_job
+    test_job,
+    test_talent_agent
 ):
     """Test basic AI performance metrics calculation."""
     # Create some matches
     match = Match(
         talent_user_id=test_candidate.id,
+        talent_agent_id=test_talent_agent.id,
         job_id=test_job.id,
         match_score=85.5,
         status=MatchStatus.PENDING
@@ -550,11 +583,14 @@ def test_calculate_ai_performance_match_conversion(
     test_company,
     test_candidate,
     test_job
+,
+    test_talent_agent
 ):
     """Test AI performance match conversion rates."""
     # Create match that was viewed and applied to
     match = Match(
         talent_user_id=test_candidate.id,
+        talent_agent_id=test_talent_agent.id,
         job_id=test_job.id,
         match_score=85.5,
         status=MatchStatus.ACCEPTED
@@ -754,7 +790,7 @@ def test_get_hiring_funnel(
         company_id=test_company.id,
         candidate_user_id=test_candidate.id,
         interviewer_user_id=test_hiring_manager.id,
-        interview_stage="technical",
+        stage=InterviewStage.TECHNICAL,
         scheduled_at=datetime.now(),
         duration_minutes=60,
         status=InterviewStatus.COMPLETED
@@ -767,8 +803,10 @@ def test_get_hiring_funnel(
         company_id=test_company.id,
         candidate_user_id=test_candidate.id,
         hiring_manager_id=test_hiring_manager.id,
+        created_by_user_id=test_hiring_manager.id,
         position_title="Senior Software Engineer",
         base_salary=150000,
+        employment_type="full_time",
         status=OfferStatus.ACCEPTED
     )
     db_session.add(offer)
