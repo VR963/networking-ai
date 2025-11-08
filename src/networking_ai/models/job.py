@@ -54,6 +54,14 @@ class Job(Base):
     id = Column(Integer, primary_key=True, index=True)
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=False, index=True)
 
+    # Phase 2: Hiring Manager and Company Agent links
+    hiring_manager_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    hiring_manager_agent_id = Column(Integer, ForeignKey("personal_ai_agents.id"), nullable=True)
+    company_admin_agent_id = Column(Integer, ForeignKey("company_admin_agents.id"), nullable=True)
+
+    # Phase 2: Job-specific RAG collection (fed from HM preferences + company knowledge)
+    job_rag_collection_id = Column(String(255), nullable=True)  # ChromaDB collection
+
     # Basic Info
     title = Column(String(255), nullable=False, index=True)
     description = Column(Text, nullable=False)
