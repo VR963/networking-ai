@@ -5,7 +5,7 @@ Stores conversations between AI agents and interview sessions with users.
 """
 
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Enum as SQLEnum, Text, JSON
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Enum as SQLEnum, Text, JSON, Float
 from sqlalchemy.orm import relationship
 from enum import Enum
 

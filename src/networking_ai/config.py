@@ -22,6 +22,7 @@ class Config:
     TOP_N_RECOMMENDATIONS: int = int(os.getenv("TOP_N_RECOMMENDATIONS", "10"))
 
     # Feature Flags
+    DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
     ENABLE_AI_ANALYSIS: bool = os.getenv("ENABLE_AI_ANALYSIS", "true").lower() == "true"
     ENABLE_CACHING: bool = os.getenv("ENABLE_CACHING", "true").lower() == "true"
 

@@ -16,9 +16,12 @@ from ..database import Base
 
 class UserRole(str, Enum):
     """User role types."""
-    JOB_SEEKER = "job_seeker"
-    COMPANY = "company"
-    ADMIN = "admin"
+    JOB_SEEKER = "job_seeker"  # Legacy - same as TALENT
+    TALENT = "talent"  # Job seeker / candidate
+    COMPANY = "company"  # Legacy - company user
+    HIRING_MANAGER = "hiring_manager"  # Hiring manager at a company
+    COMPANY_ADMIN = "company_admin"  # Company administrator
+    ADMIN = "admin"  # Platform administrator
 
 
 class AccountStatus(str, Enum):
@@ -70,7 +73,7 @@ class User(Base):
     # Relationships
     profile = relationship("UserProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
     company = relationship("Company", back_populates="user", uselist=False, cascade="all, delete-orphan")
-    applications = relationship("Application", back_populates="user", cascade="all, delete-orphan")
+    applications = relationship("Application", foreign_keys="Application.talent_user_id", back_populates="user", cascade="all, delete-orphan")
     sent_messages = relationship("Message", foreign_keys="Message.sender_id", back_populates="sender", cascade="all, delete-orphan")
     conversations_initiated = relationship("Conversation", foreign_keys="Conversation.user1_id", back_populates="user1")
     conversations_received = relationship("Conversation", foreign_keys="Conversation.user2_id", back_populates="user2")

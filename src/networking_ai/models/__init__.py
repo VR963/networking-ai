@@ -28,6 +28,31 @@ from .hiring_manager_role import HiringManagerRole
 from .company_admin_user import CompanyAdminUser
 from .subscription import Subscription, SubscriptionType, SubscriptionStatus
 
+# Phase 2 Week 3: Agent Messaging
+from .agent_message import AgentMessage, MessageType, ConversationContext
+
+# Phase 3: Notifications & Real-time
+from .notification import (
+    Notification,
+    NotificationPreferences,
+    NotificationType,
+    NotificationPriority,
+    NotificationStatus,
+    NotificationChannel
+)
+
+# Phase 4: Interviews & Hiring
+from .interview import (
+    Interview,
+    InterviewAvailability,
+    InterviewFeedback,
+    InterviewPipeline,
+    InterviewStage,
+    InterviewStatus,
+    InterviewFormat,
+    FeedbackRating
+)
+
 __all__ = [
     # User
     'User',
@@ -82,4 +107,24 @@ __all__ = [
     'Subscription',
     'SubscriptionType',
     'SubscriptionStatus',
+    # Phase 2 Week 3: Agent Messaging
+    'AgentMessage',
+    'MessageType',
+    'ConversationContext',
+    # Phase 3: Notifications
+    'Notification',
+    'NotificationPreferences',
+    'NotificationType',
+    'NotificationPriority',
+    'NotificationStatus',
+    'NotificationChannel',
+    # Phase 4: Interviews
+    'Interview',
+    'InterviewAvailability',
+    'InterviewFeedback',
+    'InterviewPipeline',
+    'InterviewStage',
+    'InterviewStatus',
+    'InterviewFormat',
+    'FeedbackRating',
 ]

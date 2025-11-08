@@ -110,7 +110,7 @@ class Notification(Base):
     action_text = Column(String(100), nullable=True)  # Button text (e.g., "View Match")
 
     # Metadata (JSON)
-    metadata = Column(JSON, nullable=True)  # Additional data (match_id, job_id, etc.)
+    extra_data = Column(JSON, nullable=True)  # Additional data (match_id, job_id, etc.)
 
     # Related entities
     match_id = Column(Integer, ForeignKey("matches.id"), nullable=True)

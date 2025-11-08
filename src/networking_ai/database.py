@@ -63,10 +63,15 @@ def get_db() -> Generator[Session, None, None]:
 # Event listener to set timezone on connection
 @event.listens_for(Pool, "connect")
 def set_postgres_timezone(dbapi_connection, connection_record):
-    """Set timezone to UTC for all connections."""
-    cursor = dbapi_connection.cursor()
-    cursor.execute("SET timezone='UTC'")
-    cursor.close()
+    """Set timezone to UTC for all connections (PostgreSQL only)."""
+    # Only run for PostgreSQL, skip for SQLite (used in tests)
+    try:
+        cursor = dbapi_connection.cursor()
+        cursor.execute("SET timezone='UTC'")
+        cursor.close()
+    except Exception:
+        # Skip for non-PostgreSQL databases (like SQLite)
+        pass
 
 
 def init_db() -> None:

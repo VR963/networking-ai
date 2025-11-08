@@ -87,7 +87,7 @@ class AgentMessage(Base):
     is_archived = Column(Boolean, default=False, nullable=False)
 
     # Metadata
-    metadata = Column(Text, nullable=True)  # JSON string for additional data
+    message_metadata = Column(Text, nullable=True)  # JSON string for additional data
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
