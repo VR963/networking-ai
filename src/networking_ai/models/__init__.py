@@ -14,7 +14,7 @@ from .message import Conversation, Message, MessageStatus
 from .ai_agent import AIAgent, AgentType, AgentStatus as AIAgentStatus
 
 # New: Agent Marketplace Models
-from .personal_ai_agent import PersonalAIAgent, AgentType as PersonalAgentType
+from .personal_ai_agent import PersonalAIAgent, AgentType as PersonalAgentType, AgentStatus
 from .agent_conversation import AgentConversation, ConversationType, ConversationStatus
 from .interview_session import InterviewSession, InterviewStatus
 from .sub_agent_activation import SubAgentActivation, SubAgentType
@@ -56,6 +56,7 @@ __all__ = [
     # Personal AI Agent (new)
     'PersonalAIAgent',
     'PersonalAgentType',
+    'AgentStatus',
     'AgentConversation',
     'ConversationType',
     'ConversationStatus',

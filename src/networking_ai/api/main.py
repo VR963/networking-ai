@@ -17,6 +17,7 @@ from .jobs import router as jobs_router
 from .matches import router as matches_router
 from .messages import router as messages_router
 from .onboarding import router as onboarding_router
+from .agents import router as agents_router
 from ..services.background_tasks import task_manager
 
 
@@ -147,6 +148,7 @@ async def list_all_tasks():
 # Include routers
 app.include_router(auth_router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(onboarding_router, prefix="/api/onboarding", tags=["Onboarding & Interview"])
+app.include_router(agents_router, prefix="/api/agents", tags=["Personal AI Agents"])
 app.include_router(users_router, prefix="/api/users", tags=["Users & Profiles"])
 app.include_router(jobs_router, prefix="/api/jobs", tags=["Jobs & Applications"])
 app.include_router(matches_router, prefix="/api/matches", tags=["AI Matches"])

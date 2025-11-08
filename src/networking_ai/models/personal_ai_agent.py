@@ -19,6 +19,15 @@ class AgentType(str, Enum):
     COMPANY = "company"
 
 
+class AgentStatus(str, Enum):
+    """Status of AI agent lifecycle."""
+    PENDING = "pending"          # Interview in progress
+    READY = "ready"              # Interview complete, not yet activated
+    ACTIVE = "active"            # Searching for matches
+    PAUSED = "paused"            # User paused agent
+    DISABLED = "disabled"        # User disabled agent
+
+
 class PersonalAIAgent(Base):
     """
     Personal AI Agent model.
@@ -54,13 +63,15 @@ class PersonalAIAgent(Base):
     active_conversations_count = Column(Integer, default=0)  # Current active (max 3)
     max_concurrent_conversations = Column(Integer, default=3)
 
-    # Status
-    status = Column(String(50), default="active")  # active, paused, archived
+    # Status (Phase 2: Proper enum)
+    status = Column(SQLEnum(AgentStatus), default=AgentStatus.PENDING, nullable=False)
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     last_activity_at = Column(DateTime)
+    activated_at = Column(DateTime)  # Phase 2: When agent became ACTIVE
+    last_search_at = Column(DateTime)  # Phase 2: Last search for matches
 
     # Relationships
     user = relationship("User", back_populates="personal_agent")
