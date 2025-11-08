@@ -60,6 +60,16 @@ from .job_offer import (
     NegotiationStatus
 )
 
+# Phase 5: Analytics & Reporting
+from .analytics import (
+    HiringMetrics,
+    JobAnalytics,
+    CandidateAnalytics,
+    AIPerformanceMetrics,
+    MetricType,
+    ReportType
+)
+
 __all__ = [
     # User
     'User',
@@ -140,4 +150,11 @@ __all__ = [
     'OfferStatus',
     'NegotiationType',
     'NegotiationStatus',
+    # Phase 5: Analytics
+    'HiringMetrics',
+    'JobAnalytics',
+    'CandidateAnalytics',
+    'AIPerformanceMetrics',
+    'MetricType',
+    'ReportType',
 ]
