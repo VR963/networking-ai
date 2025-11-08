@@ -70,6 +70,35 @@ from .analytics import (
     ReportType
 )
 
+# Phase 6: Billing & Admin
+from .billing import (
+    PaymentMethod,
+    SubscriptionPlan,
+    BillingSubscription,
+    Invoice,
+    Payment,
+    UsageRecord,
+    BillingEvent,
+    BillingCycle,
+    PaymentStatus,
+    InvoiceStatus,
+    SubscriptionPlanType
+)
+from .admin import (
+    AdminUser,
+    AuditLog as AdminAuditLog,
+    PlatformConfiguration,
+    SystemMetrics,
+    UserActionLog,
+    FeatureFlag,
+    DataExport,
+    ComplianceRecord,
+    AdminRole,
+    AuditAction,
+    AuditResourceType,
+    ConfigurationType
+)
+
 __all__ = [
     # User
     'User',
@@ -157,4 +186,29 @@ __all__ = [
     'AIPerformanceMetrics',
     'MetricType',
     'ReportType',
+    # Phase 6: Billing
+    'PaymentMethod',
+    'SubscriptionPlan',
+    'BillingSubscription',
+    'Invoice',
+    'Payment',
+    'UsageRecord',
+    'BillingEvent',
+    'BillingCycle',
+    'PaymentStatus',
+    'InvoiceStatus',
+    'SubscriptionPlanType',
+    # Phase 6: Admin
+    'AdminUser',
+    'AdminAuditLog',
+    'PlatformConfiguration',
+    'SystemMetrics',
+    'UserActionLog',
+    'FeatureFlag',
+    'DataExport',
+    'ComplianceRecord',
+    'AdminRole',
+    'AuditAction',
+    'AuditResourceType',
+    'ConfigurationType',
 ]
