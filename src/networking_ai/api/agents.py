@@ -15,7 +15,7 @@ from ..models.personal_ai_agent import PersonalAIAgent, AgentStatus
 from ..models.interview_session import InterviewSession
 from ..api.auth import get_current_active_user
 from ..services.personal_agent_factory import create_personal_agent_factory
-from ..models.audit_log import AuditLog
+from ..models.audit_log import AgentAuditLog as AuditLog
 
 
 router = APIRouter()

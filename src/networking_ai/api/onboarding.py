@@ -18,7 +18,7 @@ from ..models.user import User
 from ..models.personal_ai_agent import PersonalAIAgent, AgentType, AgentStatus
 from ..models.interview_session import InterviewSession, InterviewStatus
 from ..models.agent_conversation import AgentConversation, ConversationType, ConversationStatus
-from ..models.audit_log import AuditLog
+from ..models.audit_log import AgentAuditLog as AuditLog
 from ..api.auth import get_current_active_user
 from ..services.cv_parser import create_cv_parser
 from ..services.chromadb_service import create_chromadb_service

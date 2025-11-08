@@ -1,5 +1,5 @@
 """
-Audit Log Model.
+Agent Audit Log Model.
 
 Provides complete transparency - users can see how their agent represents them.
 """
@@ -11,14 +11,14 @@ from sqlalchemy.orm import relationship
 from ..database import Base
 
 
-class AuditLog(Base):
+class AgentAuditLog(Base):
     """
-    Audit Log model.
+    Agent Audit Log model.
 
     Records all actions taken by AI agents for transparency and compliance.
     Users can view their audit trail to see how they're being represented.
     """
-    __tablename__ = "audit_logs"
+    __tablename__ = "agent_audit_logs"
     __table_args__ = {'extend_existing': True}
 
     # Primary key
@@ -91,7 +91,7 @@ class AuditLog(Base):
     agent = relationship("PersonalAIAgent")
 
     def __repr__(self):
-        return f"<AuditLog(id={self.id}, user_id={self.user_id}, action={self.action_type})>"
+        return f"<AgentAuditLog(id={self.id}, user_id={self.user_id}, action={self.action_type})>"
 
     @classmethod
     def log_action(

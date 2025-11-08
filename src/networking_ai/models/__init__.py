@@ -20,7 +20,7 @@ from .interview_session import InterviewSession, InterviewStatus
 from .sub_agent_activation import SubAgentActivation, SubAgentType
 from .user_knowledge import UserKnowledge, KnowledgeCategory
 from .network_knowledge import NetworkKnowledge
-from .audit_log import AuditLog
+from .audit_log import AgentAuditLog
 
 # Phase 2: Company & Subscription Models
 from .company_admin_agent import CompanyAdminAgent, AdminAgentStatus
@@ -202,7 +202,7 @@ __all__ = [
     'UserKnowledge',
     'KnowledgeCategory',
     'NetworkKnowledge',
-    'AuditLog',
+    'AgentAuditLog',
     # Phase 2: Company & Subscription
     'CompanyAdminAgent',
     'AdminAgentStatus',

@@ -22,7 +22,7 @@ from ..models.subscription import Subscription
 from ..models.company_v2 import Company
 from ..models.hiring_manager_role import HiringManagerRole
 from ..models.company_admin_agent import CompanyAdminAgent
-from ..models.audit_log import AuditLog
+from ..models.audit_log import AgentAuditLog as AuditLog
 from ..api.auth import get_current_active_user
 from ..services.subscription_manager import SubscriptionManager
 from ..services.company_agent_factory import CompanyAgentFactory

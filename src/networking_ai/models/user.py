@@ -83,6 +83,14 @@ class User(Base):
     # New: Personal AI Agent for agent marketplace
     personal_agent = relationship("PersonalAIAgent", back_populates="user", uselist=False, cascade="all, delete-orphan")
 
+    # Phase 6: Billing & Admin relationships
+    payment_methods = relationship("PaymentMethod", back_populates="user")
+    billing_subscriptions = relationship("BillingSubscription", back_populates="user")
+    admin_user = relationship("AdminUser", foreign_keys="AdminUser.user_id", back_populates="user", uselist=False)
+
+    # Phase 8: AI features
+    parsed_resume = relationship("ParsedResume", back_populates="user", uselist=False)
+
     def __repr__(self):
         return f"<User {self.email} ({self.role.value})>"
 

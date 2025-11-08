@@ -17,7 +17,7 @@ from ..models.interview_session import InterviewSession, InterviewStatus
 from ..models.agent_conversation import AgentConversation, ConversationType, ConversationStatus
 from ..models.hiring_manager_role import HiringManagerRole
 from ..models.company_admin_agent import CompanyAdminAgent
-from ..models.audit_log import AuditLog
+from ..models.audit_log import AgentAuditLog as AuditLog
 from ..api.auth import get_current_active_user
 from ..agents.hiring_manager_interview_agent import create_hiring_manager_interview_agent
 from ..services.company_agent_factory import CompanyAgentFactory

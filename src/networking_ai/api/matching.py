@@ -24,7 +24,7 @@ from ..models.job import Job
 from ..models.match import Match, MatchStatus
 from ..models.company_v2 import Company
 from ..models.subscription import Subscription
-from ..models.audit_log import AuditLog
+from ..models.audit_log import AgentAuditLog as AuditLog
 from ..api.auth import get_current_active_user
 from ..services.agent_matching_service import create_agent_matching_service
 

@@ -20,7 +20,7 @@ from ..models.company_v2 import Company
 from ..models.hiring_manager_role import HiringManagerRole
 from ..models.personal_ai_agent import PersonalAIAgent, AgentType
 from ..models.company_admin_agent import CompanyAdminAgent
-from ..models.audit_log import AuditLog
+from ..models.audit_log import AgentAuditLog as AuditLog
 from ..api.auth import get_current_active_user
 from ..services.company_agent_factory import CompanyAgentFactory
 from ..services.chromadb_service import create_chromadb_service

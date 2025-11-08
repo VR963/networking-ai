@@ -20,7 +20,7 @@ from ..models.subscription import Subscription, SubscriptionType, SubscriptionSt
 from ..api.auth import get_current_active_user
 from ..services.company_agent_factory import CompanyAgentFactory
 from ..services.subscription_manager import SubscriptionManager
-from ..models.audit_log import AuditLog
+from ..models.audit_log import AgentAuditLog as AuditLog
 
 
 router = APIRouter()

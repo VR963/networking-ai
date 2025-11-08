@@ -72,7 +72,6 @@ class AdminUser(Base):
     """
     __tablename__ = "admin_users"
     __table_args__ = {'extend_existing': True}
-    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -124,7 +123,6 @@ class AuditLog(Base):
     Comprehensive logging for compliance and security.
     """
     __tablename__ = "audit_logs"
-    __table_args__ = {'extend_existing': True}
     __table_args__ = {'extend_existing': True}
 
     # Primary Key
@@ -192,7 +190,6 @@ class PlatformConfiguration(Base):
     """
     __tablename__ = "platform_configurations"
     __table_args__ = {'extend_existing': True}
-    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -230,7 +227,6 @@ class SystemMetrics(Base):
     """
     __tablename__ = "system_metrics"
     __table_args__ = {'extend_existing': True}
-    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -264,7 +260,6 @@ class UserActionLog(Base):
     Tracks user behavior for product analytics.
     """
     __tablename__ = "user_action_logs"
-    __table_args__ = {'extend_existing': True}
     __table_args__ = {'extend_existing': True}
 
     # Primary Key
@@ -315,7 +310,6 @@ class FeatureFlag(Base):
     Enables/disables features for specific users or groups.
     """
     __tablename__ = "feature_flags"
-    __table_args__ = {'extend_existing': True}
     __table_args__ = {'extend_existing': True}
 
     # Primary Key
@@ -384,7 +378,6 @@ class DataExport(Base):
     """
     __tablename__ = "data_exports"
     __table_args__ = {'extend_existing': True}
-    __table_args__ = {'extend_existing': True}
 
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -431,7 +424,6 @@ class ComplianceRecord(Base):
     Tracks compliance-related actions and records.
     """
     __tablename__ = "compliance_records"
-    __table_args__ = {'extend_existing': True}
     __table_args__ = {'extend_existing': True}
 
     # Primary Key

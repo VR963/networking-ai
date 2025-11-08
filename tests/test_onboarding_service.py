@@ -13,7 +13,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from src.networking_ai.database import Base
 from src.networking_ai.models.user import User, UserRole
 from src.networking_ai.models.company import Company, CompanyStatus
-from src.networking_ai.models.job import Job, JobStatus
+from src.networking_ai.models.job import Job, JobStatus, JobType, ExperienceLevel
 from src.networking_ai.models.application import Application, ApplicationStatus
 from src.networking_ai.models.onboarding import (
     Employee, OnboardingChecklist, OnboardingTask, TrainingProgram,
@@ -53,7 +53,8 @@ def test_user(db_session):
     """Create test user."""
     user = User(
         email="candidate@example.com",
-        password_hash="hashed_password",
+        hashed_password="hashed_password",
+        full_name="Test Candidate",
         role=UserRole.TALENT,
         is_active=True
     )
@@ -68,8 +69,9 @@ def test_manager(db_session):
     """Create test manager user."""
     manager = User(
         email="manager@example.com",
-        password_hash="hashed_password",
-        role=UserRole.EMPLOYER,
+        hashed_password="hashed_password",
+        full_name="Test Manager",
+        role=UserRole.HIRING_MANAGER,
         is_active=True
     )
     db_session.add(manager)
@@ -79,12 +81,13 @@ def test_manager(db_session):
 
 
 @pytest.fixture
-def test_company(db_session):
+def test_company(db_session, test_manager):
     """Create test company."""
     company = Company(
-        name="TechCorp Inc",
+        user_id=test_manager.id,
+        company_name="TechCorp Inc",
         status=CompanyStatus.ACTIVE,
-        description="A tech company"
+        company_description="A tech company"
     )
     db_session.add(company)
     db_session.commit()
@@ -99,7 +102,10 @@ def test_job(db_session, test_company):
         company_id=test_company.id,
         title="Senior Software Engineer",
         description="Senior engineering role",
-        status=JobStatus.OPEN,
+        job_type=JobType.FULL_TIME,
+        experience_level=ExperienceLevel.SENIOR_LEVEL,
+        location="San Francisco, CA",
+        status=JobStatus.ACTIVE,
         required_skills=["Python", "React", "AWS"]
     )
     db_session.add(job)
@@ -112,9 +118,10 @@ def test_job(db_session, test_company):
 def test_application(db_session, test_user, test_job):
     """Create test application."""
     application = Application(
+        user_id=test_user.id,
         talent_user_id=test_user.id,
         job_id=test_job.id,
-        status=ApplicationStatus.ACCEPTED
+        status=ApplicationStatus.OFFER_ACCEPTED
     )
     db_session.add(application)
     db_session.commit()
@@ -202,13 +209,13 @@ def test_create_employee(onboarding_service, db_session, test_user, test_company
 def test_create_part_time_employee(onboarding_service, db_session, test_company, test_job):
     """Test creating a part-time employee."""
     # Create another user
-    user = User(email="parttime@example.com", password_hash="hash", role=UserRole.TALENT, is_active=True)
+    user = User(email="parttime@example.com", hashed_password="hash", full_name="Part Time User", role=UserRole.TALENT, is_active=True)
     db_session.add(user)
     db_session.commit()
     db_session.refresh(user)
 
     # Create application
-    app = Application(talent_user_id=user.id, job_id=test_job.id, status=ApplicationStatus.ACCEPTED)
+    app = Application(user_id=user.id, talent_user_id=user.id, job_id=test_job.id, status=ApplicationStatus.OFFER_ACCEPTED)
     db_session.add(app)
     db_session.commit()
     db_session.refresh(app)
