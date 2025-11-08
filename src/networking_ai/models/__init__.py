@@ -52,6 +52,13 @@ from .interview import (
     InterviewFormat,
     FeedbackRating
 )
+from .job_offer import (
+    JobOffer,
+    OfferNegotiation,
+    OfferStatus,
+    NegotiationType,
+    NegotiationStatus
+)
 
 __all__ = [
     # User
@@ -127,4 +134,10 @@ __all__ = [
     'InterviewStatus',
     'InterviewFormat',
     'FeedbackRating',
+    # Phase 4: Job Offers
+    'JobOffer',
+    'OfferNegotiation',
+    'OfferStatus',
+    'NegotiationType',
+    'NegotiationStatus',
 ]
