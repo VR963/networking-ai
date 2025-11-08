@@ -130,6 +130,34 @@ from .ai_features import (
     ModelType
 )
 
+# Phase 9: Employee Onboarding
+from .onboarding import (
+    Employee,
+    OnboardingChecklist,
+    OnboardingTask,
+    TrainingProgram,
+    EmployeeTraining,
+    Equipment,
+    EmployeeDocument,
+    TimeOffRequest,
+    EmployeeReview,
+    EmploymentType,
+    EmploymentStatus,
+    OnboardingStatus,
+    TaskStatus,
+    TaskCategory,
+    TrainingStatus,
+    TrainingType,
+    EquipmentType,
+    EquipmentStatus,
+    DocumentType,
+    DocumentStatus,
+    TimeOffType,
+    TimeOffStatus,
+    ReviewType,
+    ReviewStatus
+)
+
 __all__ = [
     # User
     'User',
@@ -267,4 +295,29 @@ __all__ = [
     'ScreeningDecision',
     'PredictionType',
     'ModelType',
+    # Phase 9: Employee Onboarding
+    'Employee',
+    'OnboardingChecklist',
+    'OnboardingTask',
+    'TrainingProgram',
+    'EmployeeTraining',
+    'Equipment',
+    'EmployeeDocument',
+    'TimeOffRequest',
+    'EmployeeReview',
+    'EmploymentType',
+    'EmploymentStatus',
+    'OnboardingStatus',
+    'TaskStatus',
+    'TaskCategory',
+    'TrainingStatus',
+    'TrainingType',
+    'EquipmentType',
+    'EquipmentStatus',
+    'DocumentType',
+    'DocumentStatus',
+    'TimeOffType',
+    'TimeOffStatus',
+    'ReviewType',
+    'ReviewStatus',
 ]
