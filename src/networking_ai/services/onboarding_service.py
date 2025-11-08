@@ -385,10 +385,12 @@ class OnboardingService:
 
         employee.onboarding_progress = round(progress, 2)
 
-        # Mark onboarding complete if 100%
+        # Update onboarding status based on progress
         if progress >= 100 and employee.onboarding_status != OnboardingStatus.COMPLETED:
             employee.onboarding_status = OnboardingStatus.COMPLETED
             employee.onboarding_completed_at = datetime.utcnow()
+        elif progress > 0 and progress < 100 and employee.onboarding_status == OnboardingStatus.NOT_STARTED:
+            employee.onboarding_status = OnboardingStatus.IN_PROGRESS
 
         db.commit()
 

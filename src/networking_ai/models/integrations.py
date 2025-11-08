@@ -4,7 +4,7 @@ Integration Models - Phase 7.
 Models for external service integrations (Calendar, Video, ATS, Communication).
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import Enum
 from typing import Optional, Dict, Any
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Text, JSON, Enum as SQLEnum
