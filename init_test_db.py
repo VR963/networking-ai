@@ -40,6 +40,11 @@ try:
     import networking_ai.models.user_knowledge
     import networking_ai.models.network_knowledge
     import networking_ai.models.audit_log
+    # Phase 2: Company & Subscription Models
+    import networking_ai.models.company_admin_agent
+    import networking_ai.models.hiring_manager_role
+    import networking_ai.models.company_admin_user
+    import networking_ai.models.subscription
 
     print("✅ Models imported\n")
 

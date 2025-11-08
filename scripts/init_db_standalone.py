@@ -48,7 +48,7 @@ from networking_ai.models.match import Match
 from networking_ai.models.message import Conversation, Message
 from networking_ai.models.ai_agent import AIAgent
 
-# New agent marketplace models
+# New agent marketplace models (Phase 1)
 from networking_ai.models.personal_ai_agent import PersonalAIAgent
 from networking_ai.models.agent_conversation import AgentConversation
 from networking_ai.models.interview_session import InterviewSession
@@ -56,6 +56,12 @@ from networking_ai.models.sub_agent_activation import SubAgentActivation
 from networking_ai.models.user_knowledge import UserKnowledge
 from networking_ai.models.network_knowledge import NetworkKnowledge
 from networking_ai.models.audit_log import AuditLog
+
+# Phase 2: Company & Subscription Models
+from networking_ai.models.company_admin_agent import CompanyAdminAgent
+from networking_ai.models.hiring_manager_role import HiringManagerRole
+from networking_ai.models.company_admin_user import CompanyAdminUser
+from networking_ai.models.subscription import Subscription
 
 print("✅ Models imported")
 print()

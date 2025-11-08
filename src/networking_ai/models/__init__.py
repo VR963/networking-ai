@@ -13,7 +13,7 @@ from .match import Match, MatchStatus
 from .message import Conversation, Message, MessageStatus
 from .ai_agent import AIAgent, AgentType, AgentStatus as AIAgentStatus
 
-# New: Agent Marketplace Models
+# Agent Marketplace Models (Phase 1 & 2)
 from .personal_ai_agent import PersonalAIAgent, AgentType as PersonalAgentType, AgentStatus
 from .agent_conversation import AgentConversation, ConversationType, ConversationStatus
 from .interview_session import InterviewSession, InterviewStatus
@@ -21,6 +21,12 @@ from .sub_agent_activation import SubAgentActivation, SubAgentType
 from .user_knowledge import UserKnowledge, KnowledgeCategory
 from .network_knowledge import NetworkKnowledge
 from .audit_log import AuditLog
+
+# Phase 2: Company & Subscription Models
+from .company_admin_agent import CompanyAdminAgent, AdminAgentStatus
+from .hiring_manager_role import HiringManagerRole
+from .company_admin_user import CompanyAdminUser
+from .subscription import Subscription, SubscriptionType, SubscriptionStatus
 
 __all__ = [
     # User
@@ -53,7 +59,7 @@ __all__ = [
     'AIAgent',
     'AgentType',
     'AIAgentStatus',
-    # Personal AI Agent (new)
+    # Personal AI Agent (Phase 1)
     'PersonalAIAgent',
     'PersonalAgentType',
     'AgentStatus',
@@ -68,4 +74,12 @@ __all__ = [
     'KnowledgeCategory',
     'NetworkKnowledge',
     'AuditLog',
+    # Phase 2: Company & Subscription
+    'CompanyAdminAgent',
+    'AdminAgentStatus',
+    'HiringManagerRole',
+    'CompanyAdminUser',
+    'Subscription',
+    'SubscriptionType',
+    'SubscriptionStatus',
 ]

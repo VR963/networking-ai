@@ -16,7 +16,7 @@ load_dotenv()
 os.environ['DATABASE_URL'] = 'sqlite:///./data/test_database.db'
 
 print("="*60)
-print("Phase 1 Database Validation")
+print("Phase 1 & 2 Database Validation")
 print("="*60)
 print()
 print("Database:", os.environ['DATABASE_URL'])
@@ -46,7 +46,14 @@ try:
     import models.user_knowledge
     import models.network_knowledge
     import models.audit_log
-    print("✅ All Phase 1 models imported\n")
+    print("✅ All Phase 1 models imported")
+
+    print("Importing Phase 2 models...")
+    import models.company_admin_agent
+    import models.hiring_manager_role
+    import models.company_admin_user
+    import models.subscription
+    print("✅ All Phase 2 models imported\n")
 
     # Create tables
     print("Creating database tables...")
@@ -62,8 +69,9 @@ try:
         print(f"  ✓ {table}")
     print()
 
-    # Check Phase 1 critical tables
+    # Check Phase 1 & 2 critical tables
     critical_tables = [
+        # Phase 1
         'users',
         'personal_ai_agents',
         'agent_conversations',
@@ -71,10 +79,15 @@ try:
         'sub_agent_activations',
         'user_knowledge',
         'network_knowledge',
-        'audit_logs'
+        'audit_logs',
+        # Phase 2
+        'company_admin_agents',
+        'hiring_manager_roles',
+        'company_admin_users',
+        'subscriptions'
     ]
 
-    print("Validating Phase 1 critical tables:")
+    print("Validating Phase 1 & 2 critical tables:")
     all_present = True
     for table in critical_tables:
         if table in tables:
@@ -86,7 +99,7 @@ try:
 
     if all_present:
         print("="*60)
-        print("✅ PHASE 1 DATABASE VALIDATION PASSED")
+        print("✅ PHASE 1 & 2 DATABASE VALIDATION PASSED")
         print("="*60)
         print()
         print("All critical tables present and schema is valid.")
