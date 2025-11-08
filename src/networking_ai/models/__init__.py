@@ -99,6 +99,22 @@ from .admin import (
     ConfigurationType
 )
 
+# Phase 7: Integrations
+from .integrations import (
+    Integration,
+    CalendarEvent,
+    VideoMeeting,
+    ATSSync,
+    CommunicationLog,
+    BackgroundCheck,
+    LinkedInProfile,
+    WebhookEndpoint,
+    WebhookEvent,
+    IntegrationType,
+    IntegrationProvider,
+    IntegrationStatus
+)
+
 __all__ = [
     # User
     'User',
@@ -211,4 +227,17 @@ __all__ = [
     'AuditAction',
     'AuditResourceType',
     'ConfigurationType',
+    # Phase 7: Integrations
+    'Integration',
+    'CalendarEvent',
+    'VideoMeeting',
+    'ATSSync',
+    'CommunicationLog',
+    'BackgroundCheck',
+    'LinkedInProfile',
+    'WebhookEndpoint',
+    'WebhookEvent',
+    'IntegrationType',
+    'IntegrationProvider',
+    'IntegrationStatus',
 ]
