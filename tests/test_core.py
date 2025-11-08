@@ -1,7 +1,7 @@
 """Tests for core functionality."""
 
 import pytest
-from networking_ai.core import NetworkingAgent, UserProfile
+from src.networking_ai.core import NetworkingAgent, UserProfile
 
 
 class TestUserProfile:

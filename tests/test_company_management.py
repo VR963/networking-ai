@@ -8,10 +8,10 @@ import pytest
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 
-from networking_ai.models.company_v2 import Company
-from networking_ai.models.company_admin_agent import CompanyAdminAgent
-from networking_ai.models.hiring_manager_role import HiringManagerRole
-from networking_ai.models.subscription import Subscription, SubscriptionType
+from src.networking_ai.models.company_v2 import Company
+from src.networking_ai.models.company_admin_agent import CompanyAdminAgent
+from src.networking_ai.models.hiring_manager_role import HiringManagerRole
+from src.networking_ai.models.subscription import Subscription, SubscriptionType
 
 # Import fixtures
 pytest_plugins = ["tests.conftest_phase2"]

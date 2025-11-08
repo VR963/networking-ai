@@ -7,7 +7,7 @@ Tests AI interview agent, sub-agent activation, and knowledge extraction.
 import pytest
 import os
 
-from networking_ai.agents.recruiter_agent import RecruiterAgent, create_recruiter_agent
+from src.networking_ai.agents.recruiter_agent import RecruiterAgent, create_recruiter_agent
 
 
 # Skip tests if no API key available

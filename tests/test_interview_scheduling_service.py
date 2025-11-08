@@ -119,6 +119,7 @@ def job(db_session, company, interviewer_user):
 def application(db_session, job, candidate_user):
     """Create test application."""
     app = Application(
+        user_id=candidate_user.id,
         job_id=job.id,
         talent_user_id=candidate_user.id,
         status=ApplicationStatus.REVIEWING

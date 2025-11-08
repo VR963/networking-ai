@@ -351,8 +351,9 @@ def test_calculate_job_analytics_conversion_rates(
         db_session.flush()
 
         app = Application(
-            job_id=test_job.id,
-            talent_user_id=candidate.id,
+        user_id=candidate.id,
+        job_id=test_job.id,
+        talent_user_id=candidate.id,
             status=ApplicationStatus.PENDING
         )
         db_session.add(app)
@@ -563,6 +564,7 @@ def test_calculate_ai_performance_match_conversion(
 
     # Create application from the match
     application = Application(
+        user_id=test_candidate.id,
         job_id=test_job.id,
         talent_user_id=test_candidate.id,
         status=ApplicationStatus.PENDING
@@ -702,8 +704,9 @@ def test_get_hiring_trends_multiple_months(
         db_session.flush()
 
         app = Application(
-            job_id=test_job.id,
-            talent_user_id=candidate.id,
+        user_id=candidate.id,
+        job_id=test_job.id,
+        talent_user_id=candidate.id,
             status=ApplicationStatus.PENDING,
             created_at=created_date
         )
@@ -737,6 +740,7 @@ def test_get_hiring_funnel(
     """Test hiring funnel data calculation."""
     # Create complete funnel
     app = Application(
+        user_id=test_candidate.id,
         job_id=test_job.id,
         talent_user_id=test_candidate.id,
         status=ApplicationStatus.PENDING
@@ -821,6 +825,7 @@ def test_compare_periods(
     db_session.flush()
 
     app1 = Application(
+        user_id=candidate1.id,
         job_id=test_job.id,
         talent_user_id=candidate1.id,
         status=ApplicationStatus.PENDING,
@@ -830,6 +835,7 @@ def test_compare_periods(
 
     # Period 2: Last 30 days
     app2 = Application(
+        user_id=test_candidate.id,
         job_id=test_job.id,
         talent_user_id=test_candidate.id,
         status=ApplicationStatus.PENDING

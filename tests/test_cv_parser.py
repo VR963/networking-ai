@@ -8,7 +8,7 @@ import pytest
 import os
 from pathlib import Path
 
-from networking_ai.services.cv_parser import CVParserService, create_cv_parser
+from src.networking_ai.services.cv_parser import CVParserService, create_cv_parser
 
 
 # Skip tests if no API key available

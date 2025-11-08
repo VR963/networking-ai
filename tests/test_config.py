@@ -1,7 +1,7 @@
 """Tests for configuration module."""
 
 import pytest
-from networking_ai.config import Config
+from src.networking_ai.config import Config
 
 
 class TestConfig:

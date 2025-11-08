@@ -1,8 +1,8 @@
 """Tests for connection recommendation engine."""
 
 import pytest
-from networking_ai.core import UserProfile
-from networking_ai.recommender import ConnectionRecommender, create_recommender
+from src.networking_ai.core import UserProfile
+from src.networking_ai.recommender import ConnectionRecommender, create_recommender
 
 
 class TestConnectionRecommender:

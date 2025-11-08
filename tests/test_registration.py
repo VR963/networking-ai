@@ -12,11 +12,11 @@ import pytest
 from datetime import datetime
 from sqlalchemy.orm import Session
 
-from networking_ai.models.user import User, UserRole
-from networking_ai.models.subscription import Subscription, SubscriptionType, SubscriptionStatus
-from networking_ai.models.company_v2 import Company
-from networking_ai.models.hiring_manager_role import HiringManagerRole
-from networking_ai.models.personal_ai_agent import PersonalAIAgent, AgentType
+from src.networking_ai.models.user import User, UserRole
+from src.networking_ai.models.subscription import Subscription, SubscriptionType, SubscriptionStatus
+from src.networking_ai.models.company_v2 import Company
+from src.networking_ai.models.hiring_manager_role import HiringManagerRole
+from src.networking_ai.models.personal_ai_agent import PersonalAIAgent, AgentType
 
 # Import fixtures
 pytest_plugins = ["tests.conftest_phase2"]

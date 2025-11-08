@@ -2,7 +2,7 @@
 
 import pytest
 import numpy as np
-from networking_ai.semantic import SemanticMatcher
+from src.networking_ai.semantic import SemanticMatcher
 
 
 class TestSemanticMatcher:

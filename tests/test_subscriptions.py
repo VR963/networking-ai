@@ -8,8 +8,8 @@ import pytest
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 
-from networking_ai.models.subscription import Subscription, SubscriptionType, SubscriptionStatus
-from networking_ai.services.subscription_manager import SubscriptionManager
+from src.networking_ai.models.subscription import Subscription, SubscriptionType, SubscriptionStatus
+from src.networking_ai.services.subscription_manager import SubscriptionManager
 
 # Import fixtures
 pytest_plugins = ["tests.conftest_phase2"]

@@ -11,16 +11,16 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
-from networking_ai.api.main import app
-from networking_ai.database import Base, get_db
-from networking_ai.models.user import User, UserRole, AccountStatus
-from networking_ai.models.profile import UserProfile
-from networking_ai.models.company_v2 import Company
-from networking_ai.models.company_admin_agent import CompanyAdminAgent, AdminAgentStatus
-from networking_ai.models.hiring_manager_role import HiringManagerRole
-from networking_ai.models.personal_ai_agent import PersonalAIAgent, AgentType, AgentStatus
-from networking_ai.models.subscription import Subscription, SubscriptionType, SubscriptionStatus
-from networking_ai.security import hash_password, create_access_token
+from src.networking_ai.api.main import app
+from src.networking_ai.database import Base, get_db
+from src.networking_ai.models.user import User, UserRole, AccountStatus
+from src.networking_ai.models.profile import UserProfile
+from src.networking_ai.models.company_v2 import Company
+from src.networking_ai.models.company_admin_agent import CompanyAdminAgent, AdminAgentStatus
+from src.networking_ai.models.hiring_manager_role import HiringManagerRole
+from src.networking_ai.models.personal_ai_agent import PersonalAIAgent, AgentType, AgentStatus
+from src.networking_ai.models.subscription import Subscription, SubscriptionType, SubscriptionStatus
+from src.networking_ai.security import hash_password, create_access_token
 
 
 # Test database setup

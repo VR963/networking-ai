@@ -12,11 +12,11 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from networking_ai.api.main import app
-from networking_ai.database import Base, get_db
-from networking_ai.models.user import User
-from networking_ai.models.interview_session import InterviewSession
-from networking_ai.models.agent_conversation import AgentConversation
+from src.networking_ai.api.main import app
+from src.networking_ai.database import Base, get_db
+from src.networking_ai.models.user import User
+from src.networking_ai.models.interview_session import InterviewSession
+from src.networking_ai.models.agent_conversation import AgentConversation
 
 
 # Skip if no API key

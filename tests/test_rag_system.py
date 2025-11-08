@@ -5,7 +5,7 @@ import tempfile
 import shutil
 from pathlib import Path
 
-from networking_ai.rag_system import (
+from src.networking_ai.rag_system import (
     DualRAGSystem,
     PublicKnowledgeBase,
     PrivateUserVault,

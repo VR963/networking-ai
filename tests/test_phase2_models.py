@@ -12,9 +12,9 @@ import os
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from networking_ai.models.company_v2 import Company
-from networking_ai.models.subscription import Subscription, SubscriptionType, SubscriptionStatus
-from networking_ai.models.company_admin_agent import CompanyAdminAgent, AdminAgentStatus
+from src.networking_ai.models.company_v2 import Company
+from src.networking_ai.models.subscription import Subscription, SubscriptionType, SubscriptionStatus
+from src.networking_ai.models.company_admin_agent import CompanyAdminAgent, AdminAgentStatus
 
 
 class TestCompanyModel:
