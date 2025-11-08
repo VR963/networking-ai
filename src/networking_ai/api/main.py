@@ -23,6 +23,7 @@ from .agents import router as agents_router
 from .companies import router as companies_router
 from .hiring_manager_onboarding import router as hm_onboarding_router
 from .job_postings import router as job_postings_router
+from .mobile import mobile_router
 from ..services.background_tasks import task_manager
 
 
@@ -163,6 +164,7 @@ app.include_router(users_router, prefix="/api/users", tags=["Users & Profiles"])
 app.include_router(jobs_router, prefix="/api/jobs", tags=["Jobs & Applications (Legacy)"])
 app.include_router(matches_router, prefix="/api/matches", tags=["AI Matches (Legacy)"])
 app.include_router(messages_router, prefix="/api/conversations", tags=["Messaging"])
+app.include_router(mobile_router, prefix="/api/v1", tags=["Mobile API (Phase 10)"])
 
 
 if __name__ == "__main__":
