@@ -1,7 +1,8 @@
 """
-Agent Messaging Service - Phase 2 Week 3.
+Agent Messaging Service - Phase 2 Week 3 + Phase 3 Week 1.
 
 Manages agent-to-agent conversations with AI-powered message composition.
+Now includes real-time WebSocket broadcasting for live message delivery.
 
 Key Features:
 - Send messages between any two agents
@@ -10,12 +11,14 @@ Key Features:
 - Context-aware conversations (match, application, job)
 - Message retrieval and filtering
 - Read/unread status tracking
+- Real-time WebSocket broadcasting (Phase 3)
 """
 
 from typing import List, Dict, Optional, Tuple
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_, desc
+import asyncio
 
 from langchain_anthropic import ChatAnthropic
 from langchain.schema import HumanMessage, SystemMessage
@@ -39,7 +42,8 @@ class AgentMessagingService:
         self,
         anthropic_api_key: Optional[str] = None,
         chromadb_service: Optional[ChromaDBService] = None,
-        use_rag: bool = True
+        use_rag: bool = True,
+        enable_websocket: bool = True
     ):
         """
         Initialize messaging service.
@@ -48,6 +52,7 @@ class AgentMessagingService:
             anthropic_api_key: Anthropic API key for Claude
             chromadb_service: ChromaDB service for RAG
             use_rag: Whether to use RAG for message composition
+            enable_websocket: Enable real-time WebSocket broadcasting
         """
         import os
 
@@ -73,6 +78,62 @@ class AgentMessagingService:
                 self.chromadb = None
         else:
             self.chromadb = None
+
+        # WebSocket broadcasting
+        self.enable_websocket = enable_websocket
+        self._connection_manager = None
+
+    def _get_connection_manager(self):
+        """Get connection manager lazily to avoid circular imports."""
+        if self._connection_manager is None and self.enable_websocket:
+            try:
+                from ..websocket.connection_manager import get_connection_manager
+                self._connection_manager = get_connection_manager()
+            except ImportError:
+                print("[AgentMessaging] WebSocket not available")
+                self.enable_websocket = False
+        return self._connection_manager
+
+    async def _broadcast_new_message(self, message: AgentMessage):
+        """
+        Broadcast new message via WebSocket to receiver.
+
+        Args:
+            message: AgentMessage that was sent
+        """
+        if not self.enable_websocket:
+            return
+
+        connection_manager = self._get_connection_manager()
+        if not connection_manager:
+            return
+
+        try:
+            from ..websocket.event_types import NewMessageEvent
+
+            # Create WebSocket event
+            event = NewMessageEvent.create(
+                message_id=message.id,
+                thread_id=message.thread_id,
+                sender_agent_type=message.sender_agent_type,
+                sender_agent_id=message.sender_agent_id,
+                content=message.content,
+                subject=message.subject,
+                message_type=message.message_type.value,
+                context_type=message.context_type.value
+            )
+
+            # Send to receiver's user
+            if message.receiver_user_id:
+                await connection_manager.send_to_user(
+                    user_id=message.receiver_user_id,
+                    message=event.dict()
+                )
+
+                print(f"[AgentMessaging] Broadcasted message {message.id} to user {message.receiver_user_id}")
+
+        except Exception as e:
+            print(f"[AgentMessaging] WebSocket broadcast error: {e}")
 
     def send_message(
         self,
@@ -150,6 +211,20 @@ class AgentMessagingService:
         db.add(message)
         db.commit()
         db.refresh(message)
+
+        # Broadcast via WebSocket (Phase 3)
+        if self.enable_websocket:
+            try:
+                # Run async broadcast in event loop
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    # If loop is running, schedule task
+                    asyncio.create_task(self._broadcast_new_message(message))
+                else:
+                    # If no loop running, run sync
+                    loop.run_until_complete(self._broadcast_new_message(message))
+            except Exception as e:
+                print(f"[AgentMessaging] Failed to broadcast message: {e}")
 
         return message
 
@@ -518,7 +593,8 @@ Compose a clear, professional message based on the user's intent."""
 
 def create_agent_messaging_service(
     anthropic_api_key: Optional[str] = None,
-    use_rag: bool = True
+    use_rag: bool = True,
+    enable_websocket: bool = True
 ) -> AgentMessagingService:
     """
     Factory function to create agent messaging service.
@@ -526,11 +602,13 @@ def create_agent_messaging_service(
     Args:
         anthropic_api_key: Optional Anthropic API key
         use_rag: Whether to use RAG
+        enable_websocket: Enable real-time WebSocket broadcasting (Phase 3)
 
     Returns:
         AgentMessagingService instance
     """
     return AgentMessagingService(
         anthropic_api_key=anthropic_api_key,
-        use_rag=use_rag
+        use_rag=use_rag,
+        enable_websocket=enable_websocket
     )

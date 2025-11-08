@@ -1,9 +1,11 @@
 """
-Agent Matching Service - Phase 2.
+Agent Matching Service - Phase 2 + Phase 3 Week 1.
 
 Performs semantic matching between:
 - Talent Personal Agents (with personal RAG)
 - Job Postings (Company AI Agents with dual RAG access)
+
+Now includes real-time WebSocket notifications for new matches.
 
 Matching Strategy:
 1. Query Talent Personal Agent RAG for candidate profile
@@ -11,6 +13,7 @@ Matching Strategy:
 3. Perform semantic similarity matching
 4. Score on multiple dimensions (skills, preferences, culture)
 5. Generate AI explanation for why it's a match
+6. Broadcast new match via WebSocket (Phase 3)
 """
 
 import os
@@ -18,6 +21,7 @@ from typing import List, Dict, Optional
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from langchain_anthropic import ChatAnthropic
+import asyncio
 
 from ..models.user import User
 from ..models.personal_ai_agent import PersonalAIAgent, AgentType
@@ -40,7 +44,8 @@ class AgentMatchingService:
         self,
         anthropic_api_key: Optional[str] = None,
         chromadb_service: Optional[ChromaDBService] = None,
-        use_rag: bool = True
+        use_rag: bool = True,
+        enable_websocket: bool = True
     ):
         """
         Initialize matching service.
@@ -49,6 +54,7 @@ class AgentMatchingService:
             anthropic_api_key: Anthropic API key for Claude
             chromadb_service: ChromaDB service instance (optional)
             use_rag: Whether to use RAG queries (True) or placeholders (False)
+            enable_websocket: Enable real-time WebSocket notifications (Phase 3)
         """
         api_key = anthropic_api_key or os.getenv("ANTHROPIC_API_KEY")
 
@@ -68,6 +74,60 @@ class AgentMatchingService:
             self.chromadb = chromadb_service or create_chromadb_service()
         else:
             self.chromadb = None
+
+        # WebSocket broadcasting
+        self.enable_websocket = enable_websocket
+        self._connection_manager = None
+
+    def _get_connection_manager(self):
+        """Get connection manager lazily to avoid circular imports."""
+        if self._connection_manager is None and self.enable_websocket:
+            try:
+                from ..websocket.connection_manager import get_connection_manager
+                self._connection_manager = get_connection_manager()
+            except ImportError:
+                print("[AgentMatching] WebSocket not available")
+                self.enable_websocket = False
+        return self._connection_manager
+
+    async def _broadcast_new_match(self, match: Match):
+        """
+        Broadcast new match via WebSocket to talent user.
+
+        Args:
+            match: Match object that was created
+        """
+        if not self.enable_websocket:
+            return
+
+        connection_manager = self._get_connection_manager()
+        if not connection_manager:
+            return
+
+        try:
+            from ..websocket.event_types import NewMatchEvent
+
+            # Create WebSocket event
+            event = NewMatchEvent.create(
+                match_id=match.id,
+                job_id=match.job_id,
+                job_title=match.job_title,
+                company_name=match.company_name,
+                match_score=match.match_score,
+                matched_skills=match.matched_skills or [],
+                ai_explanation=match.ai_explanation or "Great match based on your profile!"
+            )
+
+            # Send to talent user
+            await connection_manager.send_to_user(
+                user_id=match.talent_user_id,
+                message=event.dict()
+            )
+
+            print(f"[AgentMatching] Broadcasted match {match.id} to user {match.talent_user_id}")
+
+        except Exception as e:
+            print(f"[AgentMatching] WebSocket broadcast error: {e}")
 
     def find_matches_for_talent(
         self,
@@ -157,6 +217,19 @@ class AgentMatchingService:
             matches.append(match)
 
         db.commit()
+
+        # Broadcast new matches via WebSocket (Phase 3)
+        if self.enable_websocket and matches:
+            for match in matches:
+                try:
+                    # Run async broadcast in event loop
+                    loop = asyncio.get_event_loop()
+                    if loop.is_running():
+                        asyncio.create_task(self._broadcast_new_match(match))
+                    else:
+                        loop.run_until_complete(self._broadcast_new_match(match))
+                except Exception as e:
+                    print(f"[AgentMatching] Failed to broadcast match {match.id}: {e}")
 
         return matches
 
@@ -568,7 +641,8 @@ Be encouraging but honest about any skill gaps."""
 def create_agent_matching_service(
     anthropic_api_key: Optional[str] = None,
     chromadb_service: Optional[ChromaDBService] = None,
-    use_rag: bool = True
+    use_rag: bool = True,
+    enable_websocket: bool = True
 ) -> AgentMatchingService:
     """
     Factory function to create matching service.
@@ -577,6 +651,7 @@ def create_agent_matching_service(
         anthropic_api_key: Anthropic API key
         chromadb_service: ChromaDB service instance (optional)
         use_rag: Whether to use RAG queries (default: True)
+        enable_websocket: Enable real-time WebSocket notifications (Phase 3)
 
     Returns:
         AgentMatchingService instance
@@ -584,5 +659,6 @@ def create_agent_matching_service(
     return AgentMatchingService(
         anthropic_api_key=anthropic_api_key,
         chromadb_service=chromadb_service,
-        use_rag=use_rag
+        use_rag=use_rag,
+        enable_websocket=enable_websocket
     )
