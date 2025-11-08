@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Match Found!</title>
+</head>
+<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background-color: #f5f5f5; margin: 0; padding: 0;">
+    <div style="max-width: 600px; margin: 40px auto; background-color: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 28px;">🎯 New Match Found!</h1>
+        </div>
+
+        <!-- Content -->
+        <div style="padding: 40px 30px;">
+            <p style="font-size: 16px; color: #555; margin-bottom: 25px;">
+                Great news! We found a job that matches your skills and preferences.
+            </p>
+
+            <!-- Match Card -->
+            <div style="background-color: #f8f9fa; border-left: 4px solid #667eea; padding: 20px; border-radius: 5px; margin-bottom: 30px;">
+                <h2 style="margin: 0 0 10px 0; color: #2c3e50; font-size: 22px;">{{job_title}}</h2>
+                <p style="margin: 5px 0; color: #666; font-size: 16px;">
+                    <strong>Company:</strong> {{company_name}}
+                </p>
+                <p style="margin: 5px 0; color: #667eea; font-size: 18px; font-weight: bold;">
+                    {{match_score}}% Match
+                </p>
+            </div>
+
+            <!-- Skills Section -->
+            <div style="margin-bottom: 30px;">
+                <h3 style="color: #2c3e50; margin-bottom: 15px;">Why this is a great match:</h3>
+                <p style="color: #555; line-height: 1.8;">{{message}}</p>
+            </div>
+
+            <!-- CTA Button -->
+            <div style="text-align: center;">
+                <a href="{{action_url}}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);">
+                    View Full Match Details
+                </a>
+            </div>
+
+            <!-- Tips -->
+            <div style="margin-top: 30px; padding: 20px; background-color: #e8f4f8; border-radius: 5px;">
+                <p style="margin: 0; font-size: 14px; color: #555;">
+                    <strong>💡 Tip:</strong> Matches expire in 7 days. Review and express interest soon to not miss out!
+                </p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="background-color: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #e0e0e0;">
+            <p style="margin: 0; font-size: 12px; color: #999;">
+                You're receiving this because you signed up for Networking AI<br>
+                <a href="#" style="color: #667eea; text-decoration: none;">Manage notification preferences</a>
+            </p>
+            <p style="margin: 10px 0 0 0; font-size: 12px; color: #999;">
+                &copy; {{year}} Networking AI. All rights reserved.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
