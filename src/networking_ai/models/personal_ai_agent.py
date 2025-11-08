@@ -16,7 +16,9 @@ from ..database import Base
 class AgentType(str, Enum):
     """Type of AI agent."""
     JOBSEEKER = "jobseeker"
-    COMPANY = "company"
+    HIRING_MANAGER = "hiring_manager"  # Phase 2: HM agent (portable)
+    RECRUITER = "recruiter"  # Phase 2: External recruiter
+    COMPANY = "company"  # Legacy
 
 
 class AgentStatus(str, Enum):
@@ -51,6 +53,10 @@ class PersonalAIAgent(Base):
     industry = Column(String(255))  # e.g., "finance", "tech", "healthcare"
     role = Column(String(255))  # e.g., "system_engineer", "backend_engineer"
     user_segment_id = Column(String(500))  # For cross-learning: "system_engineer_finance_5yrs_python"
+
+    # Phase 2: Recruiter-specific fields
+    recruitment_company_name = Column(String(255))  # For RECRUITER agent type
+    recruitment_company_description = Column(Text)  # For RECRUITER agent type
 
     # Performance metrics
     activation_date = Column(DateTime, default=datetime.utcnow, nullable=False)

@@ -49,6 +49,8 @@ class User(Base):
     email_verification_token = Column(String(255), nullable=True)
 
     # Basic Info
+    first_name = Column(String(100))  # Phase 2
+    last_name = Column(String(100))  # Phase 2
     full_name = Column(String(255), nullable=False)
     role = Column(SQLEnum(UserRole), nullable=False, index=True)
     status = Column(SQLEnum(AccountStatus), default=AccountStatus.PENDING_VERIFICATION, index=True)

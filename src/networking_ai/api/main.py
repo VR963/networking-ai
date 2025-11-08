@@ -12,6 +12,7 @@ import time
 
 from ..database import engine, Base
 from .auth import router as auth_router
+from .registration import router as registration_router
 from .users import router as users_router
 from .jobs import router as jobs_router
 from .matches import router as matches_router
@@ -148,6 +149,7 @@ async def list_all_tasks():
 
 # Include routers
 app.include_router(auth_router, prefix="/api/auth", tags=["Authentication"])
+app.include_router(registration_router, prefix="/api/registration", tags=["Registration & User Types"])
 app.include_router(onboarding_router, prefix="/api/onboarding", tags=["Onboarding & Interview"])
 app.include_router(agents_router, prefix="/api/agents", tags=["Personal AI Agents"])
 app.include_router(companies_router, prefix="/api/companies", tags=["Companies & Subscriptions"])
