@@ -34,6 +34,9 @@ class InterviewSession(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     recruiter_agent_id = Column(Integer, ForeignKey("personal_ai_agents.id"), nullable=True)  # Recruiter is ephemeral
 
+    # Session type - Phase 2
+    session_type = Column(String(50), default="talent")  # "talent" or "hiring_manager"
+
     # Uploaded document
     cv_file_path = Column(String(500))  # Path to uploaded CV
     cv_file_name = Column(String(255))

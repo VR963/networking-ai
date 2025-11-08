@@ -20,6 +20,7 @@ from .messages import router as messages_router
 from .onboarding import router as onboarding_router
 from .agents import router as agents_router
 from .companies import router as companies_router
+from .hiring_manager_onboarding import router as hm_onboarding_router
 from ..services.background_tasks import task_manager
 
 
@@ -151,6 +152,7 @@ async def list_all_tasks():
 app.include_router(auth_router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(registration_router, prefix="/api/registration", tags=["Registration & User Types"])
 app.include_router(onboarding_router, prefix="/api/onboarding", tags=["Onboarding & Interview"])
+app.include_router(hm_onboarding_router, prefix="/api/hiring-manager", tags=["Hiring Manager Onboarding"])
 app.include_router(agents_router, prefix="/api/agents", tags=["Personal AI Agents"])
 app.include_router(companies_router, prefix="/api/companies", tags=["Companies & Subscriptions"])
 app.include_router(users_router, prefix="/api/users", tags=["Users & Profiles"])
