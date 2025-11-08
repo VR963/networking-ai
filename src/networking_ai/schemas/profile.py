@@ -4,7 +4,7 @@ UserProfile Pydantic Schemas for API request/response validation.
 
 from datetime import datetime
 from typing import Optional, List, Dict
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, ConfigDict
 
 from ..models.profile import ProfileVisibility
 
@@ -123,8 +123,7 @@ class ProfileResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ProfileSummaryResponse(BaseModel):
@@ -137,5 +136,4 @@ class ProfileSummaryResponse(BaseModel):
     skills: Optional[List[str]]
     profile_completion_percentage: int
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)

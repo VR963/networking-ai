@@ -4,7 +4,7 @@ User Pydantic Schemas for API request/response validation.
 
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, EmailStr, Field, validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict
 
 from ..models.user import UserRole, AccountStatus
 
@@ -20,7 +20,8 @@ class UserRegisterRequest(BaseModel):
     full_name: str = Field(..., min_length=1, max_length=255)
     role: UserRole
 
-    @validator('password')
+    @field_validator('password')
+    @classmethod
     def password_strength(cls, v):
         """Validate password strength."""
         if not any(c.isupper() for c in v):
@@ -61,6 +62,8 @@ class UserUpdateRequest(BaseModel):
 
 class UserResponse(BaseModel):
     """User response (public info only)."""
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     email: EmailStr
     full_name: str
@@ -70,9 +73,6 @@ class UserResponse(BaseModel):
     is_active: bool
     last_login: Optional[datetime]
     created_at: datetime
-
-    class Config:
-        orm_mode = True
 
 
 class TokenResponse(BaseModel):

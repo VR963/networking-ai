@@ -7,8 +7,7 @@ Sets up PostgreSQL connection using SQLAlchemy ORM.
 from typing import Generator
 import os
 from sqlalchemy import create_engine, event
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import declarative_base, sessionmaker, Session
 from sqlalchemy.pool import Pool
 
 from .config import config
