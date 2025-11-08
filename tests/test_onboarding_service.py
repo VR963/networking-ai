@@ -10,7 +10,7 @@ from datetime import date, datetime, timedelta
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
-from src.networking_ai.models.base import Base
+from src.networking_ai.database import Base
 from src.networking_ai.models.user import User, UserRole
 from src.networking_ai.models.company import Company, CompanyStatus
 from src.networking_ai.models.job import Job, JobStatus
