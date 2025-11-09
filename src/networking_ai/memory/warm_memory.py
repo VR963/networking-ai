@@ -66,9 +66,6 @@ class WarmMemory:
             List of Memory objects with relevance scores
         """
         try:
-            # Build full-text search query
-            search_query = func.to_tsquery('english', self._prepare_query(query))
-
             # Build base query
             base_query = self.db.query(UserMemory).filter(
                 and_(
@@ -85,45 +82,80 @@ class WarmMemory:
                     UserMemory.memory_type.in_([MemoryType(t) for t in memory_types])
                 )
 
-            # Add full-text search with ranking
-            results = base_query.filter(
-                func.to_tsvector('english', UserMemory.content).op('@@')(search_query)
-            ).order_by(
-                # Order by relevance (ts_rank) and decay score
-                func.ts_rank(
-                    func.to_tsvector('english', UserMemory.content),
-                    search_query
-                ).desc(),
-                UserMemory.decay_score.desc()
-            ).limit(limit).all()
+            # Detect database dialect
+            dialect_name = self.db.bind.dialect.name
 
-            # Convert to Memory objects with scores
-            memories = []
-            for result in results:
-                # Calculate relevance score using ts_rank
-                score = self.db.query(
+            if dialect_name == 'postgresql':
+                # PostgreSQL: Use full-text search
+                search_query = func.to_tsquery('english', self._prepare_query(query))
+                results = base_query.filter(
+                    func.to_tsvector('english', UserMemory.content).op('@@')(search_query)
+                ).order_by(
                     func.ts_rank(
-                        func.to_tsvector('english', result.content),
+                        func.to_tsvector('english', UserMemory.content),
                         search_query
+                    ).desc(),
+                    UserMemory.decay_score.desc()
+                ).limit(limit).all()
+
+                # Calculate scores using ts_rank
+                memories = []
+                for result in results:
+                    score = self.db.query(
+                        func.ts_rank(
+                            func.to_tsvector('english', result.content),
+                            search_query
+                        )
+                    ).scalar()
+
+                    memory = Memory(
+                        id=result.id,
+                        user_id=result.user_id,
+                        content=result.content,
+                        metadata=result.meta or {},
+                        created_at=result.created_at,
+                        last_accessed=result.last_accessed,
+                        access_count=result.access_count,
+                        importance=result.importance,
+                        tier='warm',
+                        score=float(score) if score else 0.0
                     )
-                ).scalar()
+                    memories.append(memory)
+                    result.update_access()
 
-                memory = Memory(
-                    id=result.id,
-                    user_id=result.user_id,
-                    content=result.content,
-                    metadata=result.meta or {},
-                    created_at=result.created_at,
-                    last_accessed=result.last_accessed,
-                    access_count=result.access_count,
-                    importance=result.importance,
-                    tier='warm',
-                    score=float(score) if score else 0.0
-                )
-                memories.append(memory)
+            else:
+                # SQLite/Other: Use simple LIKE search
+                query_terms = query.lower().split()
+                like_filters = [UserMemory.content.ilike(f'%{term}%') for term in query_terms]
 
-                # Update access tracking
-                result.update_access()
+                results = base_query.filter(
+                    or_(*like_filters)
+                ).order_by(
+                    UserMemory.decay_score.desc(),
+                    UserMemory.last_accessed.desc()
+                ).limit(limit).all()
+
+                # Simple scoring based on term matches
+                memories = []
+                for result in results:
+                    content_lower = result.content.lower()
+                    matches = sum(1 for term in query_terms if term in content_lower)
+                    score = matches / len(query_terms) if query_terms else 0.0
+
+                    memory = Memory(
+                        id=result.id,
+                        user_id=result.user_id,
+                        content=result.content,
+                        metadata=result.meta or {},
+                        created_at=result.created_at,
+                        last_accessed=result.last_accessed,
+                        access_count=result.access_count,
+                        importance=result.importance,
+                        tier='warm',
+                        score=score
+                    )
+                    memories.append(memory)
+                    result.update_access()
 
             # Commit access updates
             self.db.commit()

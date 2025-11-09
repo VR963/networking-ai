@@ -71,14 +71,79 @@ def redis_client():
 
 @pytest.fixture
 def chromadb_service():
-    """Create ChromaDB service."""
-    service = ChromaDBService(persist_directory="./test_chroma_data")
+    """Create ChromaDB service with test-friendly settings."""
+    import chromadb
+    from chromadb.config import Settings
+
+    # Create client with in-memory database and simple embedding
+    client = chromadb.Client(Settings(
+        anonymized_telemetry=False,
+        allow_reset=True,
+        is_persistent=False  # In-memory for tests
+    ))
+
+    # Create a simple mock service
+    class TestChromaDBService:
+        def __init__(self):
+            self.client = client
+            # Use mock embedding function that doesn't require downloads
+            self.embedding_function = None
+
+        def create_collection(self, collection_name, metadata=None):
+            # Create collection without embedding function to avoid downloads
+            try:
+                return self.client.get_or_create_collection(
+                    name=collection_name,
+                    metadata=metadata or {},
+                    embedding_function=None  # No embedding downloads
+                )
+            except:
+                return self.client.create_collection(
+                    name=collection_name,
+                    metadata=metadata or {},
+                    embedding_function=None
+                )
+
+        def delete_collection(self, collection_name):
+            try:
+                self.client.delete_collection(name=collection_name)
+                return True
+            except:
+                return False
+
+        def add_documents(self, collection_name, documents, metadatas=None, ids=None):
+            collection = self.client.get_collection(name=collection_name)
+            # Generate simple embeddings (random but consistent)
+            embeddings = [[0.1 + (i * 0.01)] * 384 for i in range(len(documents))]
+            collection.add(
+                documents=documents,
+                metadatas=metadatas,
+                ids=ids,
+                embeddings=embeddings  # Provide embeddings manually
+            )
+            return True
+
+        def query_collection(self, collection_name, query_texts, n_results=5, where=None):
+            collection = self.client.get_collection(name=collection_name)
+            # Generate query embeddings
+            query_embeddings = [[0.15] * 384 for _ in query_texts]
+            return collection.query(
+                query_embeddings=query_embeddings,  # Use embeddings instead of texts
+                n_results=n_results,
+                where=where
+            )
+
+        def delete_documents(self, collection_name, ids):
+            collection = self.client.get_collection(name=collection_name)
+            collection.delete(ids=ids)
+            return True
+
+    service = TestChromaDBService()
     yield service
     # Cleanup
     try:
-        import shutil
-        shutil.rmtree("./test_chroma_data", ignore_errors=True)
-    except Exception:
+        client.reset()
+    except:
         pass
 
 
