@@ -242,7 +242,7 @@ class MemoryDecayManager:
                     id=mem.id,
                     user_id=mem.user_id,
                     content=mem.content,
-                    metadata=mem.metadata or {},
+                    metadata=mem.meta or {},
                     created_at=mem.created_at,
                     last_accessed=mem.last_accessed,
                     access_count=mem.access_count,

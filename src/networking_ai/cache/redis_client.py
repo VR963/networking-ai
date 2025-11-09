@@ -18,10 +18,9 @@ except ImportError:
     redis = None
     ConnectionPool = None
 
-from ..config import get_settings
+from ..config import config
 
 logger = logging.getLogger(__name__)
-settings = get_settings()
 
 
 class RedisClient:

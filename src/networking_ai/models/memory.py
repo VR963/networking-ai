@@ -23,6 +23,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import JSON
 
 from ..database import Base
 
@@ -60,13 +61,9 @@ class UserMemory(Base):
     - Access tracking for intelligent caching
     """
     __tablename__ = "user_memories"
+    # Note: Full-text search index is created separately for PostgreSQL
+    # SQLite doesn't support GIN indexes or to_tsvector
     __table_args__ = (
-        # Full-text search index (PostgreSQL specific)
-        Index(
-            'idx_user_memories_content_fts',
-            func.to_tsvector('english', 'content'),
-            postgresql_using='gin'
-        ),
         # Composite index for user + tier queries
         Index('idx_user_memories_user_tier', 'user_id', 'memory_tier'),
         # Index for decay-based queries
@@ -87,9 +84,9 @@ class UserMemory(Base):
     memory_type = Column(SQLEnum(MemoryType), default=MemoryType.CONVERSATION, nullable=False)
 
     # Metadata (flexible JSON storage)
-    metadata = Column(JSONB, default={})
+    meta = Column(JSON, default={})
     """
-    Metadata examples:
+    Memory metadata examples:
     - source: "conversation", "pdf_upload", "api_import"
     - tags: ["important", "project_x", "meeting"]
     - context: {"job_id": 123, "company": "Acme Corp"}
@@ -150,7 +147,7 @@ class UserMemory(Base):
             "user_id": self.user_id,
             "content": self.content,
             "memory_type": self.memory_type.value if self.memory_type else None,
-            "metadata": self.metadata or {},
+            "metadata": self.meta or {},
             "importance": self.importance,
             "decay_score": self.decay_score,
             "access_count": self.access_count,
