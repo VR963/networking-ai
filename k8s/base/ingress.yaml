@@ -1,0 +1,179 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: networking-ai-ingress
+  namespace: networking-ai
+  labels:
+    app: networking-ai
+  annotations:
+    # Nginx Ingress Controller annotations
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+
+    # Rate limiting
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+    nginx.ingress.kubernetes.io/limit-burst-multiplier: "2"
+
+    # Connection settings
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+
+    # WebSocket support
+    nginx.ingress.kubernetes.io/websocket-services: "websocket-service"
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+
+    # Buffering
+    nginx.ingress.kubernetes.io/proxy-buffering: "on"
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "4k"
+
+    # CORS (if needed)
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+    nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
+
+    # Security headers
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Frame-Options: DENY";
+      more_set_headers "X-Content-Type-Options: nosniff";
+      more_set_headers "X-XSS-Protection: 1; mode=block";
+      more_set_headers "Referrer-Policy: strict-origin-when-cross-origin";
+      more_set_headers "Permissions-Policy: geolocation=(), microphone=(), camera=()";
+
+    # SSL/TLS (cert-manager)
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    cert-manager.io/acme-challenge-type: "http01"
+
+    # Client body size
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+
+spec:
+  tls:
+    - hosts:
+        - api.networking-ai.com
+        - ws.networking-ai.com
+        - networking-ai.com
+        - www.networking-ai.com
+      secretName: networking-ai-tls
+
+  rules:
+    # Main API domain
+    - host: api.networking-ai.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: fastapi-service
+                port:
+                  number: 8000
+
+    # WebSocket domain
+    - host: ws.networking-ai.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: websocket-service
+                port:
+                  number: 8001
+
+    # Main domain with routing
+    - host: networking-ai.com
+      http:
+        paths:
+          # WebSocket endpoint
+          - path: /ws
+            pathType: Prefix
+            backend:
+              service:
+                name: websocket-service
+                port:
+                  number: 8001
+
+          # API endpoints
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: fastapi-service
+                port:
+                  number: 8000
+
+          # Default to API
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: fastapi-service
+                port:
+                  number: 8000
+
+    # www subdomain
+    - host: www.networking-ai.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: fastapi-service
+                port:
+                  number: 8000
+
+---
+# Alternative: Using separate Ingress for WebSocket (recommended for complex setups)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: networking-ai-websocket-ingress
+  namespace: networking-ai
+  labels:
+    app: networking-ai
+    component: websocket
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+
+    # WebSocket specific settings
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "86400"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "86400"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "86400"
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+    nginx.ingress.kubernetes.io/websocket-services: "websocket-service"
+
+    # Disable buffering for WebSocket
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+
+    # Session affinity for WebSocket
+    nginx.ingress.kubernetes.io/affinity: "cookie"
+    nginx.ingress.kubernetes.io/affinity-mode: "persistent"
+    nginx.ingress.kubernetes.io/session-cookie-name: "ws-route"
+    nginx.ingress.kubernetes.io/session-cookie-max-age: "3600"
+    nginx.ingress.kubernetes.io/session-cookie-expires: "3600"
+
+    # SSL
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+
+spec:
+  tls:
+    - hosts:
+        - ws.networking-ai.com
+      secretName: networking-ai-ws-tls
+
+  rules:
+    - host: ws.networking-ai.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: websocket-service
+                port:
+                  number: 8001

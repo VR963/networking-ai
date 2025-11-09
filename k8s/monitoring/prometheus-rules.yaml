@@ -1,0 +1,185 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: networking-ai-alerts
+  namespace: networking-ai
+  labels:
+    app: networking-ai
+    release: prometheus
+spec:
+  groups:
+    - name: networking-ai.application
+      interval: 30s
+      rules:
+        # High Error Rate
+        - alert: HighErrorRate
+          expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.01
+          for: 5m
+          labels:
+            severity: critical
+            component: api
+          annotations:
+            summary: "High error rate detected"
+            description: "Error rate is {{ $value | humanizePercentage }} (threshold: 1%)"
+
+        # Slow Response Time
+        - alert: SlowResponseTime
+          expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
+          for: 5m
+          labels:
+            severity: warning
+            component: api
+          annotations:
+            summary: "Slow API response time"
+            description: "P95 response time is {{ $value }}s (threshold: 1s)"
+
+        # Pod Crash Looping
+        - alert: PodCrashLooping
+          expr: rate(kube_pod_container_status_restarts_total{namespace="networking-ai"}[15m]) > 0
+          for: 5m
+          labels:
+            severity: critical
+            component: infrastructure
+          annotations:
+            summary: "Pod {{ $labels.pod }} is crash looping"
+            description: "Pod has restarted {{ $value }} times in the last 15 minutes"
+
+        # High CPU Usage
+        - alert: HighCPUUsage
+          expr: rate(container_cpu_usage_seconds_total{namespace="networking-ai",container!=""}[5m]) > 0.8
+          for: 10m
+          labels:
+            severity: warning
+            component: resources
+          annotations:
+            summary: "High CPU usage in {{ $labels.pod }}"
+            description: "CPU usage is {{ $value | humanizePercentage }} (threshold: 80%)"
+
+        # High Memory Usage
+        - alert: HighMemoryUsage
+          expr: container_memory_working_set_bytes{namespace="networking-ai",container!=""} / container_spec_memory_limit_bytes{namespace="networking-ai",container!=""} > 0.9
+          for: 5m
+          labels:
+            severity: critical
+            component: resources
+          annotations:
+            summary: "High memory usage in {{ $labels.pod }}"
+            description: "Memory usage is {{ $value | humanizePercentage }} (threshold: 90%)"
+
+        # WebSocket Connection Count
+        - alert: HighWebSocketConnections
+          expr: websocket_active_connections > 8000
+          for: 5m
+          labels:
+            severity: warning
+            component: websocket
+          annotations:
+            summary: "High number of WebSocket connections"
+            description: "Active connections: {{ $value }} (threshold: 8000)"
+
+        # Platform Health Score
+        - alert: LowPlatformHealth
+          expr: platform_health_score < 75
+          for: 5m
+          labels:
+            severity: warning
+            component: platform
+          annotations:
+            summary: "Low platform health score"
+            description: "Health score is {{ $value }}% (threshold: 75%)"
+
+        - alert: CriticalPlatformHealth
+          expr: platform_health_score < 69
+          for: 1m
+          labels:
+            severity: critical
+            component: platform
+          annotations:
+            summary: "CRITICAL: Platform health below shutdown threshold"
+            description: "Health score is {{ $value }}% (critical threshold: 69%)"
+
+    - name: networking-ai.database
+      interval: 60s
+      rules:
+        # Database Connection Pool Exhausted
+        - alert: DatabaseConnectionPoolExhausted
+          expr: pg_stat_database_numbackends / pg_settings_max_connections > 0.8
+          for: 5m
+          labels:
+            severity: warning
+            component: database
+          annotations:
+            summary: "Database connection pool nearly exhausted"
+            description: "Using {{ $value | humanizePercentage }} of available connections"
+
+        # High Database Lag
+        - alert: HighDatabaseLag
+          expr: pg_replication_lag_seconds > 10
+          for: 5m
+          labels:
+            severity: warning
+            component: database
+          annotations:
+            summary: "High database replication lag"
+            description: "Replication lag is {{ $value }}s (threshold: 10s)"
+
+        # Redis Memory Usage
+        - alert: HighRedisMemory
+          expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.85
+          for: 5m
+          labels:
+            severity: warning
+            component: cache
+          annotations:
+            summary: "High Redis memory usage"
+            description: "Memory usage is {{ $value | humanizePercentage }} (threshold: 85%)"
+
+    - name: networking-ai.availability
+      interval: 30s
+      rules:
+        # Service Down
+        - alert: ServiceDown
+          expr: up{namespace="networking-ai"} == 0
+          for: 1m
+          labels:
+            severity: critical
+            component: availability
+          annotations:
+            summary: "Service {{ $labels.job }} is down"
+            description: "Service has been down for more than 1 minute"
+
+        # Low Replica Count
+        - alert: LowReplicaCount
+          expr: kube_deployment_status_replicas_available{namespace="networking-ai"} < kube_deployment_spec_replicas{namespace="networking-ai"} * 0.5
+          for: 5m
+          labels:
+            severity: warning
+            component: availability
+          annotations:
+            summary: "Low replica count for {{ $labels.deployment }}"
+            description: "Only {{ $value }} replicas available"
+
+    - name: networking-ai.performance
+      interval: 30s
+      rules:
+        # High Request Rate
+        - alert: HighRequestRate
+          expr: rate(http_requests_total[1m]) > 1000
+          for: 5m
+          labels:
+            severity: info
+            component: performance
+          annotations:
+            summary: "High request rate detected"
+            description: "Request rate is {{ $value }} req/s"
+
+        # Queue Depth Too High
+        - alert: HighQueueDepth
+          expr: worker_queue_depth > 1000
+          for: 10m
+          labels:
+            severity: warning
+            component: worker
+          annotations:
+            summary: "High worker queue depth"
+            description: "Queue depth is {{ $value }} (threshold: 1000)"

@@ -1,0 +1,187 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: networking-ai-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-networking_ai}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=en_US.UTF-8"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init_test_db.py:/docker-entrypoint-initdb.d/init.py:ro
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - networking-ai-network
+    restart: unless-stopped
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: networking-ai-redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_pass}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - networking-ai-network
+    restart: unless-stopped
+
+  # FastAPI Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: networking-ai-app
+    environment:
+      # Database
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-networking_ai}
+
+      # Redis
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_pass}@redis:6379/0
+
+      # API Keys
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+
+      # App Configuration
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      DEBUG: ${DEBUG:-true}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
+
+      # Server
+      WORKERS: ${WORKERS:-4}
+      PORT: 8000
+
+      # CORS
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:8000}
+
+      # Features
+      ENABLE_WEBSOCKET: ${ENABLE_WEBSOCKET:-true}
+      ENABLE_MASTER_AGENT: ${ENABLE_MASTER_AGENT:-true}
+
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - networking-ai-network
+    restart: unless-stopped
+
+  # WebSocket Service (separate for scaling)
+  websocket:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: networking-ai-websocket
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-networking_ai}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_pass}@redis:6379/0
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      PORT: 8001
+      SERVICE_TYPE: websocket
+    volumes:
+      - ./logs:/app/logs
+    ports:
+      - "${WEBSOCKET_PORT:-8001}:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - networking-ai-network
+    restart: unless-stopped
+    command: ["sh", "-c", "uvicorn networking_ai.websocket.main:app --host 0.0.0.0 --port 8001 --log-level ${LOG_LEVEL:-info}"]
+
+  # Background Worker (for async tasks)
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: networking-ai-worker
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-networking_ai}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_pass}@redis:6379/0
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      SERVICE_TYPE: worker
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - networking-ai-network
+    restart: unless-stopped
+    command: ["python", "-m", "networking_ai.workers.main"]
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: networking-ai-nginx
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./logs/nginx:/var/log/nginx
+    ports:
+      - "${NGINX_HTTP_PORT:-80}:80"
+      - "${NGINX_HTTPS_PORT:-443}:443"
+    depends_on:
+      - app
+      - websocket
+    networks:
+      - networking-ai-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  networking-ai-network:
+    driver: bridge
+    name: networking-ai-network
+
+volumes:
+  postgres_data:
+    name: networking-ai-postgres-data
+  redis_data:
+    name: networking-ai-redis-data

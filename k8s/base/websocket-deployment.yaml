@@ -1,0 +1,183 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: websocket-service
+  namespace: networking-ai
+  labels:
+    app: websocket
+spec:
+  type: ClusterIP
+  sessionAffinity: ClientIP  # Important for WebSocket connections
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 3600
+  ports:
+    - port: 8001
+      targetPort: 8001
+      protocol: TCP
+      name: websocket
+  selector:
+    app: websocket
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: websocket
+  namespace: networking-ai
+  labels:
+    app: websocket
+    component: realtime
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: websocket
+  template:
+    metadata:
+      labels:
+        app: websocket
+        component: realtime
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+    spec:
+      securityContext:
+        fsGroup: 1000
+        runAsUser: 1000
+        runAsNonRoot: true
+
+      serviceAccountName: networking-ai-sa
+
+      initContainers:
+        - name: wait-for-redis
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z redis-service 6379; do
+                echo "Waiting for Redis..."
+                sleep 2
+              done
+              echo "Redis is ready!"
+
+      containers:
+        - name: websocket
+          image: networking-ai:latest
+          imagePullPolicy: IfNotPresent
+
+          command:
+            - sh
+            - -c
+            - uvicorn networking_ai.websocket.main:app --host 0.0.0.0 --port 8001 --workers 1 --log-level ${LOG_LEVEL}
+
+          ports:
+            - containerPort: 8001
+              name: websocket
+              protocol: TCP
+            - containerPort: 9090
+              name: metrics
+              protocol: TCP
+
+          envFrom:
+            - configMapRef:
+                name: networking-ai-config
+            - secretRef:
+                name: networking-ai-secrets
+
+          env:
+            - name: DATABASE_URL
+              value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)"
+            - name: REDIS_URL
+              value: "redis://:$(REDIS_PASSWORD)@$(REDIS_HOST):$(REDIS_PORT)/$(REDIS_DB)"
+            - name: SERVICE_TYPE
+              value: "websocket"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8001
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8001
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8001
+              scheme: HTTP
+            initialDelaySeconds: 0
+            periodSeconds: 5
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 30
+
+          volumeMounts:
+            - name: websocket-logs
+              mountPath: /app/logs
+
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - sh
+                  - -c
+                  - |
+                    echo "Gracefully shutting down WebSocket connections..."
+                    sleep 30  # Allow time for connections to close gracefully
+
+      volumes:
+        - name: websocket-logs
+          emptyDir: {}
+
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - websocket
+                topologyKey: kubernetes.io/hostname
+
+      terminationGracePeriodSeconds: 35  # Longer for WebSocket graceful shutdown

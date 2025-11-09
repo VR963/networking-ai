@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: networking-ai-config
+  namespace: networking-ai
+  labels:
+    app: networking-ai
+data:
+  # Application Configuration
+  ENVIRONMENT: "production"
+  DEBUG: "false"
+  LOG_LEVEL: "info"
+  WORKERS: "8"
+
+  # Feature Flags
+  ENABLE_WEBSOCKET: "true"
+  ENABLE_MASTER_AGENT: "true"
+  ENABLE_METRICS: "true"
+  ENABLE_RATE_LIMITING: "true"
+
+  # WebSocket Configuration
+  WEBSOCKET_MAX_CONNECTIONS: "10000"
+  WEBSOCKET_PING_INTERVAL: "30"
+  WEBSOCKET_PING_TIMEOUT: "10"
+
+  # Worker Configuration
+  WORKER_CONCURRENCY: "4"
+  WORKER_MAX_TASKS_PER_CHILD: "1000"
+
+  # Security
+  HSTS_ENABLED: "true"
+  HTTPS_ONLY: "true"
+  SECURE_COOKIES: "true"
+
+  # Rate Limiting
+  RATE_LIMIT_PER_MINUTE: "60"
+
+  # CORS
+  ALLOWED_ORIGINS: "https://app.networking-ai.com,https://www.networking-ai.com"
+
+  # Database (connection details, not credentials)
+  POSTGRES_HOST: "postgres-service"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: "networking_ai"
+
+  # Redis (connection details, not credentials)
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+  REDIS_DB: "0"
+
+  # Monitoring
+  METRICS_PORT: "9090"
+  METRICS_PATH: "/metrics"
+
+  # Platform Health
+  PLATFORM_HEALTH_CHECK_INTERVAL: "300"
+  PLATFORM_HEALTH_THRESHOLD: "69"
+
+  # Master Agent
+  MASTER_AGENT_ENABLED: "true"
+  MASTER_AGENT_CHECK_INTERVAL: "3600"

@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: networking-ai
+  labels:
+    name: networking-ai
+    environment: production
+    app: networking-ai-platform
