@@ -9,17 +9,19 @@ Tiers:
 - Cold Memory (ChromaDB): <10s access, long-term archive
 """
 
-from .orchestrator import MemoryOrchestrator
-from .hot_memory import HotMemory
+from .memory_orchestrator import MemoryOrchestrator
+from .hot_memory import HotMemory, Memory
 from .warm_memory import WarmMemory
 from .cold_memory import ColdMemory
-from .decay import MemoryDecayManager, calculate_decay_score
+from .memory_decay import MemoryDecayManager, run_decay_task, schedule_decay_task
 
 __all__ = [
     'MemoryOrchestrator',
     'HotMemory',
     'WarmMemory',
     'ColdMemory',
+    'Memory',
     'MemoryDecayManager',
-    'calculate_decay_score',
+    'run_decay_task',
+    'schedule_decay_task',
 ]

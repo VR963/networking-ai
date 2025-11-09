@@ -167,6 +167,14 @@ from .mobile import (
     PushNotificationStatus
 )
 
+# Phase 10A: Enhanced Memory System
+from .memory import (
+    UserMemory,
+    MemoryAnalytics,
+    MemoryTier,
+    MemoryType
+)
+
 __all__ = [
     # User
     'User',
@@ -335,4 +343,9 @@ __all__ = [
     'PushNotification',
     'DevicePlatform',
     'PushNotificationStatus',
+    # Phase 10A: Enhanced Memory System
+    'UserMemory',
+    'MemoryAnalytics',
+    'MemoryTier',
+    'MemoryType',
 ]
