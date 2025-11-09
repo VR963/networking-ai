@@ -25,6 +25,7 @@ from .hiring_manager_onboarding import router as hm_onboarding_router
 from .job_postings import router as job_postings_router
 from .mobile import mobile_router
 from .memory import router as memory_router
+from .marketplace import router as marketplace_router
 from ..services.background_tasks import task_manager
 
 
@@ -167,6 +168,7 @@ app.include_router(matches_router, prefix="/api/matches", tags=["AI Matches (Leg
 app.include_router(messages_router, prefix="/api/conversations", tags=["Messaging"])
 app.include_router(mobile_router, prefix="/api/v1", tags=["Mobile API (Phase 10)"])
 app.include_router(memory_router, tags=["Enhanced Memory System (Phase 10A)"])
+app.include_router(marketplace_router, prefix="/api/v1/marketplace", tags=["AI Agent Marketplace (Phase 12)"])
 
 
 if __name__ == "__main__":

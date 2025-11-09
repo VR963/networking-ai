@@ -175,6 +175,18 @@ from .memory import (
     MemoryType
 )
 
+# Phase 12: AI Agent Marketplace
+from .marketplace import (
+    AgentTemplate,
+    TemplatePurchase,
+    TemplateReview,
+    TemplateInstallation,
+    CreatorFollow,
+    TemplateComment,
+    TemplateCategory,
+    TemplateStatus
+)
+
 __all__ = [
     # User
     'User',
@@ -348,4 +360,13 @@ __all__ = [
     'MemoryAnalytics',
     'MemoryTier',
     'MemoryType',
+    # Phase 12: AI Agent Marketplace
+    'AgentTemplate',
+    'TemplatePurchase',
+    'TemplateReview',
+    'TemplateInstallation',
+    'CreatorFollow',
+    'TemplateComment',
+    'TemplateCategory',
+    'TemplateStatus',
 ]
