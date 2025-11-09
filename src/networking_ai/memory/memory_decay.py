@@ -11,6 +11,7 @@ Features:
 import logging
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
+import asyncio
 
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, func
@@ -52,7 +53,8 @@ class MemoryDecayManager:
         frequency_weight: float = 0.3,
         importance_weight: float = 0.3,
         hot_threshold: float = 0.8,
-        cold_threshold: float = 0.3
+        cold_threshold: float = 0.3,
+        realtime_service=None
     ):
         """
         Initialize MemoryDecayManager.
@@ -64,6 +66,7 @@ class MemoryDecayManager:
             importance_weight: Weight for importance component (default 0.3)
             hot_threshold: Minimum score for hot tier (default 0.8)
             cold_threshold: Maximum score for cold tier (default 0.3)
+            realtime_service: Optional realtime memory service for WebSocket broadcasts
         """
         self.db = db_session
         self.recency_weight = recency_weight
@@ -71,6 +74,7 @@ class MemoryDecayManager:
         self.importance_weight = importance_weight
         self.hot_threshold = hot_threshold
         self.cold_threshold = cold_threshold
+        self.realtime = realtime_service
 
     def calculate_decay_score(self, memory: UserMemory) -> float:
         """
@@ -157,6 +161,7 @@ class MemoryDecayManager:
 
                         # Promote to hot tier
                         if new_score > self.hot_threshold and memory.memory_tier != MemoryTier.HOT:
+                            old_tier = memory.memory_tier.value
                             memory.memory_tier = MemoryTier.HOT
                             stats["promoted_to_hot"] += 1
                             logger.debug(
@@ -164,14 +169,41 @@ class MemoryDecayManager:
                                 f"(score: {old_score:.2f} → {new_score:.2f})"
                             )
 
+                            # Broadcast tier changed event
+                            if self.realtime:
+                                self._broadcast_event(
+                                    self.realtime.broadcast_tier_changed(
+                                        memory_id=memory.id,
+                                        user_id=memory.user_id,
+                                        old_tier=old_tier,
+                                        new_tier='hot',
+                                        decay_score=new_score,
+                                        reason='promotion'
+                                    )
+                                )
+
                         # Demote to cold tier
                         elif new_score < self.cold_threshold and memory.memory_tier != MemoryTier.COLD:
+                            old_tier = memory.memory_tier.value
                             memory.memory_tier = MemoryTier.COLD
                             stats["demoted_to_cold"] += 1
                             logger.debug(
                                 f"Memory {memory.id} demoted to cold tier "
                                 f"(score: {old_score:.2f} → {new_score:.2f})"
                             )
+
+                            # Broadcast tier changed event
+                            if self.realtime:
+                                self._broadcast_event(
+                                    self.realtime.broadcast_tier_changed(
+                                        memory_id=memory.id,
+                                        user_id=memory.user_id,
+                                        old_tier=old_tier,
+                                        new_tier='cold',
+                                        decay_score=new_score,
+                                        reason='demotion'
+                                    )
+                                )
 
                         # Keep in warm tier
                         elif (
@@ -362,6 +394,34 @@ class MemoryDecayManager:
                 "cold": 0,
                 "deleted": 0
             }
+
+    def _broadcast_event(self, coro):
+        """
+        Helper to run async broadcast without blocking.
+
+        Args:
+            coro: Coroutine to run
+        """
+        if not self.realtime:
+            return
+
+        try:
+            # Try to get running event loop
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # If loop is running, schedule as task
+                asyncio.create_task(coro)
+            else:
+                # If no loop, run synchronously
+                loop.run_until_complete(coro)
+        except RuntimeError:
+            # No event loop, create new one
+            try:
+                asyncio.run(coro)
+            except Exception as e:
+                logger.warning(f"Failed to broadcast event: {str(e)}")
+        except Exception as e:
+            logger.warning(f"Failed to broadcast event: {str(e)}")
 
 
 def run_decay_task(

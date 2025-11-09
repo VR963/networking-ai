@@ -12,6 +12,7 @@ Features:
 import logging
 from typing import List, Optional, Dict, Any
 from datetime import datetime
+import asyncio
 
 from sqlalchemy.orm import Session
 
@@ -45,7 +46,8 @@ class MemoryOrchestrator:
         self,
         db_session: Session,
         redis_client: RedisClient,
-        chromadb_service: ChromaDBService
+        chromadb_service: ChromaDBService,
+        realtime_service=None
     ):
         """
         Initialize MemoryOrchestrator.
@@ -54,11 +56,13 @@ class MemoryOrchestrator:
             db_session: SQLAlchemy database session
             redis_client: Redis client for hot tier
             chromadb_service: ChromaDB service for cold tier
+            realtime_service: Optional realtime memory service for WebSocket broadcasts
         """
         self.db = db_session
         self.hot = HotMemory(redis_client)
         self.warm = WarmMemory(db_session)
         self.cold = ColdMemory(chromadb_service)
+        self.realtime = realtime_service
 
         # Analytics tracking
         self.analytics = {
@@ -218,6 +222,19 @@ class MemoryOrchestrator:
                 f"for user {user_id} in tier '{tier}'"
             )
 
+            # Broadcast memory created event
+            if self.realtime:
+                self._broadcast_event(
+                    self.realtime.broadcast_memory_created(
+                        memory_id=memory.id,
+                        user_id=user_id,
+                        content_preview=content[:100],
+                        importance=importance,
+                        tier=tier,
+                        memory_type=memory_type
+                    )
+                )
+
             return memory
 
         except Exception as e:
@@ -277,6 +294,15 @@ class MemoryOrchestrator:
                 f"MemoryOrchestrator deleted memory {memory_id} "
                 f"for user {user_id} (warm: {warm_deleted}, cold: {cold_deleted})"
             )
+
+            # Broadcast memory deleted event
+            if self.realtime and warm_deleted:
+                self._broadcast_event(
+                    self.realtime.broadcast_memory_deleted(
+                        memory_id=memory_id,
+                        user_id=user_id
+                    )
+                )
 
             return warm_deleted
 
@@ -387,6 +413,19 @@ class MemoryOrchestrator:
                     if success:
                         count += 1
 
+                        # Broadcast tier changed event
+                        if self.realtime:
+                            self._broadcast_event(
+                                self.realtime.broadcast_tier_changed(
+                                    memory_id=memory.id,
+                                    user_id=memory.user_id,
+                                    old_tier='cold',
+                                    new_tier='warm',
+                                    decay_score=memory.score,
+                                    reason='promotion'
+                                )
+                            )
+
             if count > 0:
                 logger.info(f"MemoryOrchestrator promoted {count} memories to warm tier")
 
@@ -405,3 +444,31 @@ class MemoryOrchestrator:
             "misses": 0
         }
         logger.info("MemoryOrchestrator analytics reset")
+
+    def _broadcast_event(self, coro):
+        """
+        Helper to run async broadcast without blocking.
+
+        Args:
+            coro: Coroutine to run
+        """
+        if not self.realtime:
+            return
+
+        try:
+            # Try to get running event loop
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # If loop is running, schedule as task
+                asyncio.create_task(coro)
+            else:
+                # If no loop, run synchronously
+                loop.run_until_complete(coro)
+        except RuntimeError:
+            # No event loop, create new one
+            try:
+                asyncio.run(coro)
+            except Exception as e:
+                logger.warning(f"Failed to broadcast event: {str(e)}")
+        except Exception as e:
+            logger.warning(f"Failed to broadcast event: {str(e)}")
