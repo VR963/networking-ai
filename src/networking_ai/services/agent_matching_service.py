@@ -121,7 +121,7 @@ class AgentMatchingService:
             # Send to talent user
             await connection_manager.send_to_user(
                 user_id=match.talent_user_id,
-                message=event.dict()
+                message=event.model_dump()
             )
 
             print(f"[AgentMatching] Broadcasted match {match.id} to user {match.talent_user_id}")

@@ -61,7 +61,7 @@ async def create_my_profile(
     # Create profile
     profile = UserProfile(
         user_id=current_user.id,
-        **profile_data.dict()
+        **profile_data.model_dump()
     )
 
     # Calculate completion percentage
@@ -154,7 +154,7 @@ async def update_work_experience(
         )
 
     # Convert to dict
-    profile.work_experience = [exp.dict() for exp in work_exp_data.work_experience]
+    profile.work_experience = [exp.model_dump() for exp in work_exp_data.work_experience]
     profile.calculate_completion_percentage()
 
     db.commit()
@@ -186,7 +186,7 @@ async def update_education(
         )
 
     # Convert to dict
-    profile.education = [edu.dict() for edu in education_data.education]
+    profile.education = [edu.model_dump() for edu in education_data.education]
     profile.calculate_completion_percentage()
 
     db.commit()

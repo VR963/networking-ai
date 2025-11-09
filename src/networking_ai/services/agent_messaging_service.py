@@ -127,7 +127,7 @@ class AgentMessagingService:
             if message.receiver_user_id:
                 await connection_manager.send_to_user(
                     user_id=message.receiver_user_id,
-                    message=event.dict()
+                    message=event.model_dump()
                 )
 
                 print(f"[AgentMessaging] Broadcasted message {message.id} to user {message.receiver_user_id}")

@@ -251,7 +251,7 @@ class NotificationService:
             # Send to user
             await connection_manager.send_to_user(
                 user_id=notification.user_id,
-                message=event.dict()
+                message=event.model_dump()
             )
 
             print(f"[Notification] Sent in-app notification {notification.id} to user {notification.user_id} (legacy)")

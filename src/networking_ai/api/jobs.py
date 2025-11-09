@@ -65,7 +65,7 @@ async def create_job(
     job = Job(
         company_id=company.id,
         status=JobStatus.DRAFT,
-        **job_data.dict()
+        **job_data.model_dump()
     )
 
     db.add(job)

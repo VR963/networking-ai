@@ -96,7 +96,7 @@ async def websocket_endpoint(
             connection_id=connection_id,
             user_id=user.id
         )
-        await websocket.send_json(connected_event.dict())
+        await websocket.send_json(connected_event.model_dump())
 
         # Broadcast presence online
         if agent_type and agent_id:
@@ -132,11 +132,11 @@ async def websocket_endpoint(
 
             except json.JSONDecodeError:
                 error_event = ErrorEvent.create("Invalid JSON format")
-                await websocket.send_json(error_event.dict())
+                await websocket.send_json(error_event.model_dump())
 
             except Exception as e:
                 error_event = ErrorEvent.create(str(e), error_code="ACTION_ERROR")
-                await websocket.send_json(error_event.dict())
+                await websocket.send_json(error_event.model_dump())
 
     except WebSocketDisconnect:
         print(f"[WebSocket] Client disconnected: {connection_id}")
@@ -262,7 +262,7 @@ async def handle_client_action(
     if action == "heartbeat":
         # Send heartbeat response
         response = HeartbeatResponse.create()
-        await connection_manager.send_personal_message(connection_id, response.dict())
+        await connection_manager.send_personal_message(connection_id, response.model_dump())
 
     elif action == "typing":
         # Broadcast typing indicator
@@ -316,7 +316,7 @@ async def handle_client_action(
                     read_by_user_id=user_id,
                     read_at=datetime.utcnow().isoformat()
                 )
-                await connection_manager.send_personal_message(connection_id, event.dict())
+                await connection_manager.send_personal_message(connection_id, event.model_dump())
 
     elif action == "update_presence":
         # Update presence status
@@ -330,7 +330,7 @@ async def handle_client_action(
         )
 
         # Send confirmation
-        await connection_manager.send_personal_message(connection_id, presence_event.dict())
+        await connection_manager.send_personal_message(connection_id, presence_event.model_dump())
 
     else:
         # Unknown action
@@ -338,7 +338,7 @@ async def handle_client_action(
             f"Unknown action: {action}",
             error_code="UNKNOWN_ACTION"
         )
-        await connection_manager.send_personal_message(connection_id, error_event.dict())
+        await connection_manager.send_personal_message(connection_id, error_event.model_dump())
 
 
 # ==================== HTTP Endpoints for WebSocket Info ====================

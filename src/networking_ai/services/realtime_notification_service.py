@@ -92,7 +92,7 @@ class RealtimeNotificationService:
             # Send to user's WebSocket connections
             await self.connection_manager.send_to_user(
                 user_id=notification.user_id,
-                message=event.model_dump() if hasattr(event, 'model_dump') else event.dict()
+                message=event.model_dump()
             )
 
             logger.debug(
@@ -126,7 +126,7 @@ class RealtimeNotificationService:
 
             await self.connection_manager.send_to_user(
                 user_id=user_id,
-                message=event.model_dump() if hasattr(event, 'model_dump') else event.dict()
+                message=event.model_dump()
             )
 
             logger.debug(f"Broadcasted notification.read for notification {notification_id}")
@@ -154,7 +154,7 @@ class RealtimeNotificationService:
 
             await self.connection_manager.send_to_user(
                 user_id=user_id,
-                message=event.model_dump() if hasattr(event, 'model_dump') else event.dict()
+                message=event.model_dump()
             )
 
             logger.debug(f"Broadcasted notification.dismissed for notification {notification_id}")
@@ -187,7 +187,7 @@ class RealtimeNotificationService:
 
             await self.connection_manager.send_to_user(
                 user_id=user_id,
-                message=event.model_dump() if hasattr(event, 'model_dump') else event.dict()
+                message=event.model_dump()
             )
 
             logger.debug(f"Broadcasted notification.clicked for notification {notification_id}")
@@ -240,7 +240,7 @@ class RealtimeNotificationService:
 
             await self.connection_manager.send_to_user(
                 user_id=user_id,
-                message=event.model_dump() if hasattr(event, 'model_dump') else event.dict()
+                message=event.model_dump()
             )
 
             logger.info(
@@ -276,7 +276,7 @@ class RealtimeNotificationService:
 
             await self.connection_manager.send_to_user(
                 user_id=user_id,
-                message=event.model_dump() if hasattr(event, 'model_dump') else event.dict()
+                message=event.model_dump()
             )
 
             logger.debug(
@@ -307,7 +307,7 @@ class RealtimeNotificationService:
 
             await self.connection_manager.send_to_user(
                 user_id=user_id,
-                message=event.model_dump() if hasattr(event, 'model_dump') else event.dict()
+                message=event.model_dump()
             )
 
             logger.debug(f"Broadcasted notification.deleted for notification {notification_id}")
@@ -335,7 +335,7 @@ class RealtimeNotificationService:
 
             await self.connection_manager.send_to_user(
                 user_id=user_id,
-                message=event.model_dump() if hasattr(event, 'model_dump') else event.dict()
+                message=event.model_dump()
             )
 
             logger.info(
@@ -408,7 +408,7 @@ class RealtimeNotificationService:
 
             await self.connection_manager.send_to_user(
                 user_id=user_id,
-                message=event.model_dump() if hasattr(event, 'model_dump') else event.dict()
+                message=event.model_dump()
             )
 
             logger.info(f"Sent test notification to user {user_id}")

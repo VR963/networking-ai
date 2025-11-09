@@ -80,7 +80,7 @@ class RealtimeMemoryService:
 
             await self.connection_manager.send_to_user(
                 user_id=user_id,
-                message=event.dict()
+                message=event.model_dump()
             )
 
             logger.debug(f"Broadcasted memory.created event for memory {memory_id} to user {user_id}")
@@ -111,7 +111,7 @@ class RealtimeMemoryService:
 
             await self.connection_manager.send_to_user(
                 user_id=user_id,
-                message=event.dict()
+                message=event.model_dump()
             )
 
             logger.debug(f"Broadcasted memory.updated event for memory {memory_id} to user {user_id}")
@@ -139,7 +139,7 @@ class RealtimeMemoryService:
 
             await self.connection_manager.send_to_user(
                 user_id=user_id,
-                message=event.dict()
+                message=event.model_dump()
             )
 
             logger.debug(f"Broadcasted memory.deleted event for memory {memory_id} to user {user_id}")
@@ -179,7 +179,7 @@ class RealtimeMemoryService:
 
             await self.connection_manager.send_to_user(
                 user_id=user_id,
-                message=event.dict()
+                message=event.model_dump()
             )
 
             logger.info(
@@ -222,7 +222,7 @@ class RealtimeMemoryService:
 
             await self.connection_manager.send_to_user(
                 user_id=user_id,
-                message=event.dict()
+                message=event.model_dump()
             )
 
             logger.info(
@@ -285,7 +285,7 @@ class RealtimeMemoryService:
 
             await self.connection_manager.send_to_user(
                 user_id=user_id,
-                message=event.dict()
+                message=event.model_dump()
             )
 
             return sync_response
@@ -326,7 +326,7 @@ class RealtimeMemoryService:
 
             await self.connection_manager.send_to_user(
                 user_id=user_id,
-                message=event.dict()
+                message=event.model_dump()
             )
 
             logger.debug(f"Broadcasted memory.stats_updated to user {user_id}")

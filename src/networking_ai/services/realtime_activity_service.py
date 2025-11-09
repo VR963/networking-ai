@@ -103,7 +103,7 @@ class RealtimeActivityService:
         )
 
         await self.connection_manager.send_personal_message(
-            message=event.dict(), user_id=user_id
+            message=event.model_dump(), user_id=user_id
         )
 
     async def broadcast_connection_accepted(
@@ -148,7 +148,7 @@ class RealtimeActivityService:
         )
 
         await self.connection_manager.send_personal_message(
-            message=event.dict(), user_id=user_id
+            message=event.model_dump(), user_id=user_id
         )
 
     async def broadcast_profile_viewed(
@@ -198,7 +198,7 @@ class RealtimeActivityService:
         )
 
         await self.connection_manager.send_personal_message(
-            message=event.dict(), user_id=user_id
+            message=event.model_dump(), user_id=user_id
         )
 
     async def broadcast_skill_endorsed(
@@ -245,7 +245,7 @@ class RealtimeActivityService:
         )
 
         await self.connection_manager.send_personal_message(
-            message=event.dict(), user_id=user_id
+            message=event.model_dump(), user_id=user_id
         )
 
     async def broadcast_message_received(
@@ -292,7 +292,7 @@ class RealtimeActivityService:
         )
 
         await self.connection_manager.send_personal_message(
-            message=event.dict(), user_id=user_id
+            message=event.model_dump(), user_id=user_id
         )
 
     async def broadcast_post_liked(
@@ -339,7 +339,7 @@ class RealtimeActivityService:
         )
 
         await self.connection_manager.send_personal_message(
-            message=event.dict(), user_id=user_id
+            message=event.model_dump(), user_id=user_id
         )
 
     async def broadcast_post_commented(
@@ -384,7 +384,7 @@ class RealtimeActivityService:
         )
 
         await self.connection_manager.send_personal_message(
-            message=event.dict(), user_id=user_id
+            message=event.model_dump(), user_id=user_id
         )
 
     async def broadcast_post_shared(
@@ -425,7 +425,7 @@ class RealtimeActivityService:
         )
 
         await self.connection_manager.send_personal_message(
-            message=event.dict(), user_id=user_id
+            message=event.model_dump(), user_id=user_id
         )
 
     async def broadcast_network_activity(
@@ -469,7 +469,7 @@ class RealtimeActivityService:
         )
 
         await self.connection_manager.send_personal_message(
-            message=event.dict(), user_id=user_id
+            message=event.model_dump(), user_id=user_id
         )
 
     async def broadcast_achievement_unlocked(
@@ -519,7 +519,7 @@ class RealtimeActivityService:
         )
 
         await self.connection_manager.send_personal_message(
-            message=event.dict(), user_id=user_id
+            message=event.model_dump(), user_id=user_id
         )
 
     async def broadcast_profile_updated(
@@ -560,7 +560,7 @@ class RealtimeActivityService:
         )
 
         await self.connection_manager.send_personal_message(
-            message=event.dict(), user_id=user_id
+            message=event.model_dump(), user_id=user_id
         )
 
 
