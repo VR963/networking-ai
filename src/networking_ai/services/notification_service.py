@@ -46,7 +46,8 @@ class NotificationService:
         email_service=None,
         sms_service=None,
         push_service=None,
-        enable_websocket: bool = True
+        enable_websocket: bool = True,
+        realtime_service=None
     ):
         """
         Initialize notification service.
@@ -56,12 +57,14 @@ class NotificationService:
             sms_service: SMS service instance
             push_service: Push notification service instance
             enable_websocket: Enable WebSocket in-app notifications
+            realtime_service: Realtime notification service for enhanced WebSocket broadcasting
         """
         self.email_service = email_service
         self.sms_service = sms_service
         self.push_service = push_service
         self.enable_websocket = enable_websocket
         self._connection_manager = None
+        self.realtime = realtime_service
 
     def _get_connection_manager(self):
         """Get WebSocket connection manager lazily."""
@@ -221,11 +224,18 @@ class NotificationService:
         if not self.enable_websocket:
             return False
 
-        connection_manager = self._get_connection_manager()
-        if not connection_manager:
-            return False
-
         try:
+            # Use enhanced realtime service if available (Phase 11)
+            if self.realtime:
+                await self.realtime.broadcast_notification(notification)
+                print(f"[Notification] Sent in-app notification {notification.id} to user {notification.user_id} (realtime)")
+                return True
+
+            # Fallback to legacy WebSocket event (Phase 3)
+            connection_manager = self._get_connection_manager()
+            if not connection_manager:
+                return False
+
             from ..websocket.event_types import NotificationEvent
 
             # Create WebSocket event
@@ -244,7 +254,7 @@ class NotificationService:
                 message=event.dict()
             )
 
-            print(f"[Notification] Sent in-app notification {notification.id} to user {notification.user_id}")
+            print(f"[Notification] Sent in-app notification {notification.id} to user {notification.user_id} (legacy)")
             return True
 
         except Exception as e:
@@ -486,7 +496,7 @@ class NotificationService:
 
         return count
 
-    def mark_as_read(
+    async def mark_as_read(
         self,
         notification_id: int,
         user_id: int,
@@ -514,9 +524,21 @@ class NotificationService:
         notification.mark_read()
         db.commit()
 
+        # Broadcast read event and update count (realtime sync across devices)
+        if self.realtime:
+            try:
+                await self.realtime.broadcast_notification_read(notification_id, user_id)
+
+                # Update unread count
+                unread_count = self.get_unread_count(user_id, db)
+                total_count = db.query(Notification).filter(Notification.user_id == user_id).count()
+                await self.realtime.broadcast_count_updated(user_id, unread_count, total_count)
+            except Exception as e:
+                print(f"[Notification] Failed to broadcast read event: {e}")
+
         return True
 
-    def mark_all_as_read(self, user_id: int, db: Session) -> int:
+    async def mark_all_as_read(self, user_id: int, db: Session) -> int:
         """
         Mark all notifications as read for a user.
 
@@ -538,6 +560,14 @@ class NotificationService:
             count += 1
 
         db.commit()
+
+        # Broadcast all read event and update count
+        if self.realtime and count > 0:
+            try:
+                await self.realtime.broadcast_all_read(user_id, count)
+                await self.realtime.broadcast_count_updated(user_id, 0, db.query(Notification).filter(Notification.user_id == user_id).count())
+            except Exception as e:
+                print(f"[Notification] Failed to broadcast all read event: {e}")
 
         return count
 
