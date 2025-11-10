@@ -213,3 +213,9 @@ data/
 *.sqlite
 chroma/
 
+# Archives and compressed files
+*.tar.gz
+*.zip
+*.tar
+*.rar
+
