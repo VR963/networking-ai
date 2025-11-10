@@ -32,7 +32,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground">
               <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse" />
-              {conversationCount} conversations happening now
+              {conversationCount} conversations happening worldwide
             </span>
           </div>
         </div>
