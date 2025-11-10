@@ -1,0 +1,292 @@
+# PostgreSQL High Availability Configuration
+# 3-node cluster with automatic failover using Patroni
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-ha-service
+  namespace: networking-ai
+  labels:
+    app: postgres-ha
+spec:
+  type: ClusterIP
+  clusterIP: None  # Headless service
+  ports:
+    - port: 5432
+      targetPort: 5432
+      protocol: TCP
+      name: postgres
+  selector:
+    app: postgres-ha
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-ha
+  namespace: networking-ai
+  labels:
+    app: postgres-ha
+spec:
+  serviceName: postgres-ha-service
+  replicas: 3  # 1 primary + 2 replicas
+  selector:
+    matchLabels:
+      app: postgres-ha
+  template:
+    metadata:
+      labels:
+        app: postgres-ha
+    spec:
+      securityContext:
+        fsGroup: 999
+        runAsUser: 999
+        runAsNonRoot: true
+
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - postgres-ha
+              topologyKey: kubernetes.io/hostname
+
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - containerPort: 5432
+              name: postgres
+              protocol: TCP
+            - containerPort: 8008
+              name: patroni
+              protocol: TCP
+
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: networking-ai-config
+                  key: POSTGRES_DB
+
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: networking-ai-secrets
+                  key: POSTGRES_USER
+
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: networking-ai-secrets
+                  key: POSTGRES_PASSWORD
+
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+
+            # Replication settings
+            - name: POSTGRES_REPLICATION_USER
+              value: replicator
+
+            - name: POSTGRES_REPLICATION_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: networking-ai-secrets
+                  key: POSTGRES_REPLICATION_PASSWORD
+
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+            - name: postgres-config
+              mountPath: /etc/postgresql/postgresql.conf
+              subPath: postgresql.conf
+              readOnly: true
+
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "1000m"
+            limits:
+              memory: "4Gi"
+              cpu: "2000m"
+
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - pg_isready -U $POSTGRES_USER -d $POSTGRES_DB
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - pg_isready -U $POSTGRES_USER -d $POSTGRES_DB
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+
+      volumes:
+        - name: postgres-config
+          configMap:
+            name: postgres-ha-config
+
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-storage
+        labels:
+          app: postgres-ha
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: standard
+        resources:
+          requests:
+            storage: 50Gi
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-ha-config
+  namespace: networking-ai
+data:
+  postgresql.conf: |
+    # PostgreSQL HA Configuration
+
+    # Connection Settings
+    max_connections = 200
+    superuser_reserved_connections = 3
+
+    # Replication Settings
+    wal_level = replica
+    hot_standby = on
+    max_wal_senders = 10
+    max_replication_slots = 10
+    hot_standby_feedback = on
+
+    # Synchronous Replication (for data safety)
+    synchronous_commit = on
+    synchronous_standby_names = '*'
+
+    # Memory Settings
+    shared_buffers = 2GB
+    effective_cache_size = 6GB
+    maintenance_work_mem = 512MB
+    work_mem = 10MB
+    wal_buffers = 16MB
+
+    # Checkpoint Settings
+    checkpoint_completion_target = 0.9
+    min_wal_size = 1GB
+    max_wal_size = 4GB
+
+    # Query Planner
+    random_page_cost = 1.1
+    effective_io_concurrency = 200
+    default_statistics_target = 100
+
+    # Parallel Query
+    max_worker_processes = 4
+    max_parallel_workers_per_gather = 2
+    max_parallel_workers = 4
+    max_parallel_maintenance_workers = 2
+
+    # Logging
+    logging_collector = on
+    log_directory = 'log'
+    log_filename = 'postgresql-%Y-%m-%d_%H%M%S.log'
+    log_rotation_age = 1d
+    log_rotation_size = 100MB
+    log_line_prefix = '%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '
+    log_checkpoints = on
+    log_connections = on
+    log_disconnections = on
+    log_replication_commands = on
+
+    # Monitoring
+    shared_preload_libraries = 'pg_stat_statements'
+    pg_stat_statements.track = all
+    pg_stat_statements.max = 10000
+
+    # Archiving (for PITR)
+    archive_mode = on
+    archive_command = 'test ! -f /var/lib/postgresql/archive/%f && cp %p /var/lib/postgresql/archive/%f'
+    archive_timeout = 300
+
+---
+# Service for read-only replica queries (load balancing)
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-replica-service
+  namespace: networking-ai
+  labels:
+    app: postgres-ha
+    role: replica
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5432
+      targetPort: 5432
+      protocol: TCP
+      name: postgres
+  selector:
+    app: postgres-ha
+    role: replica
+
+---
+# PodDisruptionBudget to ensure availability during updates
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: postgres-ha-pdb
+  namespace: networking-ai
+spec:
+  minAvailable: 2  # Always keep at least 2 pods running
+  selector:
+    matchLabels:
+      app: postgres-ha
+
+---
+# Instructions for setup:
+#
+# 1. Create replication password secret:
+#    kubectl create secret generic networking-ai-secrets \
+#      --from-literal=POSTGRES_REPLICATION_PASSWORD=<secure-password> \
+#      --namespace networking-ai \
+#      --dry-run=client -o yaml | kubectl apply -f -
+#
+# 2. Deploy StatefulSet:
+#    kubectl apply -f k8s/base/postgres-ha.yaml
+#
+# 3. Initialize replication (on standby nodes):
+#    kubectl exec -it postgres-ha-1 -- \
+#      pg_basebackup -h postgres-ha-0 -D /var/lib/postgresql/data \
+#      -U replicator -v -P --wal-method=stream
+#
+# 4. Verify replication:
+#    kubectl exec -it postgres-ha-0 -- \
+#      psql -U postgres -c "SELECT * FROM pg_stat_replication;"
+#
+# 5. Failover testing:
+#    kubectl delete pod postgres-ha-0
+#    # Standby should automatically promote to primary

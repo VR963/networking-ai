@@ -1,0 +1,133 @@
+# Image Signing Policy using Connaisseur/Cosign
+# Ensures only signed container images can be deployed
+
+---
+# Prerequisites:
+# 1. Install Connaisseur: helm install connaisseur connaisseur/connaisseur
+# 2. Generate signing keys: cosign generate-key-pair
+# 3. Store keys in Kubernetes secrets
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cosign-keys
+  namespace: networking-ai
+type: Opaque
+stringData:
+  cosign.pub: |
+    -----BEGIN PUBLIC KEY-----
+    # Replace with your actual Cosign public key
+    # Generate with: cosign generate-key-pair
+    -----END PUBLIC KEY-----
+  cosign.key: |
+    -----BEGIN ENCRYPTED COSIGN PRIVATE KEY-----
+    # Replace with your actual Cosign private key
+    # Generate with: cosign generate-key-pair
+    -----END ENCRYPTED COSIGN PRIVATE KEY-----
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: image-signing-policy
+  namespace: networking-ai
+data:
+  policy.yaml: |
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: connaisseur-config
+      namespace: connaisseur
+    data:
+      policy.yaml: |
+        policy:
+          - pattern: "ghcr.io/networking-ai/*:*"
+            validator: "cosign"
+            with:
+              key: "cosign-pub-key"
+
+        validators:
+          cosign:
+            name: cosign
+            trust_roots:
+              - name: cosign-pub-key
+                key: |
+                  # Your Cosign public key here
+
+        # Admission policy
+        admission:
+          failurePolicy: Fail  # Reject unsigned images
+          mode: mutate
+
+      # Image validation rules
+      rules:
+        - name: require-signature
+          match:
+            resources:
+              kinds:
+                - Pod
+          validate:
+            message: "Image must be signed with Cosign"
+            pattern:
+              spec:
+                containers:
+                  - image: "*"
+
+---
+# ServiceAccount for image verification
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: image-verifier
+  namespace: networking-ai
+
+---
+# Role for image verification
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: image-verifier
+  namespace: networking-ai
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get"]
+    resourceNames: ["cosign-keys"]
+
+---
+# RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: image-verifier
+  namespace: networking-ai
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: image-verifier
+subjects:
+  - kind: ServiceAccount
+    name: image-verifier
+    namespace: networking-ai
+
+---
+# Example: Signing images in CI/CD
+# Add to .github/workflows/deploy.yml:
+#
+# - name: Sign Docker image
+#   env:
+#     COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+#   run: |
+#     echo "${{ secrets.COSIGN_PRIVATE_KEY }}" > cosign.key
+#     cosign sign --key cosign.key ghcr.io/${{ github.repository }}:${{ github.sha }}
+#     rm cosign.key
+#
+# - name: Verify signature
+#   run: |
+#     echo "${{ secrets.COSIGN_PUBLIC_KEY }}" > cosign.pub
+#     cosign verify --key cosign.pub ghcr.io/${{ github.repository }}:${{ github.sha }}
+#     rm cosign.pub

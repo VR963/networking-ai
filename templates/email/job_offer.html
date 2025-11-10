@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Offer</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 50px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 10px 10px 0 0;
+            margin: -50px -50px 40px -50px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 32px;
+            font-weight: 700;
+        }
+        .celebration {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        .offer-summary {
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            border: 2px solid #4caf50;
+            border-radius: 10px;
+            padding: 30px;
+            margin: 30px 0;
+            text-align: center;
+        }
+        .offer-summary h2 {
+            margin: 0 0 20px 0;
+            color: #2e7d32;
+            font-size: 24px;
+        }
+        .position-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1b5e20;
+            margin: 10px 0;
+        }
+        .salary {
+            font-size: 36px;
+            font-weight: 700;
+            color: #2e7d32;
+            margin: 20px 0;
+        }
+        .salary-label {
+            font-size: 14px;
+            color: #558b2f;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .compensation-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .comp-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .comp-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+        .comp-value {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+        }
+        .benefits-section {
+            margin: 30px 0;
+            padding: 25px;
+            background: #fff3cd;
+            border-radius: 8px;
+            border: 1px solid #ffc107;
+        }
+        .benefits-section h3 {
+            margin-top: 0;
+            color: #856404;
+        }
+        .benefits-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .benefits-list li {
+            padding: 8px 0;
+            padding-left: 30px;
+            position: relative;
+        }
+        .benefits-list li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #4caf50;
+            font-weight: 700;
+            font-size: 18px;
+        }
+        .cta-section {
+            text-align: center;
+            margin: 40px 0;
+            padding: 30px;
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            border-radius: 8px;
+        }
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+            color: white;
+            padding: 16px 50px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 18px;
+            margin: 10px;
+            box-shadow: 0 4px 6px rgba(76, 175, 80, 0.3);
+        }
+        .cta-button:hover {
+            box-shadow: 0 6px 12px rgba(76, 175, 80, 0.4);
+        }
+        .secondary-button {
+            background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+            box-shadow: 0 4px 6px rgba(33, 150, 243, 0.3);
+        }
+        .secondary-button:hover {
+            box-shadow: 0 6px 12px rgba(33, 150, 243, 0.4);
+        }
+        .deadline {
+            background: #ffebee;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #f44336;
+            margin: 25px 0;
+        }
+        .deadline strong {
+            color: #c62828;
+        }
+        .next-steps {
+            background: #e3f2fd;
+            padding: 25px;
+            border-radius: 8px;
+            margin: 25px 0;
+            border: 1px solid #2196f3;
+        }
+        .next-steps h3 {
+            margin-top: 0;
+            color: #1976d2;
+        }
+        .next-steps ol {
+            margin: 15px 0;
+            padding-left: 25px;
+        }
+        .next-steps li {
+            margin: 10px 0;
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid #e0e0e0;
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+        }
+        .contact-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="celebration">🎉</div>
+            <h1>Congratulations!</h1>
+            <p style="margin: 10px 0 0 0; font-size: 18px; opacity: 0.95;">You've received a job offer</p>
+        </div>
+
+        <p style="font-size: 18px;">Dear {{candidate_name}},</p>
+
+        <p style="font-size: 16px;">We are thrilled to offer you the position of <strong>{{position_title}}</strong> at <strong>{{company_name}}</strong>!</p>
+
+        <p>After careful consideration of your qualifications, experience, and our interviews, we believe you would be an exceptional addition to our team.</p>
+
+        <div class="offer-summary">
+            <h2>Your Offer</h2>
+            <div class="position-title">{{position_title}}</div>
+            {{#if department}}
+            <p style="color: #558b2f; margin: 5px 0;">{{department}} Department</p>
+            {{/if}}
+            <div class="salary-label">Annual Base Salary</div>
+            <div class="salary">${{base_salary}}</div>
+            <div style="font-size: 14px; color: #558b2f;">{{employment_type}} Position</div>
+        </div>
+
+        <div class="compensation-grid">
+            {{#if bonus_amount}}
+            <div class="comp-item">
+                <div class="comp-label">Annual Bonus Target</div>
+                <div class="comp-value">${{bonus_amount}}</div>
+            </div>
+            {{/if}}
+
+            {{#if signing_bonus}}
+            <div class="comp-item">
+                <div class="comp-label">Signing Bonus</div>
+                <div class="comp-value">${{signing_bonus}}</div>
+            </div>
+            {{/if}}
+
+            {{#if equity_shares}}
+            <div class="comp-item">
+                <div class="comp-label">Equity (Stock Options)</div>
+                <div class="comp-value">{{equity_shares}} shares</div>
+                {{#if equity_vesting_years}}
+                <div style="font-size: 12px; color: #666; margin-top: 5px;">{{equity_vesting_years}} year vesting</div>
+                {{/if}}
+            </div>
+            {{/if}}
+
+            {{#if pto_days}}
+            <div class="comp-item">
+                <div class="comp-label">Paid Time Off</div>
+                <div class="comp-value">{{pto_days}} days/year</div>
+            </div>
+            {{/if}}
+
+            {{#if relocation_assistance}}
+            <div class="comp-item">
+                <div class="comp-label">Relocation Assistance</div>
+                <div class="comp-value">${{relocation_assistance}}</div>
+            </div>
+            {{/if}}
+
+            {{#if remote_work_allowed}}
+            <div class="comp-item">
+                <div class="comp-label">Work Arrangement</div>
+                <div class="comp-value">Remote Friendly</div>
+            </div>
+            {{/if}}
+        </div>
+
+        {{#if total_compensation}}
+        <div style="text-align: center; margin: 25px 0; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+            <div style="font-size: 14px; color: #666; margin-bottom: 5px;">TOTAL FIRST-YEAR COMPENSATION</div>
+            <div style="font-size: 32px; font-weight: 700; color: #667eea;">${{total_compensation}}</div>
+        </div>
+        {{/if}}
+
+        {{#if benefits}}
+        <div class="benefits-section">
+            <h3>📋 Benefits Package</h3>
+            <ul class="benefits-list">
+                {{#each benefits}}
+                <li>{{this}}</li>
+                {{/each}}
+            </ul>
+        </div>
+        {{/if}}
+
+        {{#if start_date}}
+        <p><strong>Start Date:</strong> {{start_date}}</p>
+        {{/if}}
+
+        {{#if special_conditions}}
+        <div style="background: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <strong>Special Conditions:</strong><br>
+            {{special_conditions}}
+        </div>
+        {{/if}}
+
+        <div class="deadline">
+            <strong>⏰ Response Deadline:</strong> {{response_deadline}}<br>
+            <small>This offer will expire if we don't hear from you by this date.</small>
+        </div>
+
+        <div class="next-steps">
+            <h3>📝 Next Steps</h3>
+            <ol>
+                <li>Review the attached formal offer letter and employment agreement</li>
+                <li>Ask any questions you may have - we're here to help!</li>
+                <li>Accept or negotiate the offer using the buttons below</li>
+                <li>Complete any required paperwork</li>
+                <li>Prepare for your exciting first day!</li>
+            </ol>
+        </div>
+
+        <div class="cta-section">
+            <p style="margin-top: 0; font-size: 16px; font-weight: 600;">Ready to join our team?</p>
+            <a href="{{accept_url}}" class="cta-button">Accept Offer</a>
+            <a href="{{negotiate_url}}" class="cta-button secondary-button">Negotiate Terms</a>
+        </div>
+
+        {{#if offer_letter_url}}
+        <div class="contact-info">
+            <strong>📄 Formal Offer Letter</strong><br>
+            <a href="{{offer_letter_url}}" style="color: #667eea; font-weight: 600;">Download Full Offer Package</a>
+        </div>
+        {{/if}}
+
+        <p>If you have any questions or need clarification on any aspect of this offer, please don't hesitate to reach out. We're excited about the possibility of you joining our team!</p>
+
+        <p>We look forward to your response!</p>
+
+        <p style="margin-top: 30px;">Warmest regards,<br>
+        <strong>{{hiring_manager_name}}</strong><br>
+        {{hiring_manager_title}}<br>
+        {{company_name}}</p>
+
+        <div class="footer">
+            <p>This offer is confidential and subject to the terms outlined in the formal offer letter.<br>
+            For questions, contact us at {{contact_email}} or through your application portal.</p>
+        </div>
+    </div>
+</body>
+</html>

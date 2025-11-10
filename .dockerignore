@@ -1,0 +1,117 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# Documentation
+docs/_build/
+*.md
+!README.md
+
+# Deployment
+.env
+.env.local
+.env.*.local
+docker-compose.*.yml
+!docker-compose.yml
+Dockerfile*
+!Dockerfile
+.dockerignore
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Data directories (exclude from image, mount as volumes)
+data/
+logs/
+uploads/
+*.log
+*.sql
+*.sqlite
+*.db
+
+# Kubernetes
+k8s/
+kubernetes/
+*.yaml
+!requirements*.txt
+
+# Backup files
+*.bak
+*.tmp
+*.temp
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Large files
+*.tar
+*.tar.gz
+*.zip
+*.rar
+
+# Node modules (if any)
+node_modules/
+
+# Reports and summaries
+*_SUMMARY.md
+*_REPORT.md
+*_COMPLETE.md
+*_PLAN.md
+*_ARCHITECTURE.md
+*_STATUS.md
+PHASE_*.md
+!README.md
