@@ -73,8 +73,17 @@ async def landing_page():
         "version": "0.5.0 (Demo)",
         "status": "demo_mode",
         "docs": "/api/docs",
+        "web_app": "/static/app.html",
         "note": "This is a demo server. Full app requires database setup."
     }
+
+
+@app.get("/app", tags=["Web App"])
+async def web_app():
+    """Serve the web application."""
+    if os.path.exists("static/app.html"):
+        return FileResponse("static/app.html")
+    return {"error": "Web app not found"}
 
 
 @app.get("/api/health", tags=["Health"])
