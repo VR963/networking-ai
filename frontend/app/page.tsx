@@ -79,7 +79,7 @@ export default function LandingPage() {
               <Button
                 size="lg"
                 className="w-full bg-blue-600 hover:bg-blue-700"
-                onClick={() => router.push('/onboarding/talent')}
+                onClick={() => router.push('/upload')}
               >
                 Get Started
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -108,7 +108,7 @@ export default function LandingPage() {
               <Button
                 size="lg"
                 className="w-full bg-purple-600 hover:bg-purple-700"
-                onClick={() => router.push('/onboarding/company')}
+                onClick={() => router.push('/upload')}
               >
                 Get Started
                 <ArrowRight className="ml-2 h-4 w-4" />
