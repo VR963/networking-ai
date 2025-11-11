@@ -309,29 +309,74 @@
         </div>
 
         <div class="cta-section">
-            <h2 style="color: #667eea; font-size: 2em; margin-bottom: 20px;">Get Started</h2>
+            <h2 style="color: #667eea; font-size: 2em; margin-bottom: 20px;">Developer Resources</h2>
             <p style="font-size: 1.2em; color: #666; margin-bottom: 30px;">
-                Explore our comprehensive API documentation and start building with AI agents
+                Interactive API documentation with authentication and live testing
             </p>
-            <a href="/api/docs" class="cta-button">📚 API Documentation</a>
-            <a href="/api/redoc" class="cta-button">📖 ReDoc</a>
-            <a href="/api/health" class="cta-button">💚 Health Check</a>
+            <a href="/api/docs" class="cta-button" target="_blank">📚 Swagger UI (Interactive)</a>
+            <a href="/api/redoc" class="cta-button" target="_blank">📖 ReDoc (Reference)</a>
+            <a href="/api/health" class="cta-button" target="_blank">💚 Health Check</a>
         </div>
 
         <div class="api-section">
-            <h2>🔌 Available API Endpoints</h2>
+            <h2>🔌 REST API Endpoints</h2>
             <p style="color: #666; margin-bottom: 20px;">
                 Full-featured REST API with 25+ endpoints covering authentication, onboarding,
-                matching, messaging, marketplace, and more.
+                matching, messaging, marketplace, and more. <strong>Note: These are programmatic endpoints for apps, not web pages.</strong>
             </p>
-            <div class="api-links">
-                <a href="/api/auth/login" class="api-link">Authentication</a>
-                <a href="/api/registration/register" class="api-link">Registration</a>
-                <a href="/api/onboarding/status" class="api-link">Onboarding</a>
-                <a href="/api/agents/me" class="api-link">AI Agents</a>
-                <a href="/api/matching/find-matches" class="api-link">Matching</a>
-                <a href="/api/conversations" class="api-link">Messaging</a>
-                <a href="/api/v1/marketplace/agents" class="api-link">Marketplace</a>
+            <div style="background: #f0f0f0; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                <h3 style="color: #667eea; margin-bottom: 15px;">📋 API Endpoint Categories:</h3>
+                <ul style="list-style: none; padding-left: 0;">
+                    <li style="padding: 8px 0;"><strong>POST /api/auth/login</strong> - User authentication</li>
+                    <li style="padding: 8px 0;"><strong>POST /api/registration/register</strong> - User registration</li>
+                    <li style="padding: 8px 0;"><strong>GET /api/onboarding/status</strong> - Check onboarding progress</li>
+                    <li style="padding: 8px 0;"><strong>GET /api/agents/me</strong> - Get user's AI agent</li>
+                    <li style="padding: 8px 0;"><strong>POST /api/matching/find-matches</strong> - Find job/candidate matches</li>
+                    <li style="padding: 8px 0;"><strong>GET /api/conversations</strong> - List conversations</li>
+                    <li style="padding: 8px 0;"><strong>GET /api/v1/marketplace/agents</strong> - Browse marketplace</li>
+                </ul>
+                <p style="margin-top: 15px; color: #666;">
+                    💡 <strong>Tip:</strong> Use the interactive API documentation below to test endpoints with authentication.
+                </p>
+            </div>
+        </div>
+
+        <div class="tech-stack">
+            <h2>🚀 Quick Start Guide</h2>
+            <div style="background: #f7f7f7; padding: 30px; border-radius: 15px; margin: 20px 0; text-align: left;">
+                <h3 style="color: #667eea; margin-bottom: 15px;">Option 1: Interactive Documentation (Easiest)</h3>
+                <p style="color: #666; margin-bottom: 15px;">
+                    Click the <strong>"Swagger UI (Interactive)"</strong> button above to access the full API documentation
+                    with a built-in testing interface. You can authenticate and test all endpoints directly in your browser!
+                </p>
+
+                <h3 style="color: #667eea; margin-bottom: 15px; margin-top: 30px;">Option 2: Command Line (Mac Terminal)</h3>
+                <p style="color: #666; margin-bottom: 15px;">Test the API from your Mac terminal:</p>
+                <pre style="background: #2d2d2d; color: #f8f8f2; padding: 20px; border-radius: 10px; overflow-x: auto; font-family: 'Monaco', 'Courier New', monospace;">
+# Check API health
+curl http://localhost:8000/api/health
+
+# Register a new user (example)
+curl -X POST http://localhost:8000/api/registration/register \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "password": "securepass123", "user_type": "talent"}'
+
+# Login (after registration)
+curl -X POST http://localhost:8000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "password": "securepass123"}'
+                </pre>
+
+                <h3 style="color: #667eea; margin-bottom: 15px; margin-top: 30px;">Option 3: Build Your Own Client</h3>
+                <p style="color: #666;">
+                    This is a REST API backend. You can build:
+                </p>
+                <ul style="color: #666; margin-left: 30px; margin-top: 10px;">
+                    <li>Web frontend (React, Vue, Angular)</li>
+                    <li>Mobile app (iOS, Android, React Native)</li>
+                    <li>Desktop application</li>
+                    <li>Integration with existing systems</li>
+                </ul>
             </div>
         </div>
 
