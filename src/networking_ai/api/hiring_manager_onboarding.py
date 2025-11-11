@@ -19,7 +19,17 @@ from ..models.hiring_manager_role import HiringManagerRole
 from ..models.company_admin_agent import CompanyAdminAgent
 from ..models.audit_log import AgentAuditLog as AuditLog
 from ..api.auth import get_current_active_user
-from ..agents.hiring_manager_interview_agent import create_hiring_manager_interview_agent
+
+# Optional agent imports - gracefully handle if not available
+try:
+    from ..agents.hiring_manager_interview_agent import create_hiring_manager_interview_agent
+    HM_AGENT_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Hiring manager agent not available: {e}")
+    HM_AGENT_AVAILABLE = False
+    def create_hiring_manager_interview_agent(*args, **kwargs):
+        raise HTTPException(status_code=503, detail="Agent services temporarily unavailable")
+
 from ..services.company_agent_factory import CompanyAgentFactory
 from ..services.chromadb_service import create_chromadb_service
 

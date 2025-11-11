@@ -33,10 +33,7 @@ class CompanyRAGManager:
         Args:
             persist_directory: Directory for ChromaDB storage
         """
-        self.client = chromadb.Client(Settings(
-            chroma_db_impl="duckdb+parquet",
-            persist_directory=persist_directory
-        ))
+        self.client = chromadb.PersistentClient(path=persist_directory)
 
     def create_collection(self, company_id: int, company_name: str) -> str:
         """

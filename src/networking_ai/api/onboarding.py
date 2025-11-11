@@ -22,8 +22,25 @@ from ..models.audit_log import AgentAuditLog as AuditLog
 from ..api.auth import get_current_active_user
 from ..services.cv_parser import create_cv_parser
 from ..services.chromadb_service import create_chromadb_service
-from ..agents.recruiter_agent import create_recruiter_agent
-from ..master_ai import create_master_rag
+
+# Optional imports - gracefully handle if agents not available
+try:
+    from ..agents.recruiter_agent import create_recruiter_agent
+    AGENTS_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Recruiter agent not available: {e}")
+    AGENTS_AVAILABLE = False
+    def create_recruiter_agent(*args, **kwargs):
+        raise HTTPException(status_code=503, detail="Agent services temporarily unavailable")
+
+try:
+    from ..master_ai import create_master_rag
+    MASTER_RAG_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Master RAG not available: {e}")
+    MASTER_RAG_AVAILABLE = False
+    def create_master_rag(*args, **kwargs):
+        return None
 
 
 router = APIRouter()

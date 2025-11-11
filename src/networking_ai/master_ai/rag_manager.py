@@ -38,10 +38,7 @@ class MasterRAGManager:
         os.makedirs(persist_directory, exist_ok=True)
 
         # Initialize ChromaDB client
-        self.client = chromadb.Client(Settings(
-            chroma_db_impl="duckdb+parquet",
-            persist_directory=persist_directory
-        ))
+        self.client = chromadb.PersistentClient(path=persist_directory)
 
         # Initialize collections
         self._init_collections()
