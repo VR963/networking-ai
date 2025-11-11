@@ -7,8 +7,10 @@ Provides access to all platform features via HTTP endpoints.
 
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 import time
+import os
 
 from ..database import engine, Base
 from .auth import router as auth_router
@@ -37,6 +39,11 @@ app = FastAPI(
     docs_url="/api/docs",  # Swagger UI
     redoc_url="/api/redoc",  # ReDoc
 )
+
+# Mount static files for landing page
+static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "static")
+if os.path.exists(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 
 # CORS Configuration
@@ -109,10 +116,15 @@ async def shutdown_event():
     print("[API] FastAPI application shutting down")
 
 
-# Health check endpoint
-@app.get("/", tags=["Health"])
-async def root():
-    """Root endpoint / health check."""
+# Landing page endpoint
+@app.get("/", tags=["Landing Page"])
+async def landing_page():
+    """Serve the landing page."""
+    static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "static")
+    index_path = os.path.join(static_dir, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    # Fallback to API info if landing page doesn't exist
     return {
         "message": "Networking AI Platform API",
         "version": "0.5.0",
