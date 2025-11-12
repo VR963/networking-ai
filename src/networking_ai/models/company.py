@@ -81,7 +81,7 @@ class CompanyLegacy(Base):
 
     # Relationships
     user = relationship("User")  # back_populates removed due to Company model conflict
-    jobs = relationship("Job", back_populates="company", cascade="all, delete-orphan")
+    jobs = relationship("Job", cascade="all, delete-orphan")  # back_populates removed due to Company model conflict
     admin_agent = relationship("CompanyAdminAgent", back_populates="company", uselist=False, cascade="all, delete-orphan")
     hiring_managers = relationship("HiringManagerRole", back_populates="company", cascade="all, delete-orphan")
     admin_users = relationship("CompanyAdminUser", back_populates="company", cascade="all, delete-orphan")
