@@ -6,7 +6,7 @@ SQLAlchemy ORM models for all database tables.
 
 from .user import User, UserRole, AccountStatus
 from .profile import UserProfile, ProfileVisibility
-from .company import Company, CompanyStatus, CompanySize
+from .company import CompanyLegacy as Company, CompanyStatus, CompanySize
 from .job import Job, JobStatus, JobType, ExperienceLevel
 from .application import Application, ApplicationStatus
 from .match import Match, MatchStatus
