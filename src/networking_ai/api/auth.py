@@ -144,8 +144,8 @@ async def register(
     db.refresh(user)
 
     # Create profile or company based on role
-    if user_data.role == UserRole.JOB_SEEKER:
-        # Create user profile
+    if user_data.role in (UserRole.JOB_SEEKER, UserRole.TALENT):
+        # Create user profile for talent/job seekers
         profile = UserProfile(user_id=user.id)
         db.add(profile)
 
@@ -160,7 +160,7 @@ async def register(
     # Create AI agent for this user
     ai_agent = AIAgent(
         user_id=user.id,
-        agent_type=AgentType.USER_AGENT if user_data.role == UserRole.JOB_SEEKER else AgentType.JOB_AGENT,
+        agent_type=AgentType.USER_AGENT if user_data.role in (UserRole.JOB_SEEKER, UserRole.TALENT) else AgentType.JOB_AGENT,
         agent_name=f"Agent for {user_data.full_name}",
         status="active",
     )
