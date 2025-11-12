@@ -47,7 +47,7 @@ def get_participant_info(user_id: int, current_user_id: int, db: Session) -> Par
     # Get company name if applicable
     company_name = None
     if user.role.value in ["hiring_manager", "recruiter"]:
-        from ...models.company import Company
+        from ...models.company import CompanyLegacy as Company
         company = db.query(Company).filter(Company.user_id == user_id).first()
         if company:
             company_name = company.name

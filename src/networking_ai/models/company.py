@@ -31,9 +31,9 @@ class CompanySize(str, Enum):
     ENTERPRISE = "1000+"
 
 
-class Company(Base):
+class CompanyLegacy(Base):
     """
-    Company model for employers.
+    Company model for employers (LEGACY - use CompanyV2 for new code).
 
     Companies post jobs and use AI agents to find matching candidates.
     """

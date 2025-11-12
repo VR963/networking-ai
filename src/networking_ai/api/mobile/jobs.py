@@ -17,7 +17,7 @@ from typing import Optional, List
 from ...database import get_db
 from ...models.user import User
 from ...models.job import Job, JobStatus
-from ...models.company import Company
+from ...models.company import CompanyLegacy as Company
 from ...models.mobile import SavedJob
 from ...models.application import Application
 from .schemas import (

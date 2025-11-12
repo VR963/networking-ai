@@ -12,7 +12,7 @@ from sqlalchemy import or_, and_
 
 from ..database import get_db, SessionLocal
 from ..models.user import User, UserRole
-from ..models.company import Company
+from ..models.company import CompanyLegacy as Company
 from ..models.job import Job, JobStatus
 from ..models.application import Application, ApplicationStatus
 from ..models.ai_agent import AIAgent, AgentType

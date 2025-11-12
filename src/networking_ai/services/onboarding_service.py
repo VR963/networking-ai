@@ -20,7 +20,7 @@ from ..models.onboarding import (
     TimeOffStatus, ReviewType, ReviewStatus
 )
 from ..models.user import User
-from ..models.company import Company
+from ..models.company import CompanyLegacy as Company
 from ..models.job import Job
 from ..models.application import Application
 

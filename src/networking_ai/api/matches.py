@@ -54,7 +54,7 @@ async def get_my_matches(
 
     elif current_user.role == UserRole.COMPANY:
         # Get all jobs for this company
-        from ..models.company import Company
+        from ..models.company import CompanyLegacy as Company
         company = db.query(Company).filter(Company.user_id == current_user.id).first()
 
         if not company:
@@ -183,7 +183,7 @@ async def get_match(
 
     elif current_user.role == UserRole.COMPANY:
         # Check if match belongs to company's job
-        from ..models.company import Company
+        from ..models.company import CompanyLegacy as Company
         company = db.query(Company).filter(Company.user_id == current_user.id).first()
         if not company:
             raise HTTPException(
@@ -258,7 +258,7 @@ async def accept_match(
             )
 
     elif current_user.role == UserRole.COMPANY:
-        from ..models.company import Company
+        from ..models.company import CompanyLegacy as Company
         company = db.query(Company).filter(Company.user_id == current_user.id).first()
         job = db.query(Job).filter(Job.id == match.job_id).first()
         if not company or not job or job.company_id != company.id:
@@ -312,7 +312,7 @@ async def reject_match(
             )
 
     elif current_user.role == UserRole.COMPANY:
-        from ..models.company import Company
+        from ..models.company import CompanyLegacy as Company
         company = db.query(Company).filter(Company.user_id == current_user.id).first()
         job = db.query(Job).filter(Job.id == match.job_id).first()
         if not company or not job or job.company_id != company.id:
@@ -364,7 +364,7 @@ async def get_match_stats(
         matches = db.query(Match).filter(Match.profile_id == profile.id).all()
 
     elif current_user.role == UserRole.COMPANY:
-        from ..models.company import Company
+        from ..models.company import CompanyLegacy as Company
         company = db.query(Company).filter(Company.user_id == current_user.id).first()
 
         if not company:

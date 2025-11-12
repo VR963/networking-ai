@@ -684,7 +684,7 @@ def get_admin_dashboard_metrics(
     Returns key platform metrics for the admin dashboard.
     """
     from ..models.user import User
-    from ..models.company import Company
+    from ..models.company import CompanyLegacy as Company
     from ..models.job import Job
     from ..models.application import Application
     from sqlalchemy import func

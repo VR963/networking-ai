@@ -25,7 +25,7 @@ from ..models.admin import (
     ConfigurationType
 )
 from ..models.user import User
-from ..models.company import Company
+from ..models.company import CompanyLegacy as Company
 
 logger = logging.getLogger(__name__)
 

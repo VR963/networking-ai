@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models.user import User, UserRole, AccountStatus
 from ..models.profile import UserProfile
-# from ..models.company import Company  # Commented out due to multiple Company classes
+# from ..models.company import CompanyLegacy as Company  # Commented out due to multiple Company classes
 from ..models.ai_agent import AIAgent, AgentType
 from ..schemas.user import (
     UserRegisterRequest,

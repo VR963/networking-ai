@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db, SessionLocal
 from ..models.user import User, UserRole
 from ..models.profile import UserProfile
-from ..models.company import Company
+from ..models.company import CompanyLegacy as Company
 from ..schemas.profile import (
     ProfileCreateRequest,
     ProfileUpdateRequest,
