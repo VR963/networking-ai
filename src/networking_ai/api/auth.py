@@ -148,23 +148,24 @@ async def register(
         # Create user profile for talent/job seekers
         profile = UserProfile(user_id=user.id)
         db.add(profile)
+    # Note: Company accounts should use the dedicated company registration endpoint
+    # elif user_data.role == UserRole.COMPANY:
+    #     # Create company
+    #     company = Company(
+    #         user_id=user.id,
+    #         company_name=user_data.full_name,  # Will be updated later
+    #     )
+    #     db.add(company)
 
-    elif user_data.role == UserRole.COMPANY:
-        # Create company
-        company = Company(
+    # Create AI agent for this user (only for talent users)
+    if user_data.role in (UserRole.JOB_SEEKER, UserRole.TALENT):
+        ai_agent = AIAgent(
             user_id=user.id,
-            company_name=user_data.full_name,  # Will be updated later
+            agent_type=AgentType.USER_AGENT,
+            agent_name=f"Agent for {user_data.full_name}",
+            status="active",
         )
-        db.add(company)
-
-    # Create AI agent for this user
-    ai_agent = AIAgent(
-        user_id=user.id,
-        agent_type=AgentType.USER_AGENT if user_data.role in (UserRole.JOB_SEEKER, UserRole.TALENT) else AgentType.JOB_AGENT,
-        agent_name=f"Agent for {user_data.full_name}",
-        status="active",
-    )
-    db.add(ai_agent)
+        db.add(ai_agent)
 
     db.commit()
 
