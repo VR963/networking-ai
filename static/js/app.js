@@ -109,11 +109,11 @@ async function handleSignup(e) {
         email: formData.get('email'),
         password: formData.get('password'),
         full_name: formData.get('full_name'),
-        user_type: formData.get('user_type')
+        role: formData.get('user_type')  // Backend expects 'role' not 'user_type'
     };
 
     try {
-        const response = await apiCall('POST', '/api/registration/register', data);
+        const response = await apiCall('POST', '/api/auth/register', data);
         showToast('Account created successfully! Please sign in.', 'success');
         showPage('login');
     } catch (error) {
