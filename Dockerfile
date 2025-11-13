@@ -33,7 +33,7 @@ RUN pip install --upgrade pip setuptools wheel && \
     pip install gunicorn uvicorn[standard]
 
 # Stage 2: Runtime
-FROM python:3.11-slim
+FROM python:3.11-slim AS runtime
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
@@ -53,9 +53,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user for security
+# Create non-root user for security with proper home directory
 RUN groupadd -r appuser && \
     useradd -r -g appuser -m -d /home/appuser -s /bin/bash appuser && \
+    chown -R appuser:appuser /home/appuser && \
     chmod 755 /home/appuser
 
 # Copy virtual environment from builder
@@ -68,17 +69,13 @@ WORKDIR /app
 # Copy application code
 COPY --chown=appuser:appuser . .
 
-# Create necessary directories with proper permissions BEFORE pip install
+# Create necessary directories with proper permissions
 RUN mkdir -p /app/data /app/logs /app/uploads && \
     mkdir -p /app/.cache/huggingface/hub && \
     mkdir -p /app/.cache/torch && \
-    mkdir -p /home/appuser/.cache/huggingface/hub && \
-    mkdir -p /home/appuser/.cache/torch && \
-    chown -R appuser:appuser /app && \
-    chown -R appuser:appuser /home/appuser/.cache && \
-    chmod -R 755 /home/appuser/.cache
+    chown -R appuser:appuser /app
 
-# Switch to non-root user BEFORE pip install
+# Switch to non-root user
 USER appuser
 
 # Install application in editable mode as appuser
