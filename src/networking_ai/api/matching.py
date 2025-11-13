@@ -364,11 +364,12 @@ async def provide_match_feedback(
     db.add(audit)
     db.commit()
 
+    feedback_message = "We'll help you connect with this opportunity." if request.feedback == 'interested' else "We'll refine future matches based on your preferences."
     return {
         "match_id": match_id,
         "status": match.status.value,
         "feedback": request.feedback,
-        "message": f"Thank you for your feedback! {'We'll help you connect with this opportunity.' if request.feedback == 'interested' else 'We'll refine future matches based on your preferences.'}"
+        "message": f"Thank you for your feedback! {feedback_message}"
     }
 
 
