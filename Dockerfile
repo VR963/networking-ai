@@ -29,6 +29,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 COPY requirements.txt requirements-dev.txt ./
 RUN pip install --upgrade pip setuptools wheel && \
     pip install -r requirements.txt && \
+    pip install -r requirements-dev.txt && \
     pip install gunicorn uvicorn[standard]
 
 # Stage 2: Runtime
