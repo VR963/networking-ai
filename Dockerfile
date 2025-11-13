@@ -44,6 +44,7 @@ ENV PYTHONUNBUFFERED=1 \
     LOG_LEVEL=info \
     HF_HOME=/app/.cache/huggingface \
     TRANSFORMERS_CACHE=/app/.cache/huggingface \
+    SENTENCE_TRANSFORMERS_HOME=/app/.cache/huggingface \
     TORCH_HOME=/app/.cache/torch
 
 # Install runtime dependencies only
@@ -70,6 +71,8 @@ COPY --chown=appuser:appuser . .
 RUN mkdir -p /app/data /app/logs /app/uploads && \
     mkdir -p /app/.cache/huggingface/hub && \
     mkdir -p /app/.cache/torch && \
+    mkdir -p /home/appuser/.cache/huggingface/hub && \
+    mkdir -p /home/appuser/.cache/torch && \
     chown -R appuser:appuser /app && \
     chown -R appuser:appuser /home/appuser
 
