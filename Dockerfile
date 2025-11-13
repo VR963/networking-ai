@@ -41,7 +41,10 @@ ENV PYTHONUNBUFFERED=1 \
     PATH="/opt/venv/bin:$PATH" \
     WORKERS=4 \
     PORT=8000 \
-    LOG_LEVEL=info
+    LOG_LEVEL=info \
+    HF_HOME=/app/.cache/huggingface \
+    TRANSFORMERS_CACHE=/app/.cache/huggingface \
+    TORCH_HOME=/app/.cache/torch
 
 # Install runtime dependencies only
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -66,9 +69,9 @@ RUN pip install -e .
 
 # Create necessary directories with proper permissions
 RUN mkdir -p /app/data /app/logs /app/uploads \
-    /home/appuser/.cache/huggingface/hub \
-    /home/appuser/.cache/torch && \
-    chown -R appuser:appuser /app /home/appuser/.cache
+    /app/.cache/huggingface/hub \
+    /app/.cache/torch && \
+    chown -R appuser:appuser /app
 
 # Switch to non-root user
 USER appuser

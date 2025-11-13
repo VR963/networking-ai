@@ -15,7 +15,7 @@ Populates BOTH:
 
 import os
 from typing import Dict, List, Optional
-from langchain.agents import AgentExecutor, create_openai_tools_agent
+from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain_anthropic import ChatAnthropic
 from langchain.memory import ConversationBufferMemory
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -276,10 +276,10 @@ Start by introducing yourself and asking about their role and team."""),
             MessagesPlaceholder(variable_name="agent_scratchpad"),
         ])
 
-        agent = create_openai_tools_agent(
-            llm=self.llm,
-            tools=self.tools,
-            prompt=prompt
+        agent = create_tool_calling_agent(
+            self.llm,
+            self.tools,
+            prompt
         )
 
         return AgentExecutor(
