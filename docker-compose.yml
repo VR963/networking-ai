@@ -74,6 +74,11 @@ services:
       ENABLE_WEBSOCKET: ${ENABLE_WEBSOCKET:-true}
       ENABLE_MASTER_AGENT: ${ENABLE_MASTER_AGENT:-true}
 
+      # HuggingFace Cache
+      HF_HOME: /app/.cache/huggingface
+      TRANSFORMERS_CACHE: /app/.cache/huggingface
+      TORCH_HOME: /app/.cache/torch
+
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
@@ -110,6 +115,10 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-info}
       PORT: 8001
       SERVICE_TYPE: websocket
+      # HuggingFace Cache
+      HF_HOME: /app/.cache/huggingface
+      TRANSFORMERS_CACHE: /app/.cache/huggingface
+      TORCH_HOME: /app/.cache/torch
     volumes:
       - ./logs:/app/logs
     ports:
@@ -138,6 +147,10 @@ services:
       ENVIRONMENT: ${ENVIRONMENT:-development}
       LOG_LEVEL: ${LOG_LEVEL:-info}
       SERVICE_TYPE: worker
+      # HuggingFace Cache
+      HF_HOME: /app/.cache/huggingface
+      TRANSFORMERS_CACHE: /app/.cache/huggingface
+      TORCH_HOME: /app/.cache/torch
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs

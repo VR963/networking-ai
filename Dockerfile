@@ -52,35 +52,32 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user for security with home directory
+# Create non-root user for security
 RUN groupadd -r appuser && \
-    mkdir -p /home/appuser && \
-    useradd -r -g appuser -d /home/appuser appuser && \
-    chown -R appuser:appuser /home/appuser
+    useradd -r -g appuser -m -d /home/appuser -s /bin/bash appuser
 
 # Copy virtual environment from builder
 COPY --from=builder /opt/venv /opt/venv
 
-# Set working directory
+# Set working directory and create it
+RUN mkdir -p /app && chown appuser:appuser /app
 WORKDIR /app
 
 # Copy application code
 COPY --chown=appuser:appuser . .
 
-# Install application in editable mode
-RUN pip install -e .
-
-# Create necessary directories with proper permissions
+# Create necessary directories with proper permissions BEFORE pip install
 RUN mkdir -p /app/data /app/logs /app/uploads && \
     mkdir -p /app/.cache/huggingface/hub && \
     mkdir -p /app/.cache/torch && \
-    mkdir -p /home/appuser/.cache/huggingface/hub && \
-    mkdir -p /home/appuser/.cache/torch && \
     chown -R appuser:appuser /app && \
     chown -R appuser:appuser /home/appuser
 
-# Switch to non-root user
+# Switch to non-root user BEFORE pip install
 USER appuser
+
+# Install application in editable mode as appuser
+RUN pip install -e .
 
 # Expose port
 EXPOSE 8000
