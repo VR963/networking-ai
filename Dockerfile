@@ -55,7 +55,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Create non-root user for security
 RUN groupadd -r appuser && \
-    useradd -r -g appuser -m -d /home/appuser -s /bin/bash appuser
+    useradd -r -g appuser -m -d /home/appuser -s /bin/bash appuser && \
+    chmod 755 /home/appuser
 
 # Copy virtual environment from builder
 COPY --from=builder /opt/venv /opt/venv
@@ -74,7 +75,8 @@ RUN mkdir -p /app/data /app/logs /app/uploads && \
     mkdir -p /home/appuser/.cache/huggingface/hub && \
     mkdir -p /home/appuser/.cache/torch && \
     chown -R appuser:appuser /app && \
-    chown -R appuser:appuser /home/appuser
+    chown -R appuser:appuser /home/appuser/.cache && \
+    chmod -R 755 /home/appuser/.cache
 
 # Switch to non-root user BEFORE pip install
 USER appuser

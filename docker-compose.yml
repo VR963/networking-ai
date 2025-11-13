@@ -77,6 +77,7 @@ services:
       # HuggingFace Cache
       HF_HOME: /app/.cache/huggingface
       TRANSFORMERS_CACHE: /app/.cache/huggingface
+      SENTENCE_TRANSFORMERS_HOME: /app/.cache/huggingface
       TORCH_HOME: /app/.cache/torch
 
     volumes:
@@ -118,6 +119,7 @@ services:
       # HuggingFace Cache
       HF_HOME: /app/.cache/huggingface
       TRANSFORMERS_CACHE: /app/.cache/huggingface
+      SENTENCE_TRANSFORMERS_HOME: /app/.cache/huggingface
       TORCH_HOME: /app/.cache/torch
     volumes:
       - ./logs:/app/logs
@@ -150,6 +152,7 @@ services:
       # HuggingFace Cache
       HF_HOME: /app/.cache/huggingface
       TRANSFORMERS_CACHE: /app/.cache/huggingface
+      SENTENCE_TRANSFORMERS_HOME: /app/.cache/huggingface
       TORCH_HOME: /app/.cache/torch
     volumes:
       - ./data:/app/data
