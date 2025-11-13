@@ -29,8 +29,12 @@ class SemanticMatcher:
     def model(self):
         """Lazy load the sentence transformer model."""
         if self._model is None:
+            import os
             from sentence_transformers import SentenceTransformer
-            self._model = SentenceTransformer(self.model_name)
+
+            # Use cache folder from environment or default
+            cache_folder = os.environ.get('TRANSFORMERS_CACHE') or os.environ.get('HF_HOME')
+            self._model = SentenceTransformer(self.model_name, cache_folder=cache_folder)
         return self._model
 
     def generate_embedding(self, text: str, use_cache: bool = True):

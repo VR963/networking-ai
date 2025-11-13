@@ -70,8 +70,10 @@ RUN pip install -e .
 # Create necessary directories with proper permissions
 RUN mkdir -p /app/data /app/logs /app/uploads \
     /app/.cache/huggingface/hub \
-    /app/.cache/torch && \
-    chown -R appuser:appuser /app
+    /app/.cache/torch \
+    /home/appuser/.cache/huggingface/hub \
+    /home/appuser/.cache/torch && \
+    chown -R appuser:appuser /app /home/appuser
 
 # Switch to non-root user
 USER appuser
