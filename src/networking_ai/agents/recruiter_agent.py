@@ -7,7 +7,7 @@ Uses industry-specific training from Master RAG.
 
 import os
 from typing import Dict, List, Optional
-from langchain.agents import AgentExecutor, create_openai_tools_agent
+from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain_anthropic import ChatAnthropic
 from langchain.memory import ConversationBufferMemory
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -211,7 +211,7 @@ class RecruiterAgent:
         ])
 
         # Create agent
-        agent = create_openai_tools_agent(self.llm, self.tools, prompt)
+        agent = create_tool_calling_agent(self.llm, self.tools, prompt)
 
         # Create executor
         agent_executor = AgentExecutor(

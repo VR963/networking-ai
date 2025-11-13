@@ -49,8 +49,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user for security
-RUN groupadd -r appuser && useradd -r -g appuser appuser
+# Create non-root user for security with home directory
+RUN groupadd -r appuser && useradd -r -g appuser -m -d /home/appuser appuser
 
 # Copy virtual environment from builder
 COPY --from=builder /opt/venv /opt/venv
@@ -64,9 +64,11 @@ COPY --chown=appuser:appuser . .
 # Install application in editable mode
 RUN pip install -e .
 
-# Create necessary directories
-RUN mkdir -p /app/data /app/logs /app/uploads && \
-    chown -R appuser:appuser /app
+# Create necessary directories with proper permissions
+RUN mkdir -p /app/data /app/logs /app/uploads \
+    /home/appuser/.cache/huggingface/hub \
+    /home/appuser/.cache/torch && \
+    chown -R appuser:appuser /app /home/appuser/.cache
 
 # Switch to non-root user
 USER appuser

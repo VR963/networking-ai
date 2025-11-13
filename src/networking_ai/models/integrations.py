@@ -123,7 +123,7 @@ class Integration(Base):
 
     # Relationships
     user = relationship("User", foreign_keys=[user_id])
-    company = relationship("Company", foreign_keys=[company_id])
+    company = relationship("CompanyLegacy", foreign_keys=[company_id])
     calendar_events = relationship("CalendarEvent", back_populates="integration")
     video_meetings = relationship("VideoMeeting", back_populates="integration")
 
@@ -264,7 +264,7 @@ class VideoMeeting(Base):
     integration = relationship("Integration", back_populates="video_meetings")
     interview = relationship("Interview")
     user = relationship("User", foreign_keys=[user_id])
-    company = relationship("Company", foreign_keys=[company_id])
+    company = relationship("CompanyLegacy", foreign_keys=[company_id])
 
 
 class ATSSync(Base):
@@ -310,7 +310,7 @@ class ATSSync(Base):
 
     # Relationships
     integration = relationship("Integration")
-    company = relationship("Company", foreign_keys=[company_id])
+    company = relationship("CompanyLegacy", foreign_keys=[company_id])
 
 
 class CommunicationLog(Base):
@@ -439,7 +439,7 @@ class BackgroundCheck(Base):
     integration = relationship("Integration")
     application = relationship("Application")
     candidate_user = relationship("User", foreign_keys=[candidate_user_id])
-    company = relationship("Company", foreign_keys=[company_id])
+    company = relationship("CompanyLegacy", foreign_keys=[company_id])
     reviewed_by = relationship("User", foreign_keys=[reviewed_by_user_id])
 
 

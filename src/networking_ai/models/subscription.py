@@ -98,7 +98,7 @@ class Subscription(Base):
 
     # Relationships
     user = relationship("User")
-    company = relationship("Company")
+    company = relationship("CompanyLegacy")
 
     def __repr__(self):
         return f"<Subscription(id={self.id}, type={self.subscription_type}, status={self.status})>"

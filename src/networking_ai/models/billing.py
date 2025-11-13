@@ -98,7 +98,7 @@ class PaymentMethod(Base):
 
     # Relationships
     user = relationship("User", back_populates="payment_methods")
-    company = relationship("Company", foreign_keys=[company_id])
+    company = relationship("CompanyLegacy", foreign_keys=[company_id])
 
 
 class SubscriptionPlan(Base):
@@ -208,7 +208,7 @@ class BillingSubscription(Base):
 
     # Relationships
     user = relationship("User", back_populates="billing_subscriptions")
-    company = relationship("Company", foreign_keys=[company_id])
+    company = relationship("CompanyLegacy", foreign_keys=[company_id])
     plan = relationship("SubscriptionPlan", back_populates="subscriptions")
     payment_method = relationship("PaymentMethod")
     invoices = relationship("Invoice", back_populates="subscription")
@@ -303,7 +303,7 @@ class Invoice(Base):
     # Relationships
     subscription = relationship("BillingSubscription", back_populates="invoices")
     user = relationship("User")
-    company = relationship("Company", foreign_keys=[company_id])
+    company = relationship("CompanyLegacy", foreign_keys=[company_id])
     payments = relationship("Payment", back_populates="invoice")
 
     def to_dict(self) -> Dict[str, Any]:
@@ -384,7 +384,7 @@ class Payment(Base):
     subscription = relationship("BillingSubscription", back_populates="payments")
     invoice = relationship("Invoice", back_populates="payments")
     user = relationship("User")
-    company = relationship("Company", foreign_keys=[company_id])
+    company = relationship("CompanyLegacy", foreign_keys=[company_id])
     payment_method = relationship("PaymentMethod")
 
     def to_dict(self) -> Dict[str, Any]:
@@ -442,7 +442,7 @@ class UsageRecord(Base):
     # Relationships
     subscription = relationship("BillingSubscription")
     user = relationship("User")
-    company = relationship("Company", foreign_keys=[company_id])
+    company = relationship("CompanyLegacy", foreign_keys=[company_id])
 
 
 class BillingEvent(Base):
@@ -484,5 +484,5 @@ class BillingEvent(Base):
 
     # Relationships
     user = relationship("User")
-    company = relationship("Company", foreign_keys=[company_id])
+    company = relationship("CompanyLegacy", foreign_keys=[company_id])
     subscription = relationship("BillingSubscription")

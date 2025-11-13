@@ -242,7 +242,7 @@ class Employee(Base):
 
     # Relationships
     user = relationship("User", foreign_keys=[user_id], backref="employee_record")
-    company = relationship("Company", backref="employees")
+    company = relationship("CompanyLegacy", backref="employees")
     job = relationship("Job", backref="hired_employees")
     application = relationship("Application", backref="hired_employee_record")
     manager = relationship("User", foreign_keys=[manager_user_id], backref="managed_employees")
@@ -287,7 +287,7 @@ class OnboardingChecklist(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     # Relationships
-    company = relationship("Company", backref="onboarding_checklists")
+    company = relationship("CompanyLegacy", backref="onboarding_checklists")
     creator = relationship("User", backref="created_checklists")
 
 
@@ -379,7 +379,7 @@ class TrainingProgram(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     # Relationships
-    company = relationship("Company", backref="training_programs")
+    company = relationship("CompanyLegacy", backref="training_programs")
     creator = relationship("User", backref="created_training_programs")
     enrollments = relationship("EmployeeTraining", back_populates="program", cascade="all, delete-orphan")
 
@@ -472,7 +472,7 @@ class Equipment(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     # Relationships
-    company = relationship("Company", backref="equipment")
+    company = relationship("CompanyLegacy", backref="equipment")
     employee = relationship("Employee", back_populates="equipment")
 
 

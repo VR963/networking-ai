@@ -97,7 +97,7 @@ class HiringMetrics(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    company = relationship("Company", foreign_keys=[company_id])
+    company = relationship("CompanyLegacy", foreign_keys=[company_id])
 
     def __repr__(self):
         return f"<HiringMetrics {self.company_id}: {self.period_start} - {self.period_end}>"
@@ -211,7 +211,7 @@ class JobAnalytics(Base):
 
     # Relationships
     job = relationship("Job", foreign_keys=[job_id])
-    company = relationship("Company", foreign_keys=[company_id])
+    company = relationship("CompanyLegacy", foreign_keys=[company_id])
 
     def __repr__(self):
         return f"<JobAnalytics job_id={self.job_id}>"

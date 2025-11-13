@@ -114,3 +114,15 @@ class CompanyLegacy(Base):
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
         }
+
+
+# Backward compatibility alias
+Company = CompanyLegacy
+
+# Export all public classes
+__all__ = [
+    'Company',
+    'CompanyLegacy',
+    'CompanyStatus',
+    'CompanySize',
+]

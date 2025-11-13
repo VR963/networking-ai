@@ -9,12 +9,50 @@ from enum import Enum
 from typing import Optional, List
 from decimal import Decimal
 
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum as SQLEnum, Text, DECIMAL, JSON, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum as SQLEnum, Text, DECIMAL, JSON, ForeignKey, TypeDecorator
 from sqlalchemy.dialects.postgresql import UUID, ARRAY
 from sqlalchemy.orm import relationship
 import uuid
+import json
 
 from ..database import Base
+
+
+class PortableArray(TypeDecorator):
+    """
+    Portable ARRAY type that works with both PostgreSQL and SQLite.
+
+    Uses ARRAY for PostgreSQL and JSON for SQLite/other databases.
+    """
+    impl = JSON
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect):
+        """Use ARRAY for PostgreSQL, JSON for others."""
+        if dialect.name == 'postgresql':
+            return dialect.type_descriptor(ARRAY(String))
+        else:
+            return dialect.type_descriptor(JSON)
+
+    def process_bind_param(self, value, dialect):
+        """Convert list to appropriate format for database."""
+        if value is None:
+            return value
+        if dialect.name == 'postgresql':
+            return value  # PostgreSQL handles lists natively
+        else:
+            return json.dumps(value)  # SQLite stores as JSON string
+
+    def process_result_value(self, value, dialect):
+        """Convert database value back to list."""
+        if value is None:
+            return []
+        if dialect.name == 'postgresql':
+            return value if value is not None else []
+        else:
+            if isinstance(value, str):
+                return json.loads(value)
+            return value if value is not None else []
 
 
 class TemplateCategory(str, Enum):
@@ -60,7 +98,7 @@ class AgentTemplate(Base):
     name = Column(String(255), nullable=False, index=True)
     description = Column(Text, nullable=False)
     category = Column(SQLEnum(TemplateCategory), nullable=False, index=True)
-    tags = Column(ARRAY(String), default=list)  # Searchable tags
+    tags = Column(PortableArray, default=list)  # Searchable tags
 
     # Status & Publishing
     status = Column(SQLEnum(TemplateStatus), default=TemplateStatus.DRAFT, nullable=False, index=True)
@@ -82,7 +120,7 @@ class AgentTemplate(Base):
 
     # Metadata
     icon_url = Column(String(500), nullable=True)  # Template icon/avatar
-    screenshots = Column(ARRAY(String), default=list)  # Screenshot URLs
+    screenshots = Column(PortableArray, default=list)  # Screenshot URLs
     demo_url = Column(String(500), nullable=True)  # Demo video/page
 
     # Statistics

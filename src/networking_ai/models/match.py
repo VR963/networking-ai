@@ -110,7 +110,7 @@ class Match(Base):
     talent_user = relationship("User", foreign_keys=[talent_user_id])
     talent_agent = relationship("PersonalAIAgent", foreign_keys=[talent_agent_id])
     job = relationship("Job")
-    company = relationship("Company")
+    company = relationship("CompanyLegacy")
     agent_conversation = relationship("AgentConversation", back_populates="match", uselist=False)
 
     # Phase 1 compatibility

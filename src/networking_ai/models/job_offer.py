@@ -122,7 +122,7 @@ class JobOffer(Base):
     # Relationships
     application = relationship("Application", foreign_keys=[application_id])
     job = relationship("Job", foreign_keys=[job_id])
-    company = relationship("Company", foreign_keys=[company_id])
+    company = relationship("CompanyLegacy", foreign_keys=[company_id])
     candidate = relationship("User", foreign_keys=[candidate_user_id])
     hiring_manager = relationship("User", foreign_keys=[hiring_manager_id])
     negotiations = relationship("OfferNegotiation", back_populates="offer", cascade="all, delete-orphan")

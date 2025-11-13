@@ -414,7 +414,7 @@ class DataExport(Base):
 
     # Relationships
     user = relationship("User", foreign_keys=[user_id])
-    company = relationship("Company", foreign_keys=[company_id])
+    company = relationship("CompanyLegacy", foreign_keys=[company_id])
 
 
 class ComplianceRecord(Base):
@@ -464,5 +464,5 @@ class ComplianceRecord(Base):
 
     # Relationships
     user = relationship("User", foreign_keys=[user_id])
-    company = relationship("Company", foreign_keys=[company_id])
+    company = relationship("CompanyLegacy", foreign_keys=[company_id])
     processed_by = relationship("User", foreign_keys=[processed_by_user_id])

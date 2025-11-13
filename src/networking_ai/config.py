@@ -83,3 +83,23 @@ class Config:
 
 # Global config instance
 config = Config()
+
+
+def get_settings() -> Config:
+    """
+    Get configuration instance.
+
+    This function is used for dependency injection in FastAPI and testing.
+
+    Returns:
+        Config: The global configuration instance
+    """
+    return config
+
+
+# Export all public members
+__all__ = [
+    'Config',
+    'config',
+    'get_settings',
+]
