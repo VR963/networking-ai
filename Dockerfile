@@ -56,8 +56,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Create non-root user for security with proper home directory
 RUN groupadd -r appuser && \
     useradd -r -g appuser -m -d /home/appuser -s /bin/bash appuser && \
+    mkdir -p /home/appuser/.cache/huggingface/hub && \
+    mkdir -p /home/appuser/.cache/torch && \
     chown -R appuser:appuser /home/appuser && \
-    chmod 755 /home/appuser
+    chmod -R 755 /home/appuser
 
 # Copy virtual environment from builder
 COPY --from=builder /opt/venv /opt/venv
