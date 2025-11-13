@@ -53,7 +53,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user for security with home directory
-RUN groupadd -r appuser && useradd -r -g appuser -m -d /home/appuser appuser
+RUN groupadd -r appuser && \
+    mkdir -p /home/appuser && \
+    useradd -r -g appuser -d /home/appuser appuser && \
+    chown -R appuser:appuser /home/appuser
 
 # Copy virtual environment from builder
 COPY --from=builder /opt/venv /opt/venv
@@ -68,12 +71,13 @@ COPY --chown=appuser:appuser . .
 RUN pip install -e .
 
 # Create necessary directories with proper permissions
-RUN mkdir -p /app/data /app/logs /app/uploads \
-    /app/.cache/huggingface/hub \
-    /app/.cache/torch \
-    /home/appuser/.cache/huggingface/hub \
-    /home/appuser/.cache/torch && \
-    chown -R appuser:appuser /app /home/appuser
+RUN mkdir -p /app/data /app/logs /app/uploads && \
+    mkdir -p /app/.cache/huggingface/hub && \
+    mkdir -p /app/.cache/torch && \
+    mkdir -p /home/appuser/.cache/huggingface/hub && \
+    mkdir -p /home/appuser/.cache/torch && \
+    chown -R appuser:appuser /app && \
+    chown -R appuser:appuser /home/appuser
 
 # Switch to non-root user
 USER appuser
