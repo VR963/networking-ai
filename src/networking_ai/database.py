@@ -16,17 +16,25 @@ from .config import config
 # Database URL from environment or config
 DATABASE_URL = os.getenv(
     'DATABASE_URL',
-    'postgresql://networking_ai:password@localhost:5432/networking_ai'
+    'sqlite:///./data/networking_ai.db'  # Default to SQLite for easy setup
 )
 
-# Create SQLAlchemy engine
-engine = create_engine(
-    DATABASE_URL,
-    pool_pre_ping=True,  # Verify connections before using
-    pool_size=10,  # Connection pool size
-    max_overflow=20,  # Max connections beyond pool_size
-    echo=config.DEBUG,  # Log SQL queries in debug mode
-)
+# Create SQLAlchemy engine with SQLite-specific optimizations
+if DATABASE_URL.startswith('sqlite'):
+    engine = create_engine(
+        DATABASE_URL,
+        connect_args={"check_same_thread": False},  # Required for SQLite with FastAPI
+        echo=config.DEBUG,  # Log SQL queries in debug mode
+    )
+else:
+    # PostgreSQL configuration
+    engine = create_engine(
+        DATABASE_URL,
+        pool_pre_ping=True,  # Verify connections before using
+        pool_size=10,  # Connection pool size
+        max_overflow=20,  # Max connections beyond pool_size
+        echo=config.DEBUG,  # Log SQL queries in debug mode
+    )
 
 # Create SessionLocal class for database sessions
 SessionLocal = sessionmaker(
