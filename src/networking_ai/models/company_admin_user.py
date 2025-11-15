@@ -63,7 +63,7 @@ class CompanyAdminUser(Base):
 
     # Relationships
     user = relationship("User")
-    company = relationship("CompanyV2", back_populates="admin_users")
+    company = relationship("Company", back_populates="admin_users", overlaps="admin_users,company")
 
     def __repr__(self):
         return f"<CompanyAdminUser(id={self.id}, company_id={self.company_id}, key={self.admin_key})>"

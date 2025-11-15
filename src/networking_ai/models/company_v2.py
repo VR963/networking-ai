@@ -71,9 +71,9 @@ class CompanyV2(Base):
     subscription_expires_at = Column(DateTime)
 
     # Relationships
-    admin_agent = relationship("CompanyAdminAgent", back_populates="company", uselist=False)
-    hiring_managers = relationship("HiringManagerRole", back_populates="company")
-    admin_users = relationship("CompanyAdminUser", back_populates="company")
+    admin_agent = relationship("CompanyAdminAgent", back_populates="company", uselist=False, overlaps="company,admin_agent")
+    hiring_managers = relationship("HiringManagerRole", back_populates="company", overlaps="hiring_managers,company")
+    admin_users = relationship("CompanyAdminUser", back_populates="company", overlaps="admin_users,company")
 
     def __repr__(self):
         return f"<CompanyV2(id={self.id}, name='{self.name}', status={self.status})>"

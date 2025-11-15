@@ -120,7 +120,7 @@ class Job(Base):
     closed_at = Column(DateTime(timezone=True), nullable=True)
 
     # Relationships
-    company = relationship("CompanyLegacy")  # back_populates removed due to Company model conflict
+    company = relationship("CompanyLegacy", overlaps="jobs")  # back_populates removed due to Company model conflict
     applications = relationship("Application", back_populates="job", cascade="all, delete-orphan")
     matches = relationship("Match", foreign_keys="Match.job_id", back_populates="job")
     ai_agent = relationship("AIAgent", foreign_keys=[ai_agent_id], post_update=True)

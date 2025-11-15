@@ -82,11 +82,9 @@ class CompanyLegacy(Base):
     # Relationships
     user = relationship("User")  # back_populates removed due to Company model conflict
     jobs = relationship("Job", cascade="all, delete-orphan")  # back_populates removed due to Company model conflict
-    # NOTE: admin_agent relationship commented out to fix circular dependency issue during registration
-    # Access via query: db.query(CompanyAdminAgent).filter_by(company_id=company.id).first()
-    # admin_agent = relationship("CompanyAdminAgent", uselist=False, cascade="all, delete-orphan", overlaps="company")
-    hiring_managers = relationship("HiringManagerRole", back_populates="company", cascade="all, delete-orphan")
-    admin_users = relationship("CompanyAdminUser", back_populates="company", cascade="all, delete-orphan")
+    admin_agent = relationship("CompanyAdminAgent", uselist=False, cascade="all, delete-orphan", overlaps="company,admin_agent")
+    hiring_managers = relationship("HiringManagerRole", back_populates="company", cascade="all, delete-orphan", overlaps="hiring_managers,company")
+    admin_users = relationship("CompanyAdminUser", back_populates="company", cascade="all, delete-orphan", overlaps="admin_users,company")
 
     def __repr__(self):
         return f"<Company {self.company_name}>"

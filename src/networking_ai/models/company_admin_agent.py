@@ -65,7 +65,7 @@ class CompanyAdminAgent(Base):
     subscription_expires_at = Column(DateTime)  # Mirrors company subscription
 
     # Relationships
-    company = relationship("CompanyV2", back_populates="admin_agent", foreign_keys=[company_id])
+    company = relationship("Company", back_populates="admin_agent", foreign_keys=[company_id], overlaps="admin_agent")
     hiring_managers = relationship("HiringManagerRole", back_populates="company_admin_agent")
 
     def __repr__(self):
