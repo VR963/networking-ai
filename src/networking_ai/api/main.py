@@ -13,6 +13,8 @@ import time
 import os
 
 from ..database import engine, Base
+# Import all models to ensure they're registered with SQLAlchemy
+from .. import models  # noqa: F401
 from .auth import router as auth_router
 from .registration import router as registration_router
 from .users import router as users_router
@@ -50,6 +52,7 @@ if os.path.exists(static_dir):
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        "http://localhost",  # Nginx frontend
         "http://localhost:3000",  # React development
         "http://localhost:3001",
         "http://localhost:8080",
@@ -85,9 +88,24 @@ async def not_found_handler(request: Request, exc):
 @app.exception_handler(500)
 async def internal_error_handler(request: Request, exc):
     """Handle 500 errors."""
+    import traceback
+    print(f"[ERROR] 500 Internal Server Error: {str(exc)}")
+    print(traceback.format_exc())
     return JSONResponse(
         status_code=500,
-        content={"detail": "Internal server error"},
+        content={"detail": "Internal server error", "error": str(exc)},
+    )
+
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    """Handle all unhandled exceptions."""
+    import traceback
+    print(f"[ERROR] Unhandled exception: {str(exc)}")
+    print(traceback.format_exc())
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error", "error": str(exc)},
     )
 
 
