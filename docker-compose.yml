@@ -10,7 +10,6 @@ services:
       POSTGRES_INITDB_ARGS: "-E UTF8 --locale=en_US.UTF-8"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init_test_db.py:/docker-entrypoint-initdb.d/init.py:ro
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     healthcheck:

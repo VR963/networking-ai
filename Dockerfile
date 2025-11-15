@@ -50,6 +50,7 @@ ENV PYTHONUNBUFFERED=1 \
 # Install runtime dependencies only
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
+    postgresql-client \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
@@ -71,6 +72,9 @@ WORKDIR /app
 # Copy application code
 COPY --chown=appuser:appuser . .
 
+# Make entrypoint script executable
+RUN chmod +x /app/docker-entrypoint.sh
+
 # Create necessary directories with proper permissions
 RUN mkdir -p /app/data /app/logs /app/uploads && \
     mkdir -p /app/.cache/huggingface/hub && \
@@ -89,6 +93,9 @@ EXPOSE 8000
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:${PORT}/health || exit 1
+
+# Set entrypoint script
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 
 # Default command (can be overridden)
 CMD ["sh", "-c", "uvicorn networking_ai.api.main:app --host 0.0.0.0 --port ${PORT} --workers ${WORKERS} --log-level ${LOG_LEVEL}"]

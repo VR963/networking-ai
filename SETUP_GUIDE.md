@@ -176,16 +176,30 @@ ruff check src/ tests/
 mypy src/
 ```
 
-## Using Docker (Alternative)
+## Using Docker (Recommended for Full Stack)
 
-If you prefer Docker:
+If you prefer Docker or want to run the full application stack (including PostgreSQL database):
 
 ```bash
-# Build the image
-docker-compose build
+# Build and start all services
+docker-compose up --build
 
-# Run the application
-docker-compose up
+# Run in detached mode (background)
+docker-compose up -d --build
+
+# Stop all services
+docker-compose down
 ```
 
-See `DEPLOYMENT.md` for more details.
+The application will be available at:
+- API: http://localhost:8000
+- API Documentation: http://localhost:8000/api/docs
+- Web Interface: http://localhost (through Nginx)
+
+### Database Setup
+
+When using Docker, the database tables are **automatically created** on first startup. No manual initialization needed!
+
+For more details on database management, see `DATABASE_SETUP.md`.
+
+See `DEPLOYMENT.md` for production deployment details.
