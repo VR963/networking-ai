@@ -151,6 +151,12 @@ async def landing_page():
     }
 
 
+@app.get("/health")
+async def root_health_check():
+    """Simple health check for Docker."""
+    return {"status": "healthy"}
+
+
 @app.get("/api/health", tags=["Health"])
 async def health_check():
     """Detailed health check."""

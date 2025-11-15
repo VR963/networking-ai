@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from ..models.company_admin_agent import CompanyAdminAgent, AdminAgentStatus
 from ..models.hiring_manager_role import HiringManagerRole
-from ..models.company_v2 import Company
+from ..models.company_v2 import CompanyV2 as Company
 from .company_rag import CompanyRAGManager
 
 

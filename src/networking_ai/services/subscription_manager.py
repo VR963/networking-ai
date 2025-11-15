@@ -15,7 +15,7 @@ from ..models.subscription import (
     SubscriptionStatus
 )
 from ..models.user import User
-from ..models.company_v2 import Company
+from ..models.company_v2 import CompanyV2 as Company
 
 
 class SubscriptionManager:

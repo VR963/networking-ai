@@ -50,7 +50,7 @@ class HiringManagerRole(Base):
 
     # Relationships
     user = relationship("User")
-    company = relationship("CompanyLegacy", back_populates="hiring_managers")
+    company = relationship("CompanyV2", back_populates="hiring_managers")
     hiring_manager_agent = relationship("PersonalAIAgent")
     company_admin_agent = relationship("CompanyAdminAgent", back_populates="hiring_managers")
 

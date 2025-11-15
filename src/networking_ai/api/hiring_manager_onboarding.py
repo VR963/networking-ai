@@ -133,7 +133,7 @@ async def start_hm_interview(
         )
 
     # Get company
-    from ..models.company_v2 import Company
+    from ..models.company_v2 import CompanyV2 as Company
     company = db.query(Company).filter(Company.id == request.company_id).first()
     if not company:
         raise HTTPException(
@@ -463,7 +463,7 @@ async def activate_hm_agent(
     db.commit()
 
     # Get company
-    from ..models.company_v2 import Company
+    from ..models.company_v2 import CompanyV2 as Company
     company = db.query(Company).filter(Company.id == hm_role.company_id).first()
 
     # Audit log

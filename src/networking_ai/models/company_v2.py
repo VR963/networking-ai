@@ -29,9 +29,9 @@ class CompanyStatus(str, Enum):
     INACTIVE = "inactive"
 
 
-class Company(Base):
+class CompanyV2(Base):
     """
-    Company model.
+    Company model (V2).
 
     Organizations that hire talent through the platform.
     Has Admin Agent for knowledge retention and seat licensing.
@@ -76,7 +76,7 @@ class Company(Base):
     admin_users = relationship("CompanyAdminUser", back_populates="company")
 
     def __repr__(self):
-        return f"<Company(id={self.id}, name='{self.name}', status={self.status})>"
+        return f"<CompanyV2(id={self.id}, name='{self.name}', status={self.status})>"
 
     def has_available_hiring_manager_seats(self) -> bool:
         """Check if company has available Hiring Manager seats."""

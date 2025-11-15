@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field
 from ..database import get_db
 from ..models.user import User
 from ..models.job import Job, JobStatus, JobType, ExperienceLevel
-from ..models.company_v2 import Company
+from ..models.company_v2 import CompanyV2 as Company
 from ..models.hiring_manager_role import HiringManagerRole
 from ..models.personal_ai_agent import PersonalAIAgent, AgentType
 from ..models.company_admin_agent import CompanyAdminAgent

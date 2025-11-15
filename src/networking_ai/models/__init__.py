@@ -7,6 +7,7 @@ SQLAlchemy ORM models for all database tables.
 from .user import User, UserRole, AccountStatus
 from .profile import UserProfile, ProfileVisibility
 from .company import CompanyLegacy as Company, CompanyStatus, CompanySize
+from .company_v2 import CompanyV2
 from .job import Job, JobStatus, JobType, ExperienceLevel
 from .application import Application, ApplicationStatus
 from .match import Match, MatchStatus
@@ -197,6 +198,7 @@ __all__ = [
     'ProfileVisibility',
     # Company
     'Company',
+    'CompanyV2',
     'CompanyStatus',
     'CompanySize',
     # Job

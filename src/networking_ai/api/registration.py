@@ -19,7 +19,7 @@ from ..models.user import User, UserRole, AccountStatus
 from ..models.profile import UserProfile
 from ..models.personal_ai_agent import PersonalAIAgent, AgentType as PersonalAgentType
 from ..models.subscription import Subscription
-from ..models.company_v2 import Company
+from ..models.company_v2 import CompanyV2 as Company
 from ..models.hiring_manager_role import HiringManagerRole
 from ..models.company_admin_agent import CompanyAdminAgent
 from ..models.audit_log import AgentAuditLog as AuditLog

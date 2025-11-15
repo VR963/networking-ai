@@ -27,7 +27,7 @@ from ..models.user import User
 from ..models.personal_ai_agent import PersonalAIAgent, AgentType
 from ..models.job import Job, JobStatus
 from ..models.match import Match, MatchStatus
-from ..models.company_v2 import Company
+from ..models.company_v2 import CompanyV2 as Company
 from .chromadb_service import create_chromadb_service, ChromaDBService
 
 
