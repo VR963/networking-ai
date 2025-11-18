@@ -1,15 +1,25 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const Register = () => {
+  const [searchParams] = useSearchParams();
+  const roleFromUrl = searchParams.get('role');
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'job_seeker', // or 'company'
+    role: roleFromUrl === 'company' ? 'company' : 'job_seeker', // Pre-select role from URL
   });
+
+  // Update role if URL param changes
+  useEffect(() => {
+    if (roleFromUrl === 'company' || roleFromUrl === 'job_seeker') {
+      setFormData(prev => ({ ...prev, role: roleFromUrl }));
+    }
+  }, [roleFromUrl]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();

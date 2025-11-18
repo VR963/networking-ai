@@ -1,197 +1,117 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const LandingPage = () => {
-  const { isAuthenticated, isJobSeeker } = useAuth();
+  const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuth();
+
+  // If authenticated, redirect to dashboard
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      const dashboardPath = user?.role === 'job_seeker' ? '/dashboard' : '/company-dashboard';
+      navigate(dashboardPath);
+    }
+  }, [isAuthenticated, user, navigate]);
+
+  const handleRoleSelection = (role) => {
+    navigate(`/register?role=${role}`);
+  };
 
   return (
-    <div className="bg-gray-50">
-      {/* Hero Section */}
-      <div className="bg-gradient-to-br from-primary-600 to-primary-800 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <div className="text-center">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              AI-Native Professional Networking
-            </h1>
-            <p className="text-xl md:text-2xl mb-8 text-primary-100">
-              Let autonomous AI agents find your perfect career match
-            </p>
-            <p className="text-lg mb-10 text-primary-50 max-w-3xl mx-auto">
-              From 100 candidates to 3 perfect matches through intelligent agent-to-agent conversations
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              {isAuthenticated ? (
-                <Link
-                  to={isJobSeeker ? '/dashboard' : '/company-dashboard'}
-                  className="bg-white text-primary-700 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors"
-                >
-                  Go to Dashboard
-                </Link>
-              ) : (
-                <>
-                  <Link
-                    to="/register"
-                    className="bg-white text-primary-700 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors"
-                  >
-                    Get Started Free
-                  </Link>
-                  <Link
-                    to="/login"
-                    className="bg-primary-700 border-2 border-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-primary-800 transition-colors"
-                  >
-                    Sign In
-                  </Link>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Features Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <h2 className="text-3xl font-bold text-center mb-12 text-gray-900">
-          How It Works
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="card text-center">
-            <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold mb-3">Create Your Profile</h3>
-            <p className="text-gray-600">
-              Complete our intelligent 7-phase onboarding process. AI agents learn about your skills, experience, and career goals.
-            </p>
-          </div>
-
-          <div className="card text-center">
-            <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold mb-3">AI Agent Matching</h3>
-            <p className="text-gray-600">
-              Our autonomous AI agents engage in intelligent conversations to find the perfect matches between candidates and companies.
-            </p>
-          </div>
-
-          <div className="card text-center">
-            <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold mb-3">Connect & Succeed</h3>
-            <p className="text-gray-600">
-              Get introduced to your top 3 matches. Start conversations and land your dream job or find perfect candidates.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Key Features */}
-      <div className="bg-white py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center mb-12 text-gray-900">
-            Platform Features
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Semantic Discovery</h3>
-                <p className="text-gray-600">AI-powered matching using advanced sentence transformers for accurate skill and role matching.</p>
-              </div>
-            </div>
-
-            <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Master Agent Orchestration</h3>
-                <p className="text-gray-600">Autonomous AI CEO coordinates specialized agents for optimal platform performance.</p>
-              </div>
-            </div>
-
-            <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Anti-Hallucination Controls</h3>
-                <p className="text-gray-600">4-layer validation system ensures accurate, grounded information at all times.</p>
-              </div>
-            </div>
-
-            <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Real-time Agent Chat</h3>
-                <p className="text-gray-600">Engage with specialized AI agents through intuitive chat interfaces with WebSocket support.</p>
-              </div>
-            </div>
-
-            <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Secure & Private</h3>
-                <p className="text-gray-600">Dual RAG system with encrypted private vaults protects your sensitive information.</p>
-              </div>
-            </div>
-
-            <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Smart Narrowing</h3>
-                <p className="text-gray-600">Reduce 100 candidates to 3 perfect matches through intelligent filtering and conversations.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* CTA Section */}
-      <div className="bg-primary-600 text-white py-16">
-        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold mb-4">
-            Ready to Transform Your Career Journey?
-          </h2>
-          <p className="text-xl mb-8 text-primary-100">
-            Join thousands of professionals already using AI agents to find perfect career matches.
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center px-4 py-12">
+      <div className="max-w-6xl w-full">
+        {/* Header */}
+        <div className="text-center mb-16">
+          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-4">
+            AI-Native Professional Networking
+          </h1>
+          <p className="text-xl md:text-2xl text-gray-600 mb-2">
+            Let autonomous AI agents find your perfect career match
           </p>
-          {!isAuthenticated && (
-            <Link
-              to="/register"
-              className="bg-white text-primary-700 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors inline-block"
+          <p className="text-lg text-gray-500">
+            Choose your path to get started
+          </p>
+        </div>
+
+        {/* Split Circle */}
+        <div className="flex items-center justify-center mb-12">
+          <div className="relative w-full max-w-2xl aspect-square">
+            {/* Circle Container */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="relative w-full h-full max-w-md max-h-md">
+                {/* Talent Side (Left Half) */}
+                <button
+                  onClick={() => handleRoleSelection('job_seeker')}
+                  className="absolute left-0 top-0 w-1/2 h-full overflow-hidden group cursor-pointer focus:outline-none focus:ring-4 focus:ring-primary-300 rounded-l-full transition-all"
+                  aria-label="Register as Talent"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary-500 to-primary-700 group-hover:from-primary-600 group-hover:to-primary-800 transition-all duration-300 rounded-l-full flex items-center justify-center transform group-hover:scale-105 origin-right">
+                    <div className="text-center pr-8 transform group-hover:translate-x-2 transition-transform duration-300">
+                      {/* User Icon */}
+                      <div className="mb-4 flex justify-center">
+                        <svg className="w-16 h-16 md:w-20 md:h-20 text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      </div>
+                      <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 drop-shadow-md">
+                        Talent
+                      </h2>
+                      <p className="text-sm md:text-base text-primary-100 font-medium">
+                        Find Your Dream Job
+                      </p>
+                    </div>
+                  </div>
+                </button>
+
+                {/* Hiring Manager Side (Right Half) */}
+                <button
+                  onClick={() => handleRoleSelection('company')}
+                  className="absolute right-0 top-0 w-1/2 h-full overflow-hidden group cursor-pointer focus:outline-none focus:ring-4 focus:ring-indigo-300 rounded-r-full transition-all"
+                  aria-label="Register as Hiring Manager"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-bl from-indigo-500 to-indigo-700 group-hover:from-indigo-600 group-hover:to-indigo-800 transition-all duration-300 rounded-r-full flex items-center justify-center transform group-hover:scale-105 origin-left">
+                    <div className="text-center pl-8 transform group-hover:translate-x-[-0.5rem] transition-transform duration-300">
+                      {/* Briefcase Icon */}
+                      <div className="mb-4 flex justify-center">
+                        <svg className="w-16 h-16 md:w-20 md:h-20 text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 drop-shadow-md">
+                        Hiring Manager
+                      </h2>
+                      <p className="text-sm md:text-base text-indigo-100 font-medium">
+                        Find Perfect Candidates
+                      </p>
+                    </div>
+                  </div>
+                </button>
+
+                {/* Center Divider Line */}
+                <div className="absolute left-1/2 top-0 w-1 h-full bg-white transform -translate-x-1/2 z-10 shadow-lg"></div>
+
+                {/* Outer Circle Border */}
+                <div className="absolute inset-0 rounded-full border-4 border-white shadow-2xl pointer-events-none"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Text */}
+        <div className="text-center">
+          <p className="text-gray-600 mb-4">
+            Already have an account?{' '}
+            <button
+              onClick={() => navigate('/login')}
+              className="text-primary-600 hover:text-primary-700 font-semibold underline"
             >
-              Start Your Journey Today
-            </Link>
-          )}
+              Sign In
+            </button>
+          </p>
+          <p className="text-sm text-gray-500">
+            From 100 candidates to 3 perfect matches through intelligent agent-to-agent conversations
+          </p>
         </div>
       </div>
     </div>
