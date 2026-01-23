@@ -27,6 +27,7 @@ from supabase import create_client
 from app.config import ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_KEY
 from app.services.network_learning import network_learning
 from app.services.agent_memory import agent_memory
+from app.services.hallucination_guard import hallucination_guard
 
 
 # Governance thresholds
@@ -103,6 +104,15 @@ class MasterAIGovernance:
             return {
                 "approved": False,
                 "reason": f"Profile incomplete: {', '.join(issues)}",
+                "issues": issues,
+            }
+
+        # Check integrity directive is embedded
+        if not profile.get("integrity_directive") and not profile.get("agent_personality", "").lower().__contains__("never exaggerate"):
+            issues.append("Missing integrity directive - agent cannot operate without anti-hallucination rules")
+            return {
+                "approved": False,
+                "reason": f"Integrity check failed: {', '.join(issues)}",
                 "issues": issues,
             }
 
@@ -218,6 +228,14 @@ class MasterAIGovernance:
             .execute()
         )
 
+        # Hallucination violations count
+        hallucination_events = (
+            client.table("cv2_network_events")
+            .select("id", count="exact")
+            .eq("event_type", "hallucination_detected")
+            .execute()
+        )
+
         # Supply/demand balance
         supply_demand_ratio = len(talent_agents) / max(len(hm_agents), 1)
         balance_status = "balanced"
@@ -252,6 +270,14 @@ class MasterAIGovernance:
                 "min_reputation": MIN_REPUTATION_FOR_NETWORK,
                 "match_quality_floor": MATCH_QUALITY_FLOOR,
                 "max_negotiations_per_cycle": MAX_NEGOTIATIONS_PER_CYCLE,
+            },
+            "integrity": {
+                "hallucination_violations": hallucination_events.count or 0,
+                "agents_with_directive": sum(
+                    1 for a in agent_list
+                    if isinstance(a.get("profile"), dict)
+                    and a["profile"].get("integrity_directive")
+                ),
             },
         }
 
@@ -353,6 +379,27 @@ class MasterAIGovernance:
                 review = await self.review_agent_performance(agent["id"])
                 if review["action"] != "continue":
                     actions_taken.append(review)
+
+        # Hallucination monitoring - check active agents for drift
+        if client:
+            active_agents = (
+                client.table("cv2_agents")
+                .select("id")
+                .eq("active", True)
+                .execute()
+            )
+            for agent in (active_agents.data or [])[:20]:  # Check up to 20 per cycle
+                try:
+                    drift_result = await hallucination_guard.monitor_agent_drift(agent["id"])
+                    if drift_result.get("drift_detected"):
+                        actions_taken.append({
+                            "action": "hallucination_drift_detected",
+                            "agent_id": agent["id"],
+                            "severity": drift_result.get("drift_severity", "unknown"),
+                            "result": drift_result.get("recommended_action", "none"),
+                        })
+                except Exception:
+                    pass
 
         # Synthesize intelligence
         intelligence = await network_learning.synthesize_network_intelligence()

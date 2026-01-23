@@ -19,6 +19,11 @@ from fastapi import HTTPException
 from app.config import SUPABASE_URL, SUPABASE_SERVICE_KEY
 from app.services.interview_service import interview_service
 from app.services.ai_profile_service import ai_profile_service
+from app.services.hallucination_guard import (
+    hallucination_guard,
+    AGENT_INTEGRITY_DIRECTIVE,
+    HM_INTEGRITY_DIRECTIVE,
+)
 
 
 ACTIVATION_THRESHOLD = 60  # 0-100 score needed to auto-activate
@@ -230,7 +235,15 @@ class AutoActivation:
         }
         client.table("cv2_a2a_candidates").upsert(candidate_record).execute()
 
-        # Register agent
+        # Embed integrity directive in profile
+        ai_profile["integrity_directive"] = AGENT_INTEGRITY_DIRECTIVE
+        personality = ai_profile.get("agent_personality", "")
+        if "never exaggerate" not in personality.lower():
+            ai_profile["agent_personality"] = (
+                personality + " INTEGRITY: Never exaggerate or fabricate. Only state documented facts."
+            )
+
+        # Register agent with embedded integrity rules
         agent_id = f"agent_{user_id}"
         agent_record = {
             "id": agent_id,
@@ -240,6 +253,7 @@ class AutoActivation:
             "profile": ai_profile,
             "active": True,
             "reputation": 50,
+            "integrity_directive": AGENT_INTEGRITY_DIRECTIVE,
         }
         client.table("cv2_agents").upsert(agent_record).execute()
 
@@ -317,7 +331,15 @@ class AutoActivation:
             "activation_score": readiness["combined_score"],
         }).eq("id", job_id).execute()
 
-        # Register HM agent
+        # Embed integrity directive in HM profile
+        ai_profile["integrity_directive"] = HM_INTEGRITY_DIRECTIVE
+        personality = ai_profile.get("agent_personality", "")
+        if "never exaggerate" not in personality.lower():
+            ai_profile["agent_personality"] = (
+                personality + " INTEGRITY: Never exaggerate role benefits or fabricate undocumented conditions."
+            )
+
+        # Register HM agent with embedded integrity rules
         agent_id = f"hm_agent_{job_id}"
         agent_record = {
             "id": agent_id,
@@ -328,6 +350,7 @@ class AutoActivation:
             "profile": ai_profile,
             "active": True,
             "reputation": 50,
+            "integrity_directive": HM_INTEGRITY_DIRECTIVE,
         }
         client.table("cv2_agents").upsert(agent_record).execute()
 

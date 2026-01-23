@@ -26,6 +26,21 @@ from typing import Optional
 import anthropic
 
 from app.config import ANTHROPIC_API_KEY, MAX_NEGOTIATION_TOKENS
+from app.services.hallucination_guard import AGENT_INTEGRITY_DIRECTIVE, HM_INTEGRITY_DIRECTIVE
+
+
+# Negotiation-specific anti-hallucination rule embedded in every round
+NEGOTIATION_INTEGRITY_RULE = """
+FACTUAL GROUNDING RULE (VIOLATION = MATCH VOIDED):
+- You may ONLY state facts present in the profile data provided above
+- DO NOT invent skills, experience, or qualifications not listed
+- DO NOT exaggerate match quality to achieve a higher score
+- DO NOT fabricate alignment points that have no basis in the profiles
+- DO NOT attribute preferences or values not explicitly stated
+- If information is missing from a profile, acknowledge the gap - do not fill it
+- Every claim in your output must be traceable to the input data
+- Scores must reflect ACTUAL evidence, not optimistic interpretation
+"""
 
 
 ROUND_1_THRESHOLD = 40  # Minimum score to proceed to round 2
@@ -123,8 +138,8 @@ class NegotiationProtocol:
                 "negotiation_log": f"Completed all rounds but below threshold ({final_score}<{FINAL_THRESHOLD})",
             }
 
-        # Build synopses from round 3
-        return {
+        # Build match result
+        match_result = {
             "status": "matched",
             "final_score": final_score,
             "rounds": [r1, r2, r3],
@@ -134,6 +149,29 @@ class NegotiationProtocol:
             "negotiation_log": r3.get("negotiation_summary", "Match found through 3-round negotiation"),
             "match_level": self._score_to_level(final_score),
         }
+
+        # Post-negotiation hallucination audit
+        try:
+            from app.services.hallucination_guard import hallucination_guard
+            audit = await hallucination_guard.audit_negotiation(
+                talent_agent=talent_agent,
+                hm_agent=hm_agent,
+                negotiation_result=match_result,
+            )
+            if not audit.get("clean", True):
+                match_result["integrity_flag"] = "audit_violations_detected"
+                match_result["audit_result"] = audit
+                # Reduce score if audit recommends it
+                if audit.get("recommended_action") == "reduce_score":
+                    match_result["final_score"] = int(final_score * 0.5)
+                    match_result["match_level"] = self._score_to_level(match_result["final_score"])
+                elif audit.get("recommended_action") == "void_match":
+                    match_result["status"] = "voided"
+                    match_result["void_reason"] = "Hallucination detected in negotiation"
+        except Exception:
+            pass  # Audit is non-blocking
+
+        return match_result
 
     async def _round_1_surface(self, talent: dict, hm: dict) -> dict:
         """Round 1: Quick skills and experience compatibility check."""
@@ -149,12 +187,13 @@ class NegotiationProtocol:
         }
 
         prompt = f"""ROUND 1: Surface Compatibility Check
-
+{NEGOTIATION_INTEGRITY_RULE}
 TALENT: {json.dumps(talent_summary)}
 ROLE: {json.dumps(hm_summary)}
 
 Quick check: Does this person have the fundamental skills and experience for this role?
 Consider must-have requirements vs verified skills.
+ONLY compare skills that are explicitly listed. Do NOT infer unlisted skills.
 
 Return JSON:
 {{
@@ -188,7 +227,7 @@ Return ONLY JSON."""
         }
 
         prompt = f"""ROUND 2: Values & Culture Negotiation
-
+{NEGOTIATION_INTEGRITY_RULE}
 CONTEXT FROM ROUND 1: Skills match = {r1.get('skills_match', 'unknown')}, {r1.get('reason', '')}
 
 TALENT AGENT (style: {talent_personality}) represents:
@@ -198,9 +237,9 @@ HM AGENT (style: {hm_personality}) represents:
 {json.dumps(hm_values)}
 
 Negotiate from each agent's perspective:
-- Talent agent: Would my user's values clash with this culture?
-- HM agent: Does this person's style match what we really need?
-- Check dealbreakers on BOTH sides
+- Talent agent: Would my user's values clash with this culture? ONLY use values listed above.
+- HM agent: Does this person's style match what we really need? ONLY use preferences listed above.
+- Check dealbreakers on BOTH sides - ONLY flagged dealbreakers, do not invent new ones
 
 Return JSON:
 {{
@@ -224,7 +263,7 @@ Return ONLY JSON."""
     ) -> dict:
         """Round 3: Deep fit analysis with full agent personalities."""
         prompt = f"""ROUND 3: Deep Fit Negotiation
-
+{NEGOTIATION_INTEGRITY_RULE}
 PREVIOUS ROUNDS:
 - Round 1: Score {r1.get('score')}, {r1.get('reason', '')}
 - Round 2: Score {r2.get('score')}, {r2.get('reason', '')}
@@ -243,9 +282,11 @@ HM AGENT (personality: {hm_personality}) full profile:
 - Offer flexibility: {json.dumps(hm.get('offer_flexibility', {}))}
 
 Now conduct the deep negotiation. Each agent argues for their user:
-- Talent agent: Is this truly where my user will thrive? Growth potential?
-- HM agent: Will this person succeed long-term? What's the gut check?
-- Consider hidden criteria, personality fit, growth trajectory
+- Talent agent: Is this truly where my user will thrive? ONLY cite documented priorities and preferences.
+- HM agent: Will this person succeed long-term? ONLY reference documented green/red flags.
+- Consider hidden criteria and personality fit ONLY from the profiles above.
+- DO NOT fabricate growth opportunities, benefits, or candidate strengths not in the data.
+- Synopses must contain ONLY claims supported by the profile data above.
 
 Return JSON:
 {{

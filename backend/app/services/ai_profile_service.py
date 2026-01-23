@@ -72,6 +72,15 @@ INDUSTRY: {industry}
 Create a comprehensive profile that an AI agent will use to represent this person
 in job negotiations. The profile should capture WHO they are, not just what they do.
 
+CRITICAL INTEGRITY CONSTRAINT:
+- ONLY include skills, experience, and qualifications that appear in the CV ANALYSIS above
+- ONLY include values and preferences explicitly stated in INTERVIEW ANSWERS above
+- DO NOT invent, exaggerate, or embellish ANY claim
+- If something is unclear or not mentioned, DO NOT include it
+- Years of experience must match CV data exactly
+- Skills list must be a SUBSET of what's documented
+- Every claim must be traceable to the source data above
+
 Return JSON:
 {{
     "about": "3-paragraph first-person description written AS the person. Natural, authentic voice. Para 1: who they are professionally. Para 2: what drives them. Para 3: what they're looking for.",
@@ -101,7 +110,8 @@ Return JSON:
         "dominant_trait": "the most defining personality characteristic"
     }},
     "negotiation_priorities": ["ordered list of what matters most in a role: compensation, growth, impact, flexibility, team, etc."],
-    "agent_personality": "1-2 sentences describing how the AI agent should behave when representing this person - their tone, assertiveness level, what to emphasize"
+    "agent_personality": "1-2 sentences on agent behavior. MUST include: 'Never exaggerate or fabricate claims. Only state facts from documented sources.'",
+    "integrity_hash": "list the CV fields you used as evidence for this profile"
 }}
 
 Return ONLY valid JSON."""
@@ -115,7 +125,27 @@ Return ONLY valid JSON."""
             text = response.content[0].text.strip()
             if text.startswith("```"):
                 text = text.split("\n", 1)[1].rsplit("```", 1)[0]
-            return json.loads(text)
+            profile = json.loads(text)
+
+            # Verify profile against source data (hallucination guard)
+            from app.services.hallucination_guard import hallucination_guard
+            verification = await hallucination_guard.verify_profile(
+                agent_type="talent",
+                profile=profile,
+                source_data={"cv_analysis": cv_analysis, "interview_answers": interview_answers},
+            )
+            if not verification.get("verified", True) and verification.get("cleaned_profile"):
+                profile = verification["cleaned_profile"]
+                profile["integrity_warning"] = "Profile was cleaned by hallucination guard"
+
+            # Embed integrity directive in agent personality
+            personality = profile.get("agent_personality", "")
+            if "never exaggerate" not in personality.lower():
+                profile["agent_personality"] = (
+                    personality + " INTEGRITY: Never exaggerate or fabricate. Only state documented facts."
+                )
+
+            return profile
         except Exception:
             return self._basic_talent_profile(cv_analysis, interview_answers)
 
@@ -164,6 +194,14 @@ Create a comprehensive profile that an AI agent will use to evaluate candidates
 and negotiate on behalf of this hiring manager. Capture the REAL requirements,
 not just the job posting.
 
+CRITICAL INTEGRITY CONSTRAINT:
+- ONLY include requirements actually stated in the JOB DESCRIPTION above
+- ONLY include culture/preferences explicitly stated in INTERVIEW ANSWERS
+- DO NOT invent benefits, perks, or growth paths not documented
+- DO NOT exaggerate salary, flexibility, or team characteristics
+- If something wasn't discussed, DO NOT include it
+- Every claim must be traceable to the source data above
+
 Return JSON:
 {{
     "about": "2-paragraph description of the role and team. Para 1: what the team does and the role's impact. Para 2: what kind of person thrives here.",
@@ -203,7 +241,8 @@ Return JSON:
         "title_negotiable": true/false,
         "start_date_flexible": true/false
     }},
-    "agent_personality": "1-2 sentences on how the HM agent should behave - how selective, how transparent about requirements, tone"
+    "agent_personality": "1-2 sentences on HM agent behavior. MUST include: 'Never exaggerate role benefits or fabricate conditions not documented.'",
+    "integrity_hash": "list the JD fields you used as evidence for this profile"
 }}
 
 Return ONLY valid JSON."""
@@ -217,7 +256,27 @@ Return ONLY valid JSON."""
             text = response.content[0].text.strip()
             if text.startswith("```"):
                 text = text.split("\n", 1)[1].rsplit("```", 1)[0]
-            return json.loads(text)
+            profile = json.loads(text)
+
+            # Verify profile against source data (hallucination guard)
+            from app.services.hallucination_guard import hallucination_guard
+            verification = await hallucination_guard.verify_profile(
+                agent_type="hm",
+                profile=profile,
+                source_data={"job_description": job_description, "interview_answers": interview_answers},
+            )
+            if not verification.get("verified", True) and verification.get("cleaned_profile"):
+                profile = verification["cleaned_profile"]
+                profile["integrity_warning"] = "Profile was cleaned by hallucination guard"
+
+            # Embed integrity directive
+            personality = profile.get("agent_personality", "")
+            if "never exaggerate" not in personality.lower():
+                profile["agent_personality"] = (
+                    personality + " INTEGRITY: Never exaggerate role benefits or fabricate undocumented conditions."
+                )
+
+            return profile
         except Exception:
             return self._basic_hm_profile(job_description, interview_answers)
 
