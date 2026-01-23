@@ -1,4 +1,5 @@
 import json
+from typing import Optional
 
 import anthropic
 from fastapi import APIRouter, HTTPException
@@ -7,12 +8,34 @@ from pydantic import BaseModel
 from supabase import create_client
 
 from app.config import SUPABASE_URL, SUPABASE_SERVICE_KEY, ANTHROPIC_API_KEY
+from app.services.master_ai_control_center import master_ai_control_center
+from app.services.ai_analytics import ai_analytics
+from app.services.cost_tracker import cost_tracker
+from app.services.agent_training_center import agent_training_center
+from app.services.market_intelligence import market_intelligence
+from app.services.ai_council import ai_council
 
 router = APIRouter()
 
 
 class CertifyRequest(BaseModel):
     user_id: str
+
+
+class CouncilRequest(BaseModel):
+    topic: str
+    context: Optional[dict] = None
+    members: Optional[list] = None
+
+
+class TrainAgentRequest(BaseModel):
+    agent_id: str
+    training_type: str = "correction"  # correction, integrity, full_retrain
+
+
+class MarketDataRequest(BaseModel):
+    source: str
+    data: dict
 
 
 def _get_supabase():
@@ -203,3 +226,182 @@ async def certify_agent(request: CertifyRequest):
             "reasoning": evaluation.get("reasoning", ""),
             "gaps": evaluation.get("gaps", []),
         }
+
+
+# --- CONTROL CENTER ENDPOINTS ---
+
+@router.get("/control-center")
+async def get_control_center_dashboard():
+    """Full Master AI Control Center dashboard data."""
+    return await master_ai_control_center.get_full_dashboard()
+
+
+@router.post("/control-center/cycle")
+async def run_master_cycle():
+    """Run a complete Master AI operational cycle."""
+    return await master_ai_control_center.run_full_cycle()
+
+
+@router.get("/control-center/strategic")
+async def get_strategic_overview():
+    """Strategic overview for platform leadership."""
+    return await master_ai_control_center.get_strategic_overview()
+
+
+@router.get("/control-center/rd")
+async def get_rd_status():
+    """R&D status - capabilities and improvements."""
+    return await master_ai_control_center.get_rd_status()
+
+
+# --- ANALYTICS ---
+
+@router.get("/analytics/rankings")
+async def get_agent_rankings():
+    """Get agent performance rankings."""
+    return await ai_analytics.get_agent_rankings()
+
+
+@router.get("/analytics/behavior")
+async def get_network_behavior():
+    """Get network-wide behavior analysis."""
+    return await ai_analytics.get_behavior_analysis()
+
+
+@router.get("/analytics/behavior/{agent_id}")
+async def get_agent_behavior(agent_id: str):
+    """Get behavior analysis for a specific agent."""
+    return await ai_analytics.get_behavior_analysis(agent_id)
+
+
+@router.get("/analytics/data")
+async def get_data_report():
+    """Get data collection and coverage report."""
+    return await ai_analytics.get_data_collection_report()
+
+
+@router.get("/analytics/communication")
+async def get_communication_analysis():
+    """Get communication pattern analysis."""
+    return await ai_analytics.get_communication_analysis()
+
+
+@router.get("/analytics/deep-dive/{agent_id}")
+async def get_agent_deep_dive(agent_id: str):
+    """Deep dive into a specific agent."""
+    return await master_ai_control_center.get_agent_deep_dive(agent_id)
+
+
+# --- COSTS ---
+
+@router.get("/costs")
+async def get_costs(period: str = "today"):
+    """Get cost summary for a period (today, week, month, all)."""
+    return await cost_tracker.get_cost_summary(period)
+
+
+@router.get("/costs/budget")
+async def get_budget_status(monthly_budget: float = 100.0):
+    """Get budget status and alerts."""
+    return await cost_tracker.get_budget_status(monthly_budget)
+
+
+@router.get("/costs/agent/{agent_id}")
+async def get_agent_costs(agent_id: str):
+    """Get cost breakdown for a specific agent."""
+    return await cost_tracker.get_agent_costs(agent_id)
+
+
+# --- TRAINING CENTER ---
+
+@router.get("/training/queue")
+async def get_training_queue():
+    """Get list of agents needing training."""
+    return await agent_training_center.get_training_queue()
+
+
+@router.get("/training/diagnose/{agent_id}")
+async def diagnose_agent(agent_id: str):
+    """Diagnose why an agent is underperforming."""
+    return await agent_training_center.diagnose_agent(agent_id)
+
+
+@router.post("/training/run")
+async def train_agent(request: TrainAgentRequest):
+    """Run training for a specific agent."""
+    if request.training_type == "correction":
+        return await agent_training_center.run_correction_training(request.agent_id)
+    elif request.training_type == "integrity":
+        return await agent_training_center.run_integrity_reinforcement(request.agent_id)
+    elif request.training_type == "full_retrain":
+        return await agent_training_center.run_full_retrain(request.agent_id)
+    else:
+        raise HTTPException(status_code=400, detail=f"Unknown training type: {request.training_type}")
+
+
+@router.post("/training/cycle")
+async def run_training_cycle():
+    """Run a full training cycle for all agents in queue."""
+    return await agent_training_center.run_training_cycle()
+
+
+# --- MARKET INTELLIGENCE ---
+
+@router.get("/market/snapshot")
+async def get_market_snapshot():
+    """Get current market intelligence snapshot."""
+    return await market_intelligence.get_market_snapshot()
+
+
+@router.get("/market/industry/{industry}")
+async def get_industry_report(industry: str):
+    """Get detailed market report for an industry."""
+    return await market_intelligence.get_industry_report(industry)
+
+
+@router.get("/market/trends")
+async def get_hiring_trends():
+    """Get hiring trend analysis."""
+    return await market_intelligence.get_hiring_trends()
+
+
+@router.get("/market/strategic-brief")
+async def get_strategic_brief():
+    """Get AI-synthesized strategic brief."""
+    return await market_intelligence.synthesize_strategic_brief()
+
+
+@router.post("/market/ingest")
+async def ingest_market_data(request: MarketDataRequest):
+    """Ingest external market data from 3rd party sources."""
+    return await market_intelligence.ingest_market_data(request.source, request.data)
+
+
+# --- AI COUNCIL ---
+
+@router.post("/council/convene")
+async def convene_council(request: CouncilRequest):
+    """Convene the AI council for a strategic deliberation."""
+    return await ai_council.convene(
+        topic=request.topic,
+        context=request.context or {},
+        members=request.members,
+    )
+
+
+@router.post("/council/consult")
+async def consult_council(request: CouncilRequest):
+    """Quick consultation with the platform council."""
+    return await master_ai_control_center.consult_council(
+        topic=request.topic,
+        context=request.context,
+    )
+
+
+@router.post("/council/review")
+async def council_review_decision(request: CouncilRequest):
+    """Have the council review a decision."""
+    return await ai_council.review_decision(
+        decision=request.topic,
+        rationale=json.dumps(request.context or {}),
+    )

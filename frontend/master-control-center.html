@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master AI Control Center - CV 2.0</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            background: #0a0a0f;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+        .header {
+            background: linear-gradient(135deg, #1a0a2e 0%, #0a1628 50%, #0a0a0f 100%);
+            padding: 20px 30px;
+            border-bottom: 1px solid #2a1a4a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            font-size: 1.4em;
+            color: #a855f7;
+            letter-spacing: 2px;
+        }
+        .header .status {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+        .status-dot.green { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+        .status-dot.yellow { background: #eab308; box-shadow: 0 0 6px #eab308; }
+        .status-dot.red { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
+
+        .nav-tabs {
+            display: flex;
+            background: #0f0f1a;
+            border-bottom: 1px solid #1a1a2e;
+            overflow-x: auto;
+        }
+        .nav-tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            color: #666;
+            border-bottom: 2px solid transparent;
+            white-space: nowrap;
+            font-size: 0.85em;
+            transition: all 0.2s;
+        }
+        .nav-tab:hover { color: #a855f7; }
+        .nav-tab.active { color: #a855f7; border-bottom-color: #a855f7; }
+
+        .content { padding: 20px 30px; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .grid { display: grid; gap: 15px; }
+        .grid-2 { grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); }
+        .grid-3 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+        .grid-4 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+
+        .card {
+            background: #12121e;
+            border: 1px solid #1e1e3a;
+            border-radius: 8px;
+            padding: 18px;
+        }
+        .card h3 {
+            color: #a855f7;
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        .metric {
+            text-align: center;
+            padding: 10px;
+        }
+        .metric .value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #fff;
+        }
+        .metric .label {
+            font-size: 0.75em;
+            color: #888;
+            margin-top: 4px;
+        }
+        .metric.green .value { color: #22c55e; }
+        .metric.yellow .value { color: #eab308; }
+        .metric.red .value { color: #ef4444; }
+        .metric.purple .value { color: #a855f7; }
+
+        .alert {
+            padding: 10px 14px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 0.85em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .alert.critical { background: #1a0505; border: 1px solid #ef4444; color: #fca5a5; }
+        .alert.warning { background: #1a1505; border: 1px solid #eab308; color: #fde047; }
+        .alert.info { background: #051a0a; border: 1px solid #22c55e; color: #86efac; }
+
+        .table-container { overflow-x: auto; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82em;
+        }
+        th, td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid #1e1e3a;
+        }
+        th { color: #888; text-transform: uppercase; font-size: 0.8em; letter-spacing: 1px; }
+        tr:hover { background: #1a1a2e; }
+
+        .badge {
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75em;
+            font-weight: bold;
+        }
+        .badge.green { background: #052e16; color: #22c55e; }
+        .badge.red { background: #2e0505; color: #ef4444; }
+        .badge.yellow { background: #2e2505; color: #eab308; }
+        .badge.purple { background: #1a052e; color: #a855f7; }
+
+        .btn {
+            padding: 8px 16px;
+            border: 1px solid #a855f7;
+            background: transparent;
+            color: #a855f7;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.82em;
+            transition: all 0.2s;
+        }
+        .btn:hover { background: #a855f7; color: #fff; }
+        .btn.danger { border-color: #ef4444; color: #ef4444; }
+        .btn.danger:hover { background: #ef4444; color: #fff; }
+        .btn.success { border-color: #22c55e; color: #22c55e; }
+        .btn.success:hover { background: #22c55e; color: #fff; }
+
+        .actions { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
+
+        .progress-bar {
+            height: 6px;
+            background: #1e1e3a;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        .progress-bar .fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.3s;
+        }
+        .progress-bar .fill.green { background: #22c55e; }
+        .progress-bar .fill.yellow { background: #eab308; }
+        .progress-bar .fill.red { background: #ef4444; }
+        .progress-bar .fill.purple { background: #a855f7; }
+
+        .council-member {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px;
+            border: 1px solid #1e1e3a;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+        .council-member .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        .council-member .name { font-weight: bold; color: #a855f7; font-size: 0.85em; }
+        .council-member .role { color: #666; font-size: 0.75em; }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .input-group input, .input-group textarea {
+            flex: 1;
+            padding: 8px 12px;
+            background: #0a0a14;
+            border: 1px solid #2a2a4a;
+            border-radius: 6px;
+            color: #e0e0e0;
+            font-family: inherit;
+            font-size: 0.85em;
+        }
+        .input-group textarea { min-height: 80px; resize: vertical; }
+
+        .cost-breakdown {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .cost-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.82em;
+            padding: 4px 0;
+            border-bottom: 1px solid #1a1a2a;
+        }
+        .cost-row .amount { color: #a855f7; font-weight: bold; }
+
+        #loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #a855f7;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">Loading Control Center...</div>
+
+    <div id="app" style="display: none;">
+        <div class="header">
+            <h1>MASTER AI CONTROL CENTER</h1>
+            <div class="status">
+                <span><span class="status-dot green" id="health-dot"></span> <span id="health-text">Healthy</span></span>
+                <span style="color: #666">|</span>
+                <span style="color: #888; font-size: 0.85em" id="timestamp"></span>
+            </div>
+        </div>
+
+        <div class="nav-tabs">
+            <div class="nav-tab active" data-tab="overview">Overview</div>
+            <div class="nav-tab" data-tab="agents">Agents</div>
+            <div class="nav-tab" data-tab="training">Training</div>
+            <div class="nav-tab" data-tab="analytics">Analytics</div>
+            <div class="nav-tab" data-tab="costs">Costs</div>
+            <div class="nav-tab" data-tab="market">Market Intel</div>
+            <div class="nav-tab" data-tab="council">AI Council</div>
+            <div class="nav-tab" data-tab="rd">R&D</div>
+        </div>
+
+        <div class="content">
+            <!-- OVERVIEW TAB -->
+            <div class="tab-content active" id="tab-overview">
+                <div id="alerts-container" style="margin-bottom: 20px;"></div>
+
+                <div class="grid grid-4" style="margin-bottom: 20px;">
+                    <div class="card"><div class="metric purple"><div class="value" id="m-agents">-</div><div class="label">Active Agents</div></div></div>
+                    <div class="card"><div class="metric green"><div class="value" id="m-matches">-</div><div class="label">Matches</div></div></div>
+                    <div class="card"><div class="metric yellow"><div class="value" id="m-cost">-</div><div class="label">Today's Cost</div></div></div>
+                    <div class="card"><div class="metric"><div class="value" id="m-performance">-</div><div class="label">Avg Performance</div></div></div>
+                </div>
+
+                <div class="grid grid-2">
+                    <div class="card">
+                        <h3>Network Health</h3>
+                        <div id="health-details"></div>
+                    </div>
+                    <div class="card">
+                        <h3>Budget Status</h3>
+                        <div id="budget-status"></div>
+                    </div>
+                    <div class="card">
+                        <h3>Integrity Monitor</h3>
+                        <div id="integrity-status"></div>
+                    </div>
+                    <div class="card">
+                        <h3>Training Queue</h3>
+                        <div id="training-overview"></div>
+                    </div>
+                </div>
+
+                <div class="actions" style="margin-top: 20px;">
+                    <button class="btn" onclick="runMasterCycle()">Run Master Cycle</button>
+                    <button class="btn success" onclick="runTrainingCycle()">Run Training</button>
+                    <button class="btn" onclick="refreshDashboard()">Refresh</button>
+                </div>
+            </div>
+
+            <!-- AGENTS TAB -->
+            <div class="tab-content" id="tab-agents">
+                <div class="card" style="margin-bottom: 15px;">
+                    <h3>Agent Rankings</h3>
+                    <div class="table-container" id="rankings-table"></div>
+                </div>
+                <div class="actions">
+                    <button class="btn" onclick="loadRankings()">Refresh Rankings</button>
+                </div>
+            </div>
+
+            <!-- TRAINING TAB -->
+            <div class="tab-content" id="tab-training">
+                <div class="grid grid-2">
+                    <div class="card">
+                        <h3>Training Queue</h3>
+                        <div id="training-queue-detail"></div>
+                    </div>
+                    <div class="card">
+                        <h3>Train Agent</h3>
+                        <div class="input-group">
+                            <input type="text" id="train-agent-id" placeholder="Agent ID">
+                        </div>
+                        <div class="actions">
+                            <button class="btn" onclick="trainAgent('correction')">Correction</button>
+                            <button class="btn" onclick="trainAgent('integrity')">Integrity</button>
+                            <button class="btn danger" onclick="trainAgent('full_retrain')">Full Retrain</button>
+                        </div>
+                        <div id="train-result" style="margin-top: 15px; font-size: 0.85em;"></div>
+                    </div>
+                </div>
+                <div class="card" style="margin-top: 15px;">
+                    <h3>Agent Diagnosis</h3>
+                    <div class="input-group">
+                        <input type="text" id="diagnose-agent-id" placeholder="Agent ID to diagnose">
+                        <button class="btn" onclick="diagnoseAgent()">Diagnose</button>
+                    </div>
+                    <div id="diagnosis-result"></div>
+                </div>
+            </div>
+
+            <!-- ANALYTICS TAB -->
+            <div class="tab-content" id="tab-analytics">
+                <div class="grid grid-2">
+                    <div class="card">
+                        <h3>Network Behavior</h3>
+                        <div id="behavior-analysis"></div>
+                    </div>
+                    <div class="card">
+                        <h3>Communication Patterns</h3>
+                        <div id="communication-analysis"></div>
+                    </div>
+                    <div class="card">
+                        <h3>Data Collection Report</h3>
+                        <div id="data-report"></div>
+                    </div>
+                    <div class="card">
+                        <h3>Score Distribution</h3>
+                        <div id="score-distribution"></div>
+                    </div>
+                </div>
+                <div class="actions" style="margin-top: 15px;">
+                    <button class="btn" onclick="loadAnalytics()">Refresh Analytics</button>
+                </div>
+            </div>
+
+            <!-- COSTS TAB -->
+            <div class="tab-content" id="tab-costs">
+                <div class="grid grid-3" style="margin-bottom: 15px;">
+                    <div class="card"><div class="metric purple"><div class="value" id="cost-today">-</div><div class="label">Today</div></div></div>
+                    <div class="card"><div class="metric"><div class="value" id="cost-month">-</div><div class="label">This Month</div></div></div>
+                    <div class="card"><div class="metric yellow"><div class="value" id="cost-projection">-</div><div class="label">Monthly Projection</div></div></div>
+                </div>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <h3>Cost by Operation</h3>
+                        <div id="cost-by-operation" class="cost-breakdown"></div>
+                    </div>
+                    <div class="card">
+                        <h3>Cost by Model</h3>
+                        <div id="cost-by-model" class="cost-breakdown"></div>
+                    </div>
+                    <div class="card">
+                        <h3>Top Agent Costs</h3>
+                        <div id="cost-by-agent" class="cost-breakdown"></div>
+                    </div>
+                    <div class="card">
+                        <h3>Budget</h3>
+                        <div id="budget-detail"></div>
+                    </div>
+                </div>
+                <div class="actions" style="margin-top: 15px;">
+                    <button class="btn" onclick="loadCosts('today')">Today</button>
+                    <button class="btn" onclick="loadCosts('week')">Week</button>
+                    <button class="btn" onclick="loadCosts('month')">Month</button>
+                </div>
+            </div>
+
+            <!-- MARKET INTEL TAB -->
+            <div class="tab-content" id="tab-market">
+                <div class="grid grid-2">
+                    <div class="card">
+                        <h3>Market Snapshot</h3>
+                        <div id="market-snapshot"></div>
+                    </div>
+                    <div class="card">
+                        <h3>Hiring Trends</h3>
+                        <div id="hiring-trends"></div>
+                    </div>
+                    <div class="card">
+                        <h3>Industry Report</h3>
+                        <div class="input-group">
+                            <input type="text" id="industry-input" placeholder="Industry (e.g., tech, finance)">
+                            <button class="btn" onclick="loadIndustryReport()">Get Report</button>
+                        </div>
+                        <div id="industry-report"></div>
+                    </div>
+                    <div class="card">
+                        <h3>Strategic Brief</h3>
+                        <button class="btn" onclick="loadStrategicBrief()" style="margin-bottom: 10px;">Generate Brief</button>
+                        <div id="strategic-brief"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI COUNCIL TAB -->
+            <div class="tab-content" id="tab-council">
+                <div class="card" style="margin-bottom: 15px;">
+                    <h3>Council Members</h3>
+                    <div class="grid grid-3" id="council-members">
+                        <div class="council-member">
+                            <div class="avatar" style="background: #1a2e3a; color: #3b82f6;">ST</div>
+                            <div><div class="name">Strategist</div><div class="role">Long-term growth, market positioning</div></div>
+                        </div>
+                        <div class="council-member">
+                            <div class="avatar" style="background: #2e1a1a; color: #ef4444;">RA</div>
+                            <div><div class="name">Risk Analyst</div><div class="role">Threats, vulnerabilities, failure modes</div></div>
+                        </div>
+                        <div class="council-member">
+                            <div class="avatar" style="background: #1a2e1a; color: #22c55e;">EO</div>
+                            <div><div class="name">Ethics Officer</div><div class="role">Fairness, bias, integrity, trust</div></div>
+                        </div>
+                        <div class="council-member">
+                            <div class="avatar" style="background: #2e2e1a; color: #eab308;">GA</div>
+                            <div><div class="name">Growth Advisor</div><div class="role">Acquisition, engagement, retention</div></div>
+                        </div>
+                        <div class="council-member">
+                            <div class="avatar" style="background: #1a1a2e; color: #a855f7;">TA</div>
+                            <div><div class="name">Tech Architect</div><div class="role">Performance, scalability, cost efficiency</div></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Convene Council</h3>
+                    <div class="input-group">
+                        <textarea id="council-topic" placeholder="Describe the topic or decision for the council to deliberate on..."></textarea>
+                    </div>
+                    <div class="actions">
+                        <button class="btn" onclick="conveneCouncil()">Convene Full Council</button>
+                        <button class="btn success" onclick="quickConsult()">Quick Consult (Strategist)</button>
+                    </div>
+                    <div id="council-result" style="margin-top: 15px;"></div>
+                </div>
+            </div>
+
+            <!-- R&D TAB -->
+            <div class="tab-content" id="tab-rd">
+                <div class="grid grid-2">
+                    <div class="card">
+                        <h3>Platform Capabilities</h3>
+                        <div id="rd-capabilities"></div>
+                    </div>
+                    <div class="card">
+                        <h3>Architecture</h3>
+                        <div id="rd-architecture"></div>
+                    </div>
+                    <div class="card">
+                        <h3>Feature Utilization</h3>
+                        <div id="rd-utilization"></div>
+                    </div>
+                    <div class="card">
+                        <h3>Suggested Improvements</h3>
+                        <div id="rd-suggestions"></div>
+                    </div>
+                </div>
+                <div class="actions" style="margin-top: 15px;">
+                    <button class="btn" onclick="loadRD()">Refresh R&D Status</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = '';
+
+        // Tab navigation
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+
+                // Load tab-specific data
+                const tabName = tab.dataset.tab;
+                if (tabName === 'agents') loadRankings();
+                else if (tabName === 'analytics') loadAnalytics();
+                else if (tabName === 'costs') loadCosts('today');
+                else if (tabName === 'market') loadMarket();
+                else if (tabName === 'training') loadTrainingQueue();
+                else if (tabName === 'rd') loadRD();
+            });
+        });
+
+        // Initial load
+        async function init() {
+            try {
+                await refreshDashboard();
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+            } catch (e) {
+                document.getElementById('loading').textContent = 'Control Center: Connection error. Retrying...';
+                setTimeout(init, 3000);
+            }
+        }
+
+        async function refreshDashboard() {
+            const data = await fetch(API + '/master-ai/control-center').then(r => r.json());
+            renderOverview(data);
+        }
+
+        function renderOverview(data) {
+            document.getElementById('timestamp').textContent = new Date(data.timestamp).toLocaleString();
+
+            // Health status
+            const health = data.network_health || {};
+            const dot = document.getElementById('health-dot');
+            const text = document.getElementById('health-text');
+            if (health.status === 'healthy') { dot.className = 'status-dot green'; text.textContent = 'Healthy'; }
+            else { dot.className = 'status-dot yellow'; text.textContent = 'Needs Attention'; }
+
+            // Metrics
+            const ao = data.agent_overview || {};
+            document.getElementById('m-agents').textContent = ao.active || 0;
+            document.getElementById('m-matches').textContent = (health.matches || {}).total || 0;
+            document.getElementById('m-cost').textContent = '$' + ((data.costs || {}).today_usd || 0).toFixed(2);
+            document.getElementById('m-performance').textContent = (ao.avg_performance || 0).toFixed(0);
+
+            // Alerts
+            const alertsHtml = (data.alerts || []).map(a =>
+                `<div class="alert ${a.level}"><span>${a.level.toUpperCase()}</span> [${a.source}] ${a.message}</div>`
+            ).join('');
+            document.getElementById('alerts-container').innerHTML = alertsHtml || '<div class="alert info">No active alerts</div>';
+
+            // Health details
+            const agents = health.agents || {};
+            document.getElementById('health-details').innerHTML = `
+                <div style="font-size: 0.85em;">
+                    <div class="cost-row"><span>Talent Agents</span><span class="amount">${agents.talent_active || 0}</span></div>
+                    <div class="cost-row"><span>HM Agents</span><span class="amount">${agents.hm_active || 0}</span></div>
+                    <div class="cost-row"><span>Supply/Demand</span><span class="amount">${agents.supply_demand_ratio || 0}</span></div>
+                    <div class="cost-row"><span>Balance</span><span class="badge ${agents.balance === 'balanced' ? 'green' : 'yellow'}">${agents.balance || '-'}</span></div>
+                    <div class="cost-row"><span>Avg Match Score</span><span class="amount">${(health.matches || {}).avg_score || 0}</span></div>
+                    <div class="cost-row"><span>Avg Reputation</span><span class="amount">${(health.reputation || {}).average || 0}</span></div>
+                </div>`;
+
+            // Budget
+            const costs = data.costs || {};
+            const usage = costs.budget_usage_percent || 0;
+            const barClass = usage > 90 ? 'red' : usage > 75 ? 'yellow' : 'green';
+            document.getElementById('budget-status').innerHTML = `
+                <div class="metric ${barClass}" style="margin-bottom: 10px;"><div class="value">${usage.toFixed(0)}%</div><div class="label">Budget Used</div></div>
+                <div class="progress-bar"><div class="fill ${barClass}" style="width: ${Math.min(usage, 100)}%"></div></div>
+                <div style="font-size: 0.8em; color: #888; margin-top: 8px;">
+                    ${costs.monthly_projection ? 'Projected: $' + costs.monthly_projection.toFixed(2) + '/mo' : ''}
+                </div>`;
+
+            // Integrity
+            const integrity = health.integrity || {};
+            document.getElementById('integrity-status').innerHTML = `
+                <div style="font-size: 0.85em;">
+                    <div class="cost-row"><span>Violations Detected</span><span class="badge ${integrity.hallucination_violations > 0 ? 'red' : 'green'}">${integrity.hallucination_violations || 0}</span></div>
+                    <div class="cost-row"><span>Agents with Directive</span><span class="amount">${integrity.agents_with_directive || 0}</span></div>
+                    <div class="cost-row"><span>At-Risk Agents</span><span class="badge ${(health.reputation || {}).at_risk > 0 ? 'yellow' : 'green'}">${(health.reputation || {}).at_risk || 0}</span></div>
+                </div>`;
+
+            // Training overview
+            const training = ao;
+            document.getElementById('training-overview').innerHTML = `
+                <div style="font-size: 0.85em;">
+                    <div class="cost-row"><span>Needing Training</span><span class="badge ${training.needing_training > 0 ? 'yellow' : 'green'}">${training.needing_training || 0}</span></div>
+                    <div class="cost-row"><span>Critical</span><span class="badge ${training.critical_agents > 0 ? 'red' : 'green'}">${training.critical_agents || 0}</span></div>
+                    <div class="cost-row"><span>Top Performer</span><span class="amount">${training.top_performer ? training.top_performer.agent_id.substring(0, 15) : '-'}</span></div>
+                </div>`;
+        }
+
+        async function loadRankings() {
+            const data = await fetch(API + '/master-ai/analytics/rankings').then(r => r.json());
+            const rankings = data.rankings || [];
+            let html = '<table><thead><tr><th>#</th><th>Agent</th><th>Type</th><th>Score</th><th>Rep</th><th>Matches</th><th>Success</th></tr></thead><tbody>';
+            rankings.forEach(r => {
+                html += `<tr>
+                    <td>${r.rank}</td>
+                    <td style="color: #a855f7; font-size: 0.85em;">${r.agent_id.substring(0, 20)}</td>
+                    <td><span class="badge ${r.agent_type === 'talent' ? 'purple' : 'green'}">${r.agent_type}</span></td>
+                    <td>${r.performance_score}</td>
+                    <td>${r.reputation}</td>
+                    <td>${r.total_matches}</td>
+                    <td>${r.success_rate}%</td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            document.getElementById('rankings-table').innerHTML = html;
+        }
+
+        async function loadAnalytics() {
+            const [behavior, comm, dataReport] = await Promise.all([
+                fetch(API + '/master-ai/analytics/behavior').then(r => r.json()),
+                fetch(API + '/master-ai/analytics/communication').then(r => r.json()),
+                fetch(API + '/master-ai/analytics/data').then(r => r.json()),
+            ]);
+
+            const nb = behavior.network_behavior || {};
+            document.getElementById('behavior-analysis').innerHTML = `
+                <div style="font-size: 0.85em;">
+                    <div class="cost-row"><span>Active Agents</span><span class="amount">${nb.total_active_agents || 0}</span></div>
+                    <div class="cost-row"><span>Total Negotiations</span><span class="amount">${nb.total_negotiations || 0}</span></div>
+                    <div class="cost-row"><span>Avg Match Score</span><span class="amount">${nb.avg_match_score || 0}</span></div>
+                </div>`;
+
+            const dist = nb.score_distribution || {};
+            document.getElementById('score-distribution').innerHTML = `
+                <div style="font-size: 0.85em;">
+                    <div class="cost-row"><span>Exceptional (85+)</span><span class="badge green">${dist.exceptional || 0}</span></div>
+                    <div class="cost-row"><span>Strong (75-84)</span><span class="badge green">${dist.strong || 0}</span></div>
+                    <div class="cost-row"><span>Moderate (65-74)</span><span class="badge yellow">${dist.moderate || 0}</span></div>
+                    <div class="cost-row"><span>Weak (55-64)</span><span class="badge yellow">${dist.weak || 0}</span></div>
+                    <div class="cost-row"><span>Poor (&lt;55)</span><span class="badge red">${dist.poor || 0}</span></div>
+                </div>`;
+
+            const uf = comm.user_facing || {};
+            document.getElementById('communication-analysis').innerHTML = `
+                <div style="font-size: 0.85em;">
+                    <div class="cost-row"><span>Conversations</span><span class="amount">${uf.total_conversations || 0}</span></div>
+                    <div class="cost-row"><span>Total Messages</span><span class="amount">${uf.total_messages || 0}</span></div>
+                    <div class="cost-row"><span>Avg AI Response</span><span class="amount">${uf.avg_ai_response_length || 0} chars</span></div>
+                    <div class="cost-row"><span>Msgs/Conversation</span><span class="amount">${uf.messages_per_conversation || 0}</span></div>
+                </div>`;
+
+            const dc = dataReport.data_coverage || {};
+            document.getElementById('data-report').innerHTML = `
+                <div style="font-size: 0.85em;">
+                    <div class="cost-row"><span>Total Users</span><span class="amount">${dataReport.total_users || 0}</span></div>
+                    <div class="cost-row"><span>Have CV</span><span class="amount">${dc.have_cv || 0}</span></div>
+                    <div class="cost-row"><span>Have Interview</span><span class="amount">${dc.have_interview || 0}</span></div>
+                    <div class="cost-row"><span>Have Profile</span><span class="amount">${dc.have_ai_profile || 0}</span></div>
+                    <div class="cost-row"><span>Fully Complete</span><span class="badge green">${dc.fully_complete || 0}</span></div>
+                    <div class="cost-row"><span>Completion Rate</span><span class="amount">${(dataReport.data_quality || {}).completion_rate || 0}%</span></div>
+                </div>`;
+        }
+
+        async function loadCosts(period) {
+            const [costs, budget] = await Promise.all([
+                fetch(API + '/master-ai/costs?period=' + period).then(r => r.json()),
+                fetch(API + '/master-ai/costs/budget').then(r => r.json()),
+            ]);
+
+            document.getElementById('cost-today').textContent = '$' + (costs.total_cost_usd || 0).toFixed(4);
+            document.getElementById('cost-month').textContent = '$' + (budget.spent_usd || 0).toFixed(4);
+            document.getElementById('cost-projection').textContent = costs.monthly_projection_usd ? '$' + costs.monthly_projection_usd.toFixed(2) : '-';
+
+            // By operation
+            const ops = costs.by_operation || {};
+            document.getElementById('cost-by-operation').innerHTML = Object.entries(ops)
+                .map(([k, v]) => `<div class="cost-row"><span>${k}</span><span class="amount">$${v.cost_usd.toFixed(4)} (${v.calls} calls)</span></div>`)
+                .join('') || '<div style="color: #666; font-size: 0.85em;">No data yet</div>';
+
+            // By model
+            const models = costs.by_model || {};
+            document.getElementById('cost-by-model').innerHTML = Object.entries(models)
+                .map(([k, v]) => `<div class="cost-row"><span>${k.replace('claude-', '').substring(0, 15)}</span><span class="amount">$${v.cost_usd.toFixed(4)}</span></div>`)
+                .join('') || '<div style="color: #666; font-size: 0.85em;">No data yet</div>';
+
+            // By agent
+            const agents = costs.by_agent || {};
+            document.getElementById('cost-by-agent').innerHTML = Object.entries(agents)
+                .map(([k, v]) => `<div class="cost-row"><span>${k.substring(0, 18)}</span><span class="amount">$${v.cost_usd.toFixed(4)}</span></div>`)
+                .join('') || '<div style="color: #666; font-size: 0.85em;">No data yet</div>';
+
+            // Budget detail
+            const usage = budget.usage_percent || 0;
+            document.getElementById('budget-detail').innerHTML = `
+                <div class="metric ${usage > 90 ? 'red' : usage > 75 ? 'yellow' : 'green'}"><div class="value">${usage.toFixed(0)}%</div><div class="label">Used of $${budget.monthly_budget_usd || 100}</div></div>
+                <div class="progress-bar"><div class="fill ${usage > 90 ? 'red' : usage > 75 ? 'yellow' : 'green'}" style="width: ${Math.min(usage, 100)}%"></div></div>
+                <div style="margin-top: 10px; font-size: 0.82em; color: #888;">Remaining: $${(budget.remaining_usd || 0).toFixed(4)}</div>`;
+        }
+
+        async function loadMarket() {
+            const [snapshot, trends] = await Promise.all([
+                fetch(API + '/master-ai/market/snapshot').then(r => r.json()),
+                fetch(API + '/master-ai/market/trends').then(r => r.json()),
+            ]);
+
+            const internal = snapshot.internal_metrics || {};
+            const synthesis = snapshot.market_synthesis || {};
+            document.getElementById('market-snapshot').innerHTML = `
+                <div style="font-size: 0.85em;">
+                    <div class="cost-row"><span>Network Maturity</span><span class="badge purple">${synthesis.network_maturity || '-'}</span></div>
+                    <div class="cost-row"><span>Market Health</span><span class="badge green">${synthesis.market_health || '-'}</span></div>
+                    <div class="cost-row"><span>Balance</span><span class="badge ${synthesis.supply_demand_balance === 'balanced' ? 'green' : 'yellow'}">${synthesis.supply_demand_balance || '-'}</span></div>
+                    <div class="cost-row"><span>Industries</span><span class="amount">${synthesis.industry_diversity || 0}</span></div>
+                    <div class="cost-row"><span>Total Agents</span><span class="amount">${internal.total_agents || 0}</span></div>
+                    <div class="cost-row"><span>Matchable Users</span><span class="amount">${internal.matchable_users || 0}</span></div>
+                </div>
+                ${(snapshot.recommendations || []).map(r => `<div class="alert info" style="margin-top: 8px;">[${r.priority}] ${r.action}</div>`).join('')}`;
+
+            const ha = trends.hiring_activity || {};
+            const mt = trends.match_trends || {};
+            document.getElementById('hiring-trends').innerHTML = `
+                <div style="font-size: 0.85em;">
+                    <div class="cost-row"><span>Total Jobs</span><span class="amount">${ha.total_jobs || 0}</span></div>
+                    <div class="cost-row"><span>Active Jobs</span><span class="amount">${ha.active_jobs || 0}</span></div>
+                    <div class="cost-row"><span>Industries Active</span><span class="amount">${ha.industries_active || 0}</span></div>
+                    <div class="cost-row"><span>Match Success Rate</span><span class="amount">${mt.success_rate || 0}%</span></div>
+                    <div class="cost-row"><span>Avg Match Score</span><span class="amount">${mt.avg_match_score || 0}</span></div>
+                </div>
+                ${(trends.market_signals || []).map(s => `<div class="alert warning" style="margin-top: 8px;">${s.signal}</div>`).join('')}`;
+        }
+
+        async function loadIndustryReport() {
+            const industry = document.getElementById('industry-input').value;
+            if (!industry) return;
+            const data = await fetch(API + '/master-ai/market/industry/' + industry).then(r => r.json());
+            const sd = data.supply_demand || {};
+            let html = `<div style="font-size: 0.85em; margin-top: 10px;">
+                <div class="cost-row"><span>Talent</span><span class="amount">${sd.talent_count || 0}</span></div>
+                <div class="cost-row"><span>HM</span><span class="amount">${sd.hm_count || 0}</span></div>
+                <div class="cost-row"><span>Balance</span><span class="badge ${sd.balance === 'balanced' ? 'green' : 'yellow'}">${sd.balance || '-'}</span></div>
+            </div>`;
+            if (data.skill_gaps && data.skill_gaps.length > 0) {
+                html += '<h4 style="margin-top: 10px; color: #888; font-size: 0.8em;">SKILL GAPS</h4>';
+                html += data.skill_gaps.slice(0, 5).map(g => `<div class="cost-row"><span>${g.skill}</span><span class="amount">demand: ${g.demand}, supply: ${g.supply}</span></div>`).join('');
+            }
+            document.getElementById('industry-report').innerHTML = html;
+        }
+
+        async function loadStrategicBrief() {
+            document.getElementById('strategic-brief').innerHTML = '<div style="color: #888;">Generating strategic brief...</div>';
+            const data = await fetch(API + '/master-ai/market/strategic-brief').then(r => r.json());
+            let html = `<div style="font-size: 0.85em;">
+                <p style="margin-bottom: 10px; color: #e0e0e0;">${data.market_position || ''}</p>`;
+            if (data.growth_opportunities) {
+                html += '<div style="margin-top: 8px; color: #888; font-size: 0.8em;">OPPORTUNITIES:</div>';
+                data.growth_opportunities.forEach(o => { html += `<div class="alert info">[${o.priority}] ${o.area}: ${o.rationale}</div>`; });
+            }
+            if (data.risk_factors) {
+                html += '<div style="margin-top: 8px; color: #888; font-size: 0.8em;">RISKS:</div>';
+                data.risk_factors.forEach(r => { html += `<div class="alert ${r.severity === 'high' ? 'critical' : 'warning'}">${r.risk}</div>`; });
+            }
+            html += '</div>';
+            document.getElementById('strategic-brief').innerHTML = html;
+        }
+
+        async function loadTrainingQueue() {
+            const data = await fetch(API + '/master-ai/training/queue').then(r => r.json());
+            const queue = data.queue || [];
+            let html = queue.length === 0 ? '<div style="color: #22c55e; font-size: 0.85em;">All agents healthy - no training needed</div>' : '';
+            queue.forEach(q => {
+                html += `<div class="alert ${q.priority === 'critical' ? 'critical' : 'warning'}">
+                    <span>${q.agent_id.substring(0, 18)}</span> - Rep: ${q.reputation} - Needs: ${q.training_needed.join(', ')}
+                </div>`;
+            });
+            document.getElementById('training-queue-detail').innerHTML = html;
+        }
+
+        async function trainAgent(type) {
+            const agentId = document.getElementById('train-agent-id').value;
+            if (!agentId) { alert('Enter agent ID'); return; }
+            document.getElementById('train-result').innerHTML = '<span style="color: #888;">Training...</span>';
+            const data = await fetch(API + '/master-ai/training/run', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({agent_id: agentId, training_type: type}),
+            }).then(r => r.json());
+            document.getElementById('train-result').innerHTML = `<div class="alert ${data.status === 'trained' || data.status === 'reinforced' || data.status === 'retrained' ? 'info' : 'warning'}">${JSON.stringify(data, null, 2)}</div>`;
+        }
+
+        async function diagnoseAgent() {
+            const agentId = document.getElementById('diagnose-agent-id').value;
+            if (!agentId) return;
+            const data = await fetch(API + '/master-ai/training/diagnose/' + agentId).then(r => r.json());
+            const d = data.diagnosis || {};
+            document.getElementById('diagnosis-result').innerHTML = `
+                <div style="font-size: 0.85em; margin-top: 10px;">
+                    <div class="cost-row"><span>Priority</span><span class="badge ${data.priority === 'high' ? 'red' : data.priority === 'critical' ? 'red' : 'yellow'}">${data.priority || '-'}</span></div>
+                    <div class="cost-row"><span>Reputation</span><span class="amount">${data.reputation || 0}</span></div>
+                    <div class="cost-row"><span>Success Rate</span><span class="amount">${d.success_rate || 0}%</span></div>
+                    <div class="cost-row"><span>Training Plan</span><span class="amount">${(data.training_plan || []).join(', ')}</span></div>
+                    <div style="margin-top: 8px; color: #888;">Issues:</div>
+                    ${(d.issues || []).map(i => `<div class="alert warning">${i}</div>`).join('')}
+                </div>`;
+        }
+
+        async function conveneCouncil() {
+            const topic = document.getElementById('council-topic').value;
+            if (!topic) { alert('Enter a topic'); return; }
+            document.getElementById('council-result').innerHTML = '<div style="color: #888;">Council deliberating...</div>';
+            const data = await fetch(API + '/master-ai/council/convene', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({topic}),
+            }).then(r => r.json());
+
+            let html = `<div style="margin-top: 10px;">
+                <div class="alert info"><strong>Recommendation:</strong> ${data.recommendation || 'No consensus'}</div>
+                <div style="font-size: 0.82em; color: #888; margin-top: 5px;">Confidence: ${data.confidence || 0}%</div>`;
+
+            if (data.opinions) {
+                html += '<div style="margin-top: 10px;">';
+                Object.entries(data.opinions).forEach(([member, opinion]) => {
+                    const posColor = opinion.position === 'support' ? 'green' : opinion.position === 'oppose' ? 'red' : 'yellow';
+                    html += `<div class="council-member">
+                        <div class="avatar" style="background: #1a1a2e; color: #a855f7;">${member.substring(0, 2).toUpperCase()}</div>
+                        <div>
+                            <div class="name">${member} <span class="badge ${posColor}">${opinion.position || '?'}</span></div>
+                            <div style="font-size: 0.82em; color: #ccc; margin-top: 4px;">${opinion.analysis || ''}</div>
+                            ${opinion.key_concern ? `<div style="font-size: 0.78em; color: #ef4444; margin-top: 2px;">Concern: ${opinion.key_concern}</div>` : ''}
+                        </div>
+                    </div>`;
+                });
+                html += '</div>';
+            }
+
+            if (data.action_items && data.action_items.length) {
+                html += '<div style="margin-top: 10px; color: #888; font-size: 0.8em;">ACTION ITEMS:</div>';
+                data.action_items.forEach(a => { html += `<div class="cost-row"><span>${a}</span></div>`; });
+            }
+            html += '</div>';
+            document.getElementById('council-result').innerHTML = html;
+        }
+
+        async function quickConsult() {
+            const topic = document.getElementById('council-topic').value;
+            if (!topic) { alert('Enter a topic'); return; }
+            document.getElementById('council-result').innerHTML = '<div style="color: #888;">Consulting strategist...</div>';
+            const data = await fetch(API + '/master-ai/council/consult', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({topic}),
+            }).then(r => r.json());
+            const opinions = data.opinions || {};
+            let html = '<div style="margin-top: 10px;">';
+            Object.entries(opinions).forEach(([m, o]) => {
+                html += `<div class="alert info"><strong>${m}:</strong> ${o.analysis || o.recommendation || JSON.stringify(o)}</div>`;
+            });
+            html += `<div style="margin-top: 8px;"><strong>Recommendation:</strong> ${data.recommendation || ''}</div>`;
+            html += '</div>';
+            document.getElementById('council-result').innerHTML = html;
+        }
+
+        async function loadRD() {
+            const data = await fetch(API + '/master-ai/control-center/rd').then(r => r.json());
+
+            // Capabilities
+            const caps = data.capabilities || {};
+            document.getElementById('rd-capabilities').innerHTML = Object.entries(caps)
+                .map(([k, v]) => `<div class="cost-row"><span>${k.replace(/_/g, ' ')}</span><span class="badge green">${v.status}</span></div>`)
+                .join('');
+
+            // Architecture
+            const arch = data.architecture || {};
+            document.getElementById('rd-architecture').innerHTML = `
+                <div style="font-size: 0.85em;">
+                    <div class="cost-row"><span>Backend</span><span class="amount">${arch.backend || '-'}</span></div>
+                    <div class="cost-row"><span>AI Provider</span><span class="amount">${arch.ai_provider || '-'}</span></div>
+                    <div class="cost-row"><span>Models</span><span class="amount">${(arch.models_used || []).join(', ')}</span></div>
+                    <div class="cost-row"><span>Services</span><span class="amount">${arch.services_count || 0}</span></div>
+                </div>`;
+
+            // Utilization
+            const util = data.feature_utilization || {};
+            document.getElementById('rd-utilization').innerHTML = Object.entries(util)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10)
+                .map(([k, v]) => `<div class="cost-row"><span>${k}</span><span class="amount">${v}</span></div>`)
+                .join('') || '<div style="color: #666; font-size: 0.85em;">No events tracked yet</div>';
+
+            // Suggestions
+            const suggestions = data.suggested_improvements || [];
+            document.getElementById('rd-suggestions').innerHTML = suggestions.length > 0
+                ? suggestions.map(s => `<div class="alert warning">${s.capability}: ${s.suggestion}</div>`).join('')
+                : '<div class="alert info">No improvements suggested - platform is well-utilized</div>';
+        }
+
+        async function runMasterCycle() {
+            if (!confirm('Run a full Master AI cycle? This will check all agents, run training, and update intelligence.')) return;
+            const result = await fetch(API + '/master-ai/control-center/cycle', {method: 'POST'}).then(r => r.json());
+            alert('Cycle complete: ' + JSON.stringify(result.results, null, 2));
+            refreshDashboard();
+        }
+
+        async function runTrainingCycle() {
+            const result = await fetch(API + '/master-ai/training/cycle', {method: 'POST'}).then(r => r.json());
+            alert('Training complete: ' + result.agents_trained + ' agents trained');
+            refreshDashboard();
+        }
+
+        init();
+    </script>
+</body>
+</html>
