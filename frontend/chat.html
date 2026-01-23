@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CV 2.0 - Agent Onboarding</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+    <header class="bg-white shadow-sm">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <a href="/" class="text-2xl font-bold text-indigo-600">CV 2.0</a>
+            <div class="flex items-center space-x-4">
+                <a href="/calibration.html" class="text-gray-600 hover:text-indigo-600">Calibration</a>
+                <span id="learning-indicator" class="hidden text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Learning Active</span>
+            </div>
+        </nav>
+    </header>
+
+    <main class="flex-1 max-w-3xl mx-auto w-full px-4 py-6 flex flex-col">
+        <!-- Setup -->
+        <div id="setup-panel" class="bg-white rounded-lg shadow p-6 mb-4">
+            <h2 class="text-lg font-semibold text-gray-900 mb-3">Start Your Onboarding</h2>
+            <p class="text-gray-600 text-sm mb-4">
+                Your AI agent will have a deep conversation to understand your values, goals,
+                and what truly matters to you professionally.
+            </p>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Your User ID</label>
+                    <input type="text" id="user-id" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Enter your user ID">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Industry</label>
+                    <select id="industry" class="w-full border rounded-lg px-3 py-2 text-sm">
+                        <option value="">Select...</option>
+                        <option value="technology">Technology</option>
+                        <option value="finance">Finance</option>
+                        <option value="healthcare">Healthcare</option>
+                        <option value="legal">Legal</option>
+                        <option value="hr">HR</option>
+                    </select>
+                </div>
+            </div>
+            <button onclick="startChat()" class="mt-4 bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition text-sm">
+                Start Conversation
+            </button>
+        </div>
+
+        <!-- Chat Messages -->
+        <div id="chat-container" class="hidden flex-1 flex flex-col">
+            <div id="messages" class="flex-1 overflow-y-auto space-y-4 mb-4 bg-white rounded-lg shadow p-4" style="max-height: 60vh;"></div>
+
+            <!-- Input -->
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="flex space-x-3">
+                    <textarea id="user-input" rows="2" class="flex-1 border rounded-lg px-3 py-2 text-sm resize-none"
+                        placeholder="Tell me about yourself..." onkeydown="handleKeyDown(event)"></textarea>
+                    <button onclick="sendMessage()" id="send-btn" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition text-sm self-end">
+                        Send
+                    </button>
+                </div>
+                <div class="mt-2 flex justify-between items-center text-xs text-gray-400">
+                    <span id="conversation-info"></span>
+                    <span>Press Shift+Enter for new line</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let conversationMessages = [];
+        let userId = '';
+        let industry = '';
+        let conversationId = null;
+        let learningCount = 0;
+
+        function startChat() {
+            userId = document.getElementById('user-id').value.trim();
+            industry = document.getElementById('industry').value;
+
+            if (!userId) {
+                alert('Please enter your user ID');
+                return;
+            }
+
+            document.getElementById('setup-panel').classList.add('hidden');
+            document.getElementById('chat-container').classList.remove('hidden');
+
+            // Send initial greeting from agent
+            appendMessage('assistant', 'Hello! I\'m your AI career agent. I\'m here to understand you deeply \u2014 your values, goals, what energizes you, and what you\'re looking for in your next opportunity. Let\'s have a real conversation. Tell me, what\'s on your mind professionally right now?');
+            conversationMessages.push({
+                role: 'assistant',
+                content: 'Hello! I\'m your AI career agent. I\'m here to understand you deeply \u2014 your values, goals, what energizes you, and what you\'re looking for in your next opportunity. Let\'s have a real conversation. Tell me, what\'s on your mind professionally right now?'
+            });
+
+            document.getElementById('user-input').focus();
+        }
+
+        function handleKeyDown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('user-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            input.value = '';
+            appendMessage('user', text);
+            conversationMessages.push({ role: 'user', content: text });
+
+            // Show typing indicator
+            const typingId = showTyping();
+
+            try {
+                const response = await fetch('/chat/message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        messages: conversationMessages,
+                        context: { industry: industry },
+                    }),
+                });
+
+                removeTyping(typingId);
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    appendMessage('system', `Error: ${err.detail}`);
+                    return;
+                }
+
+                const data = await response.json();
+                appendMessage('assistant', data.response);
+                conversationMessages.push({ role: 'assistant', content: data.response });
+
+                if (data.conversation_id) {
+                    conversationId = data.conversation_id;
+                }
+                if (data.learning_triggered) {
+                    learningCount++;
+                    document.getElementById('learning-indicator').classList.remove('hidden');
+                    document.getElementById('learning-indicator').textContent = `Learning (${learningCount})`;
+                }
+
+                updateConversationInfo();
+            } catch (error) {
+                removeTyping(typingId);
+                appendMessage('system', 'Connection error. Please try again.');
+            }
+        }
+
+        function appendMessage(role, content) {
+            const container = document.getElementById('messages');
+            const div = document.createElement('div');
+
+            if (role === 'user') {
+                div.className = 'flex justify-end';
+                div.innerHTML = `<div class="bg-indigo-600 text-white px-4 py-2 rounded-lg rounded-br-sm max-w-[80%] text-sm whitespace-pre-wrap">${escapeHtml(content)}</div>`;
+            } else if (role === 'assistant') {
+                div.className = 'flex justify-start';
+                div.innerHTML = `<div class="bg-gray-100 text-gray-800 px-4 py-2 rounded-lg rounded-bl-sm max-w-[80%] text-sm whitespace-pre-wrap">${escapeHtml(content)}</div>`;
+            } else {
+                div.className = 'flex justify-center';
+                div.innerHTML = `<div class="text-red-500 text-xs">${escapeHtml(content)}</div>`;
+            }
+
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function showTyping() {
+            const container = document.getElementById('messages');
+            const div = document.createElement('div');
+            const id = 'typing-' + Date.now();
+            div.id = id;
+            div.className = 'flex justify-start';
+            div.innerHTML = '<div class="bg-gray-100 text-gray-500 px-4 py-2 rounded-lg text-sm animate-pulse">Thinking...</div>';
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+            return id;
+        }
+
+        function removeTyping(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        function updateConversationInfo() {
+            const info = document.getElementById('conversation-info');
+            const turns = conversationMessages.filter(m => m.role === 'user').length;
+            let text = `${turns} message${turns !== 1 ? 's' : ''} sent`;
+            if (conversationId) text += ` | ID: ${conversationId.substring(0, 8)}...`;
+            info.textContent = text;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

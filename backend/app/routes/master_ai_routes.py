@@ -50,3 +50,25 @@ async def list_patterns():
         .execute()
     )
     return {"patterns": result.data or []}
+
+
+@router.get("/matches")
+async def list_matches():
+    client = _get_supabase()
+    result = (
+        client.table("cv2_a2a_matches")
+        .select("*")
+        .order("score", desc=True)
+        .execute()
+    )
+    return {"matches": result.data or []}
+
+
+@router.get("/synthesize/{industry}")
+async def synthesize_insights(industry: str):
+    from app.services.collective_intelligence import collective_intelligence
+
+    insights = await collective_intelligence.synthesize_industry_insights(industry)
+    if not insights:
+        return {"industry": industry, "insights": None, "message": "No patterns available for this industry yet."}
+    return {"industry": industry, "insights": insights}

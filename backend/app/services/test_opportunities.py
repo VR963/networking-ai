@@ -173,6 +173,16 @@ class TestOpportunities:
         }
         self.supabase_client.table("cv2_collective_patterns").insert(record).execute()
 
+        # Share to collective intelligence network
+        try:
+            from app.services.collective_intelligence import collective_intelligence
+
+            profile = await self._get_user_profile(user_id)
+            industry = (profile or {}).get("industry", "general") or "general"
+            await collective_intelligence.share_pattern(user_id, industry, criteria)
+        except Exception:
+            pass  # Network sharing is non-critical
+
     async def get_calibration_status(self, user_id: str) -> dict:
         result = (
             self.supabase_client.table("cv2_test_opportunities")

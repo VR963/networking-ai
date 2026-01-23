@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CV 2.0 - Job Command Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <header class="bg-white shadow-sm">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <a href="/" class="text-2xl font-bold text-indigo-600">CV 2.0</a>
+            <div class="flex items-center space-x-4">
+                <a href="/master-ai-dashboard.html" class="text-gray-600 hover:text-indigo-600">Dashboard</a>
+                <span class="text-sm text-gray-500">Hiring Manager View</span>
+            </div>
+        </nav>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Controls -->
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Job Command Center</h1>
+                <p class="text-gray-600 text-sm">Review AI-matched candidates for your open positions</p>
+            </div>
+            <div class="flex space-x-3">
+                <button onclick="runMatching()" id="match-btn" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition text-sm">
+                    Run A2A Matching
+                </button>
+                <button onclick="loadMatches()" class="bg-white border text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition text-sm">
+                    Refresh
+                </button>
+            </div>
+        </div>
+
+        <!-- Status Bar -->
+        <div id="status-bar" class="mb-6 bg-white rounded-lg shadow p-4 flex items-center space-x-6 text-sm">
+            <span class="text-gray-500">Loading status...</span>
+        </div>
+
+        <!-- Matches Grid -->
+        <div id="matches-container" class="space-y-4">
+            <div class="text-center text-gray-500 py-12">Loading matches...</div>
+        </div>
+
+        <!-- Match Detail Modal -->
+        <div id="match-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <h3 class="text-xl font-semibold text-gray-900" id="modal-title">Match Detail</h3>
+                        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                    </div>
+                    <div id="modal-content"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        async function loadStatus() {
+            try {
+                const response = await fetch('/a2a/status');
+                if (!response.ok) {
+                    const err = await response.json();
+                    document.getElementById('status-bar').innerHTML = `<span class="text-amber-600">${err.detail}</span>`;
+                    return;
+                }
+                const data = await response.json();
+                document.getElementById('status-bar').innerHTML = `
+                    <div class="flex items-center space-x-1">
+                        <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                        <span class="text-gray-700 font-medium">${data.candidates}</span>
+                        <span class="text-gray-500">Candidates</span>
+                    </div>
+                    <div class="flex items-center space-x-1">
+                        <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
+                        <span class="text-gray-700 font-medium">${data.jobs}</span>
+                        <span class="text-gray-500">Jobs</span>
+                    </div>
+                    <div class="flex items-center space-x-1">
+                        <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                        <span class="text-gray-700 font-medium">${data.matches}</span>
+                        <span class="text-gray-500">Matches</span>
+                    </div>
+                `;
+            } catch (e) {
+                document.getElementById('status-bar').innerHTML = '<span class="text-red-500">Connection error</span>';
+            }
+        }
+
+        async function loadMatches() {
+            try {
+                const response = await fetch('/master-ai/matches');
+                if (!response.ok) {
+                    const err = await response.json();
+                    document.getElementById('matches-container').innerHTML = `<div class="text-center text-amber-600 py-12">${err.detail}</div>`;
+                    return;
+                }
+                const data = await response.json();
+                renderMatches(data.matches);
+            } catch (e) {
+                document.getElementById('matches-container').innerHTML = '<div class="text-center text-red-500 py-12">Connection error</div>';
+            }
+        }
+
+        function renderMatches(matches) {
+            if (!matches.length) {
+                document.getElementById('matches-container').innerHTML = `
+                    <div class="text-center py-12">
+                        <p class="text-gray-500 mb-4">No matches yet. Run A2A matching to find candidates.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            document.getElementById('matches-container').innerHTML = matches.map(match => {
+                const score = match.score || 0;
+                const level = match.match_level || 'unknown';
+                const hmSynopsis = match.hiring_manager_synopsis || {};
+                const candidateSynopsis = match.candidate_synopsis || {};
+
+                const scoreColor = score >= 80 ? 'text-green-600' : score >= 60 ? 'text-blue-600' : 'text-amber-600';
+                const levelBadge = {
+                    'exceptional_match': 'bg-green-100 text-green-700',
+                    'strong_match': 'bg-blue-100 text-blue-700',
+                    'moderate_match': 'bg-amber-100 text-amber-700',
+                    'weak_match': 'bg-gray-100 text-gray-600',
+                }[level] || 'bg-gray-100 text-gray-600';
+
+                const alignments = (hmSynopsis.key_alignments || []).slice(0, 3);
+                const concerns = (hmSynopsis.concerns || []).slice(0, 2);
+
+                return `
+                    <div class="bg-white rounded-lg shadow p-6 hover:shadow-md transition cursor-pointer" onclick="viewMatch('${match.id}')">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-3 mb-2">
+                                    <span class="text-2xl font-bold ${scoreColor}">${score}%</span>
+                                    <span class="text-xs px-2 py-1 rounded-full ${levelBadge}">${level.replace('_', ' ')}</span>
+                                </div>
+                                <p class="text-gray-700 text-sm mb-3">${hmSynopsis.summary || 'No synopsis available'}</p>
+                                ${alignments.length ? `
+                                    <div class="mb-2">
+                                        <span class="text-xs font-medium text-gray-500">Strengths:</span>
+                                        <div class="flex flex-wrap gap-1 mt-1">
+                                            ${alignments.map(a => `<span class="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded">${a}</span>`).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                ${concerns.length ? `
+                                    <div>
+                                        <span class="text-xs font-medium text-gray-500">Explore:</span>
+                                        <div class="flex flex-wrap gap-1 mt-1">
+                                            ${concerns.map(c => `<span class="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded">${c}</span>`).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            <div class="ml-4 text-right text-xs text-gray-400">
+                                <div>${match.candidate_id ? match.candidate_id.substring(0, 8) + '...' : ''}</div>
+                                <div class="mt-1">Click for details</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function viewMatch(matchId) {
+            try {
+                const response = await fetch(`/a2a/match/${matchId}`);
+                if (!response.ok) return;
+                const match = await response.json();
+                showMatchModal(match);
+            } catch (e) {
+                console.error('Failed to load match:', e);
+            }
+        }
+
+        function showMatchModal(match) {
+            const hmSynopsis = match.hiring_manager_synopsis || {};
+            const candidateSynopsis = match.candidate_synopsis || {};
+
+            document.getElementById('modal-title').textContent = `Match: ${match.score}% - ${(match.match_level || '').replace('_', ' ')}`;
+            document.getElementById('modal-content').innerHTML = `
+                <div class="space-y-4">
+                    <div class="bg-blue-50 rounded-lg p-4">
+                        <h4 class="font-medium text-blue-900 mb-2">HM Synopsis</h4>
+                        <p class="text-blue-800 text-sm">${hmSynopsis.summary || 'N/A'}</p>
+                        ${(hmSynopsis.key_alignments || []).length ? `
+                            <div class="mt-2"><strong class="text-xs text-blue-700">Alignments:</strong>
+                            <ul class="list-disc list-inside text-sm text-blue-800 mt-1">
+                                ${(hmSynopsis.key_alignments || []).map(a => `<li>${a}</li>`).join('')}
+                            </ul></div>
+                        ` : ''}
+                        ${(hmSynopsis.concerns || []).length ? `
+                            <div class="mt-2"><strong class="text-xs text-blue-700">Concerns:</strong>
+                            <ul class="list-disc list-inside text-sm text-blue-800 mt-1">
+                                ${(hmSynopsis.concerns || []).map(c => `<li>${c}</li>`).join('')}
+                            </ul></div>
+                        ` : ''}
+                        ${(hmSynopsis.recommended_questions || []).length ? `
+                            <div class="mt-2"><strong class="text-xs text-blue-700">Interview Questions:</strong>
+                            <ul class="list-disc list-inside text-sm text-blue-800 mt-1">
+                                ${(hmSynopsis.recommended_questions || []).map(q => `<li>${q}</li>`).join('')}
+                            </ul></div>
+                        ` : ''}
+                    </div>
+
+                    <div class="bg-indigo-50 rounded-lg p-4">
+                        <h4 class="font-medium text-indigo-900 mb-2">Candidate Perspective</h4>
+                        <p class="text-indigo-800 text-sm"><strong>My Take:</strong> ${candidateSynopsis.my_take || 'N/A'}</p>
+                        <p class="text-indigo-800 text-sm mt-1"><strong>Heads Up:</strong> ${candidateSynopsis.heads_up || 'N/A'}</p>
+                        <p class="text-indigo-800 text-sm mt-1"><strong>Question:</strong> ${candidateSynopsis.question_to_consider || 'N/A'}</p>
+                    </div>
+
+                    ${match.negotiation_notes ? `
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <h4 class="font-medium text-gray-700 mb-1 text-sm">Negotiation Notes</h4>
+                            <p class="text-gray-600 text-sm">${match.negotiation_notes}</p>
+                        </div>
+                    ` : ''}
+
+                    <div class="text-xs text-gray-400">
+                        Candidate: ${match.candidate_id || 'N/A'} | Job: ${match.job_id || 'N/A'}
+                    </div>
+                </div>
+            `;
+            document.getElementById('match-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('match-modal').classList.add('hidden');
+        }
+
+        async function runMatching() {
+            const btn = document.getElementById('match-btn');
+            btn.disabled = true;
+            btn.textContent = 'Matching...';
+
+            try {
+                const response = await fetch('/a2a/run-matching', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: '{}',
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    alert(`Matching complete! ${data.matches_found} matches found.`);
+                    loadMatches();
+                    loadStatus();
+                } else {
+                    alert(data.detail || 'Matching failed');
+                }
+            } catch (e) {
+                alert('Connection error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Run A2A Matching';
+            }
+        }
+
+        // Initialize
+        loadStatus();
+        loadMatches();
+    </script>
+</body>
+</html>
