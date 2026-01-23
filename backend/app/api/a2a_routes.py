@@ -7,18 +7,27 @@ router = APIRouter()
 
 @router.post("/run-matching")
 async def run_matching():
-    result = await a2a_engine.run_matching()
-    return result
+    try:
+        result = await a2a_engine.run_matching()
+        return result
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
 
 
 @router.get("/status")
 async def get_status():
-    return await a2a_engine.get_status()
+    try:
+        return await a2a_engine.get_status()
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
 
 
 @router.get("/match/{match_id}")
 async def get_match(match_id: str):
-    match = await a2a_engine.get_match(match_id)
-    if not match:
-        raise HTTPException(status_code=404, detail="Match not found")
-    return match
+    try:
+        match = await a2a_engine.get_match(match_id)
+        if not match:
+            raise HTTPException(status_code=404, detail="Match not found")
+        return match
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))

@@ -1,5 +1,6 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -18,21 +19,44 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.exception_handler(RuntimeError)
+async def runtime_error_handler(request: Request, exc: RuntimeError):
+    return JSONResponse(status_code=503, content={"detail": str(exc)})
+
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    error_type = type(exc).__name__
+    if "supabase" in error_type.lower() or "supabase_url" in str(exc).lower():
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "Database not configured. Set SUPABASE_URL and SUPABASE_SERVICE_KEY."},
+        )
+    if "api_key" in str(exc).lower() or "auth_token" in str(exc).lower():
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "API credentials not configured. Set ANTHROPIC_API_KEY."},
+        )
+    return JSONResponse(status_code=500, content={"detail": f"Internal error: {error_type}"})
+
+
 # API routes
 app.include_router(a2a_router, prefix="/a2a", tags=["A2A Matching"])
 app.include_router(profile_chat_router, prefix="/chat", tags=["Profile Chat"])
 app.include_router(calibration_router, prefix="/calibration", tags=["Calibration"])
 app.include_router(master_ai_router, prefix="/master-ai", tags=["Master AI"])
 
-# Serve frontend static files
-frontend_path = os.path.join(os.path.dirname(__file__), "..", "..", "frontend")
-if os.path.exists(frontend_path):
-    app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")
-
 
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "version": "2.0.0"}
+
+
+# Serve frontend static files (must be after API routes)
+frontend_path = os.path.join(os.path.dirname(__file__), "..", "..", "frontend")
+if os.path.exists(frontend_path):
+    app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")
 
 
 if __name__ == "__main__":

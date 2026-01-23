@@ -27,6 +27,8 @@ class A2AEngine:
     @property
     def supabase_client(self):
         if self._supabase is None:
+            if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+                raise RuntimeError("SUPABASE_URL and SUPABASE_SERVICE_KEY environment variables are required")
             self._supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
         return self._supabase
 

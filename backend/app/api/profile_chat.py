@@ -25,37 +25,50 @@ class ChatResponse(BaseModel):
 
 @router.post("/message", response_model=ChatResponse)
 async def chat_message(request: ChatRequest):
-    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    if not ANTHROPIC_API_KEY:
+        raise HTTPException(status_code=503, detail="ANTHROPIC_API_KEY environment variable is required")
 
-    system_prompt = _build_system_prompt(request.context)
+    try:
+        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
-    api_messages = [
-        {"role": m["role"], "content": m["content"]}
-        for m in request.messages
-    ]
+        system_prompt = _build_system_prompt(request.context)
 
-    response = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=1000,
-        system=system_prompt,
-        messages=api_messages,
-    )
+        api_messages = [
+            {"role": m["role"], "content": m["content"]}
+            for m in request.messages
+        ]
 
-    ai_response = response.content[0].text
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1000,
+            system=system_prompt,
+            messages=api_messages,
+        )
+
+        ai_response = response.content[0].text
+    except TypeError as e:
+        raise HTTPException(status_code=503, detail="API credentials not configured. Set ANTHROPIC_API_KEY.")
+    except anthropic.AuthenticationError:
+        raise HTTPException(status_code=503, detail="Invalid ANTHROPIC_API_KEY")
 
     # --- DSPy Learning Pipeline (Connected) ---
     full_messages = request.messages + [{"role": "assistant", "content": ai_response}]
 
-    conversation_id = await conversation_logger.log_conversation(
-        request.user_id, full_messages, metadata=request.context
-    )
+    try:
+        conversation_id = await conversation_logger.log_conversation(
+            request.user_id, full_messages, metadata=request.context
+        )
 
-    quality_score = await quality_analyzer.analyze(conversation_id)
+        quality_score = await quality_analyzer.analyze(conversation_id)
 
-    learning_triggered = False
-    if quality_score >= QUALITY_THRESHOLD:
-        await dspy_learning.learn_from_conversation(conversation_id)
-        learning_triggered = True
+        learning_triggered = False
+        if quality_score >= QUALITY_THRESHOLD:
+            await dspy_learning.learn_from_conversation(conversation_id)
+            learning_triggered = True
+    except Exception:
+        # Learning pipeline failure should not block chat response
+        conversation_id = None
+        learning_triggered = False
     # --- End Learning Pipeline ---
 
     return ChatResponse(
