@@ -1,3 +1,4 @@
+import json
 from typing import Optional
 
 from supabase import create_client
@@ -42,8 +43,30 @@ class DSPyLearning:
         patterns = await self._extract_patterns(messages)
         if patterns:
             await self._store_patterns(user_id, conversation_id, patterns)
+            # Share to collective intelligence network
+            await self._share_to_network(user_id, patterns)
 
         return patterns
+
+    async def _share_to_network(self, user_id: str, patterns: dict) -> None:
+        """Share learned patterns with the collective intelligence network."""
+        from app.services.collective_intelligence import collective_intelligence
+
+        try:
+            # Determine user's industry from profile
+            profile_result = (
+                self.supabase_client.table("cv2_profiles")
+                .select("industry")
+                .eq("user_id", user_id)
+                .execute()
+            )
+            industry = "general"
+            if profile_result.data:
+                industry = profile_result.data[0].get("industry", "general") or "general"
+
+            await collective_intelligence.share_pattern(user_id, industry, patterns)
+        except Exception:
+            pass  # Network sharing is non-critical
 
     async def _extract_patterns(self, messages: list[dict]) -> Optional[dict]:
         conversation_text = "\n".join(
@@ -69,8 +92,6 @@ class DSPyLearning:
                 }
             ],
         )
-
-        import json
 
         try:
             text = response.content[0].text.strip()

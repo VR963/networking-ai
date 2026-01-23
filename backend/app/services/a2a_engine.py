@@ -5,6 +5,7 @@ import anthropic
 from supabase import create_client
 
 from app.config import ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_KEY, MAX_NEGOTIATION_TOKENS
+from app.services.industry_knowledge_modules import industry_knowledge
 
 
 class A2AEngine:
@@ -66,6 +67,10 @@ class A2AEngine:
         candidate_profile = json.dumps(candidate.get("profile", {}), indent=2)
         job_profile = json.dumps(job.get("profile", {}), indent=2)
 
+        # Enrich with industry knowledge and learned patterns
+        industry_context = self._get_industry_context(candidate, job)
+        learned_patterns = await self._get_candidate_patterns(candidate)
+
         prompt = f"""You are the Master AI overseeing a negotiation between two agents.
 
 CANDIDATE AGENT represents:
@@ -73,7 +78,7 @@ CANDIDATE AGENT represents:
 
 JOB AGENT represents:
 {job_profile}
-
+{industry_context}{learned_patterns}
 Conduct a deep negotiation between these agents. Consider:
 1. Skills alignment (both hard and soft skills)
 2. Values alignment (culture, work style, goals)
@@ -111,6 +116,75 @@ Return a JSON object with:
             return json.loads(text)
         except (json.JSONDecodeError, IndexError):
             return None
+
+    def _get_industry_context(self, candidate: dict, job: dict) -> str:
+        """Build industry expertise context for the negotiation."""
+        candidate_industry = (
+            candidate.get("profile", {}).get("industry", "")
+            or candidate.get("industry", "")
+        )
+        job_industry = (
+            job.get("profile", {}).get("industry", "")
+            or job.get("industry", "")
+        )
+
+        context_parts = []
+        for label, ind in [("CANDIDATE", candidate_industry), ("JOB", job_industry)]:
+            if ind:
+                module = industry_knowledge.get_module(ind)
+                if module.get("skill_benchmarks"):
+                    context_parts.append(
+                        f"\n{label} INDUSTRY CONTEXT ({ind}):\n"
+                        f"- Skill benchmarks: {json.dumps(module['skill_benchmarks'])}\n"
+                        f"- Culture signals: {', '.join(module.get('culture_signals', []))}\n"
+                        f"- Hidden criteria patterns: {'; '.join(module.get('hidden_criteria', []))}"
+                    )
+
+        if context_parts:
+            return "\n" + "\n".join(context_parts) + "\n"
+        return ""
+
+    async def _get_candidate_patterns(self, candidate: dict) -> str:
+        """Fetch previously learned patterns for this candidate."""
+        user_id = candidate.get("user_id", candidate.get("id", ""))
+        if not user_id:
+            return ""
+
+        try:
+            result = (
+                self.supabase_client.table("cv2_collective_patterns")
+                .select("patterns, pattern_type")
+                .eq("user_id", user_id)
+                .order("created_at", desc=True)
+                .limit(5)
+                .execute()
+            )
+            if not result.data:
+                return ""
+
+            patterns_summary = []
+            for r in result.data:
+                p = r.get("patterns", {})
+                if r.get("pattern_type") == "hidden_criteria":
+                    if p.get("inferred_criteria"):
+                        patterns_summary.append(f"- Hidden criteria: {p['inferred_criteria']}")
+                    if p.get("values_revealed"):
+                        patterns_summary.append(f"- Values: {p['values_revealed']}")
+                elif r.get("pattern_type") == "conversation_learning":
+                    if p.get("values"):
+                        patterns_summary.append(f"- Core values: {', '.join(p['values'][:3])}")
+                    if p.get("hidden_criteria"):
+                        patterns_summary.append(f"- Unspoken preferences: {', '.join(p['hidden_criteria'][:3])}")
+
+            if patterns_summary:
+                return (
+                    "\nLEARNED PATTERNS (from previous interactions with this candidate):\n"
+                    + "\n".join(patterns_summary) + "\n"
+                )
+        except Exception:
+            pass
+
+        return ""
 
     async def _store_match(self, candidate: dict, job: dict, match: dict) -> None:
         candidate_id = candidate.get("user_id", candidate.get("id", ""))

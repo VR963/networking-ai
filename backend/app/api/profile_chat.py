@@ -7,6 +7,7 @@ from app.config import ANTHROPIC_API_KEY, QUALITY_THRESHOLD
 from app.services.conversation_logger import conversation_logger
 from app.services.quality_analyzer import quality_analyzer
 from app.services.dspy_learning import dspy_learning
+from app.services.ai_agent_knowledge_base import ai_agent_knowledge_base
 
 router = APIRouter()
 
@@ -28,10 +29,19 @@ async def chat_message(request: ChatRequest):
     if not ANTHROPIC_API_KEY:
         raise HTTPException(status_code=503, detail="ANTHROPIC_API_KEY environment variable is required")
 
+    # Build enriched context from knowledge base and learned patterns
+    agent_context = {}
+    user_patterns = []
+    try:
+        agent_context = await ai_agent_knowledge_base.build_agent_context(request.user_id)
+        user_patterns = await dspy_learning.get_user_patterns(request.user_id)
+    except Exception:
+        pass  # Non-critical: proceed with base prompt if knowledge unavailable
+
     try:
         client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
-        system_prompt = _build_system_prompt(request.context)
+        system_prompt = _build_system_prompt(request.context, agent_context, user_patterns)
 
         api_messages = [
             {"role": m["role"], "content": m["content"]}
@@ -78,7 +88,11 @@ async def chat_message(request: ChatRequest):
     )
 
 
-def _build_system_prompt(context: dict) -> str:
+def _build_system_prompt(
+    context: dict,
+    agent_context: dict = None,
+    user_patterns: list = None,
+) -> str:
     base = (
         "You are an AI career agent conducting a deep onboarding conversation. "
         "Your goal is to understand this person deeply - their values, goals, "
@@ -86,9 +100,33 @@ def _build_system_prompt(context: dict) -> str:
         "Ask thoughtful follow-up questions. Listen for what they don't say explicitly."
     )
 
-    if context.get("industry"):
-        base += f"\n\nThe user works in {context['industry']}. "
-        base += "Apply your industry expertise to ask relevant probing questions."
+    # Inject industry expertise from knowledge base
+    industry = context.get("industry") or (agent_context or {}).get("industry")
+    if industry and industry != "general":
+        base += f"\n\nThe user works in {industry}."
+        knowledge = (agent_context or {}).get("knowledge", {})
+        if knowledge.get("skill_benchmarks"):
+            base += f" Skill levels in this field: {', '.join(f'{k}: {v}' for k, v in list(knowledge['skill_benchmarks'].items())[:3])}."
+        if knowledge.get("hidden_criteria"):
+            base += f" Industry insight: {'; '.join(knowledge['hidden_criteria'][:2])}."
+        base += " Apply this expertise to ask relevant probing questions."
+
+    # Inject previously learned patterns about this user
+    if user_patterns:
+        latest = user_patterns[0] if user_patterns else {}
+        pattern_notes = []
+        if latest.get("values"):
+            pattern_notes.append(f"Known values: {', '.join(latest['values'][:3])}")
+        if latest.get("hidden_criteria"):
+            pattern_notes.append(f"Hidden preferences: {', '.join(latest['hidden_criteria'][:2])}")
+        if latest.get("goals"):
+            pattern_notes.append(f"Goals: {', '.join(latest['goals'][:2])}")
+        if pattern_notes:
+            base += (
+                "\n\nYou already know the following about this user from previous conversations:\n- "
+                + "\n- ".join(pattern_notes)
+                + "\nBuild on this knowledge. Don't re-ask what you already know. Go deeper."
+            )
 
     if context.get("stage") == "calibration":
         base += (
