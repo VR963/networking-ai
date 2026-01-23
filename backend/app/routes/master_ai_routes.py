@@ -14,6 +14,8 @@ from app.services.cost_tracker import cost_tracker
 from app.services.agent_training_center import agent_training_center
 from app.services.market_intelligence import market_intelligence
 from app.services.ai_council import ai_council
+from app.services.marketing_ai_agent import marketing_ai_agent
+from app.services.campaign_manager import campaign_manager
 
 router = APIRouter()
 
@@ -36,6 +38,21 @@ class TrainAgentRequest(BaseModel):
 class MarketDataRequest(BaseModel):
     source: str
     data: dict
+
+
+class CampaignActionRequest(BaseModel):
+    campaign_id: str
+    reason: str = ""
+
+
+class CampaignMetricsRequest(BaseModel):
+    campaign_id: str
+    metrics: dict
+
+
+class CampaignApproveRequest(BaseModel):
+    campaign_id: str
+    budget_override: Optional[float] = None
 
 
 def _get_supabase():
@@ -405,3 +422,96 @@ async def council_review_decision(request: CouncilRequest):
         decision=request.topic,
         rationale=json.dumps(request.context or {}),
     )
+
+
+# --- MARKETING DEPARTMENT ---
+
+@router.get("/marketing/dashboard")
+async def get_marketing_dashboard():
+    """Get marketing department dashboard with all campaign data."""
+    return await campaign_manager.get_marketing_dashboard()
+
+
+@router.get("/marketing/gaps")
+async def analyze_platform_gaps():
+    """Analyze platform gaps to identify recruitment targets."""
+    return await marketing_ai_agent.analyze_platform_gaps()
+
+
+@router.post("/marketing/propose")
+async def propose_campaign():
+    """Marketing AI proposes a new campaign based on gap analysis."""
+    gap_analysis = await marketing_ai_agent.analyze_platform_gaps()
+    return await marketing_ai_agent.propose_campaign(gap_analysis)
+
+
+@router.post("/marketing/review/{campaign_id}")
+async def review_campaign(campaign_id: str):
+    """Master AI reviews a campaign proposal."""
+    return await campaign_manager.master_review_campaign(campaign_id)
+
+
+@router.post("/marketing/approve")
+async def approve_campaign(request: CampaignApproveRequest):
+    """Master AI manually approves a campaign."""
+    return await campaign_manager.approve_campaign(request.campaign_id, request.budget_override)
+
+
+@router.post("/marketing/reject")
+async def reject_campaign(request: CampaignActionRequest):
+    """Master AI rejects a campaign."""
+    return await campaign_manager.reject_campaign(request.campaign_id, request.reason)
+
+
+@router.post("/marketing/content/{campaign_id}")
+async def generate_campaign_content(campaign_id: str):
+    """Generate all content for an approved campaign."""
+    return await marketing_ai_agent.generate_campaign_content(campaign_id)
+
+
+@router.post("/marketing/landing-page/{campaign_id}")
+async def generate_landing_page(campaign_id: str):
+    """Generate a landing page for a campaign."""
+    return await marketing_ai_agent.generate_landing_page(campaign_id)
+
+
+@router.post("/marketing/justify/{campaign_id}")
+async def justify_budget(campaign_id: str):
+    """Marketing AI justifies budget spending to Master AI."""
+    return await marketing_ai_agent.justify_budget(campaign_id)
+
+
+@router.post("/marketing/activate")
+async def activate_campaign(request: CampaignActionRequest):
+    """Activate an approved campaign (start running it)."""
+    return await campaign_manager.activate_campaign(request.campaign_id)
+
+
+@router.post("/marketing/pause")
+async def pause_campaign(request: CampaignActionRequest):
+    """Pause an active campaign."""
+    return await campaign_manager.pause_campaign(request.campaign_id, request.reason)
+
+
+@router.post("/marketing/terminate")
+async def terminate_campaign(request: CampaignActionRequest):
+    """Master AI terminates a campaign permanently."""
+    return await campaign_manager.terminate_campaign(request.campaign_id, request.reason)
+
+
+@router.post("/marketing/metrics")
+async def record_campaign_metrics(request: CampaignMetricsRequest):
+    """Record performance metrics for an active campaign."""
+    return await campaign_manager.record_metrics(request.campaign_id, request.metrics)
+
+
+@router.get("/marketing/campaigns")
+async def get_all_campaigns(status: Optional[str] = None):
+    """Get all campaigns, optionally filtered by status."""
+    return await campaign_manager.get_all_campaigns(status)
+
+
+@router.get("/marketing/report")
+async def get_marketing_report():
+    """Full marketing AI report to Master AI."""
+    return await marketing_ai_agent.report_to_master()

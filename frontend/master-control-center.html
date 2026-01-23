@@ -260,6 +260,7 @@
             <div class="nav-tab" data-tab="costs">Costs</div>
             <div class="nav-tab" data-tab="market">Market Intel</div>
             <div class="nav-tab" data-tab="council">AI Council</div>
+            <div class="nav-tab" data-tab="marketing">Marketing</div>
             <div class="nav-tab" data-tab="rd">R&D</div>
         </div>
 
@@ -466,6 +467,68 @@
                 </div>
             </div>
 
+            <!-- MARKETING TAB -->
+            <div class="tab-content" id="tab-marketing">
+                <div class="grid grid-4" style="margin-bottom: 20px;">
+                    <div class="card"><div class="metric purple"><div class="value" id="mkt-total">-</div><div class="label">Total Campaigns</div></div></div>
+                    <div class="card"><div class="metric green"><div class="value" id="mkt-active">-</div><div class="label">Active</div></div></div>
+                    <div class="card"><div class="metric yellow"><div class="value" id="mkt-pending">-</div><div class="label">Pending Approval</div></div></div>
+                    <div class="card"><div class="metric"><div class="value" id="mkt-signups">-</div><div class="label">Total Signups</div></div></div>
+                </div>
+
+                <div class="grid grid-2">
+                    <div class="card">
+                        <h3>Platform Gaps</h3>
+                        <button class="btn" onclick="analyzeGaps()" style="margin-bottom: 10px;">Run Gap Analysis</button>
+                        <div id="gap-analysis"></div>
+                    </div>
+                    <div class="card">
+                        <h3>Budget Overview</h3>
+                        <div id="mkt-budget"></div>
+                    </div>
+                    <div class="card">
+                        <h3>Campaign Pipeline</h3>
+                        <div class="actions" style="margin-bottom: 10px;">
+                            <button class="btn success" onclick="proposeCampaign()">Propose New Campaign</button>
+                        </div>
+                        <div id="campaign-pipeline"></div>
+                    </div>
+                    <div class="card">
+                        <h3>Campaign Actions</h3>
+                        <div class="input-group">
+                            <input type="text" id="campaign-id-input" placeholder="Campaign ID">
+                        </div>
+                        <div class="actions">
+                            <button class="btn" onclick="reviewCampaign()">Review</button>
+                            <button class="btn success" onclick="approveCampaign()">Approve</button>
+                            <button class="btn danger" onclick="rejectCampaign()">Reject</button>
+                        </div>
+                        <div class="actions" style="margin-top: 10px;">
+                            <button class="btn" onclick="generateContent()">Gen Content</button>
+                            <button class="btn" onclick="generateLandingPage()">Gen Landing Page</button>
+                            <button class="btn" onclick="activateCampaign()">Activate</button>
+                        </div>
+                        <div class="actions" style="margin-top: 10px;">
+                            <button class="btn" onclick="justifyBudget()">Justify Budget</button>
+                            <button class="btn yellow" onclick="pauseCampaign()">Pause</button>
+                            <button class="btn danger" onclick="terminateCampaign()">Terminate</button>
+                        </div>
+                        <div id="campaign-action-result" style="margin-top: 15px; font-size: 0.85em;"></div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 15px;">
+                    <h3>Active Campaigns</h3>
+                    <div class="table-container" id="campaigns-table"></div>
+                </div>
+
+                <div class="actions" style="margin-top: 15px;">
+                    <button class="btn" onclick="loadMarketing()">Refresh</button>
+                    <button class="btn" onclick="loadMarketingReport()">Full AI Report</button>
+                </div>
+                <div id="marketing-report" style="margin-top: 15px;"></div>
+            </div>
+
             <!-- R&D TAB -->
             <div class="tab-content" id="tab-rd">
                 <div class="grid grid-2">
@@ -511,6 +574,7 @@
                 else if (tabName === 'costs') loadCosts('today');
                 else if (tabName === 'market') loadMarket();
                 else if (tabName === 'training') loadTrainingQueue();
+                else if (tabName === 'marketing') loadMarketing();
                 else if (tabName === 'rd') loadRD();
             });
         });
@@ -893,6 +957,234 @@
             document.getElementById('rd-suggestions').innerHTML = suggestions.length > 0
                 ? suggestions.map(s => `<div class="alert warning">${s.capability}: ${s.suggestion}</div>`).join('')
                 : '<div class="alert info">No improvements suggested - platform is well-utilized</div>';
+        }
+
+        // --- MARKETING FUNCTIONS ---
+
+        async function loadMarketing() {
+            const data = await fetch(API + '/master-ai/marketing/dashboard').then(r => r.json());
+            const overview = data.overview || {};
+            const budget = data.budget || {};
+            const perf = data.performance || {};
+
+            document.getElementById('mkt-total').textContent = overview.total_campaigns || 0;
+            document.getElementById('mkt-active').textContent = overview.active || 0;
+            document.getElementById('mkt-pending').textContent = overview.pending_approval || 0;
+            document.getElementById('mkt-signups').textContent = perf.total_signups || 0;
+
+            // Budget
+            const spent = budget.total_spent_usd || 0;
+            const approved = budget.total_approved_usd || 0;
+            const usagePct = approved > 0 ? (spent / approved * 100) : 0;
+            document.getElementById('mkt-budget').innerHTML = `
+                <div style="font-size: 0.85em;">
+                    <div class="cost-row"><span>Total Approved</span><span class="amount">$${approved.toFixed(2)}</span></div>
+                    <div class="cost-row"><span>Total Spent</span><span class="amount">$${spent.toFixed(2)}</span></div>
+                    <div class="cost-row"><span>Remaining</span><span class="amount">$${(budget.remaining_usd || 0).toFixed(2)}</span></div>
+                    <div class="cost-row"><span>Avg CPA</span><span class="amount">$${perf.avg_cpa || 0}</span></div>
+                </div>
+                <div class="progress-bar" style="margin-top: 10px;"><div class="fill ${usagePct > 90 ? 'red' : usagePct > 75 ? 'yellow' : 'green'}" style="width: ${Math.min(usagePct, 100)}%"></div></div>`;
+
+            // Campaign list
+            const campaigns = data.campaigns || [];
+            if (campaigns.length > 0) {
+                let html = '<table><thead><tr><th>Name</th><th>Status</th><th>Budget</th><th>Signups</th></tr></thead><tbody>';
+                campaigns.forEach(c => {
+                    const statusClass = c.status === 'active' ? 'green' : c.status === 'proposed' ? 'yellow' : c.status === 'rejected' || c.status === 'terminated' ? 'red' : 'purple';
+                    html += `<tr>
+                        <td style="color: #a855f7; font-size: 0.85em;">${c.name || 'Unnamed'}</td>
+                        <td><span class="badge ${statusClass}">${c.status || '-'}</span></td>
+                        <td>$${(c.budget || 0).toFixed(0)}</td>
+                        <td>${c.signups || 0}</td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+                document.getElementById('campaigns-table').innerHTML = html;
+            } else {
+                document.getElementById('campaigns-table').innerHTML = '<div style="color: #666; font-size: 0.85em;">No campaigns yet. Run Gap Analysis and Propose a campaign to get started.</div>';
+            }
+
+            // Pipeline status
+            document.getElementById('campaign-pipeline').innerHTML = `
+                <div style="font-size: 0.85em;">
+                    <div class="cost-row"><span>Proposed</span><span class="badge yellow">${overview.pending_approval || 0}</span></div>
+                    <div class="cost-row"><span>Active</span><span class="badge green">${overview.active || 0}</span></div>
+                    <div class="cost-row"><span>Completed</span><span class="badge purple">${overview.completed || 0}</span></div>
+                    <div class="cost-row"><span>Rejected</span><span class="badge red">${overview.rejected || 0}</span></div>
+                </div>`;
+        }
+
+        async function analyzeGaps() {
+            document.getElementById('gap-analysis').innerHTML = '<div style="color: #888;">Analyzing platform gaps...</div>';
+            const data = await fetch(API + '/master-ai/marketing/gaps').then(r => r.json());
+            const gaps = data.critical_gaps || [];
+            let html = '';
+            if (gaps.length > 0) {
+                html += '<div style="font-size: 0.85em; margin-top: 8px;">';
+                gaps.forEach(g => {
+                    html += `<div class="alert warning" style="margin-bottom: 6px;">
+                        <strong>${g.skill || g.industry || 'Gap'}</strong> - Demand: ${g.demand || 0}, Supply: ${g.supply || 0}
+                        ${g.gap_severity ? ` (Severity: ${g.gap_severity})` : ''}
+                    </div>`;
+                });
+                html += '</div>';
+            } else {
+                html = '<div class="alert info">No critical gaps detected. Platform is well-balanced.</div>';
+            }
+            if (data.recommended_targets && data.recommended_targets.length > 0) {
+                html += '<div style="margin-top: 10px; color: #888; font-size: 0.8em;">RECOMMENDED TARGETS:</div>';
+                data.recommended_targets.forEach(t => {
+                    html += `<div class="cost-row"><span>${t}</span></div>`;
+                });
+            }
+            document.getElementById('gap-analysis').innerHTML = html;
+        }
+
+        async function proposeCampaign() {
+            document.getElementById('campaign-action-result').innerHTML = '<div style="color: #888;">Marketing AI is proposing a campaign...</div>';
+            const data = await fetch(API + '/master-ai/marketing/propose', {method: 'POST'}).then(r => r.json());
+            if (data.campaign_id) {
+                document.getElementById('campaign-id-input').value = data.campaign_id;
+                document.getElementById('campaign-action-result').innerHTML = `
+                    <div class="alert info">Campaign proposed: ${data.campaign_name || data.campaign_id}</div>
+                    <div style="font-size: 0.82em; margin-top: 5px; color: #888;">Budget: $${data.budget || 0} | Target: ${data.target_segment || 'unknown'}</div>`;
+            } else {
+                document.getElementById('campaign-action-result').innerHTML = `<div class="alert warning">${JSON.stringify(data)}</div>`;
+            }
+            loadMarketing();
+        }
+
+        async function reviewCampaign() {
+            const id = document.getElementById('campaign-id-input').value;
+            if (!id) { alert('Enter campaign ID'); return; }
+            document.getElementById('campaign-action-result').innerHTML = '<div style="color: #888;">Master AI reviewing...</div>';
+            const data = await fetch(API + '/master-ai/marketing/review/' + id, {method: 'POST'}).then(r => r.json());
+            const review = data.review || {};
+            document.getElementById('campaign-action-result').innerHTML = `
+                <div class="alert ${data.decision === 'approve' ? 'info' : data.decision === 'reject' ? 'critical' : 'warning'}">
+                    Decision: <strong>${data.decision || 'unknown'}</strong> | Score: ${review.review_score || 0}/100
+                </div>
+                <div style="font-size: 0.82em; margin-top: 5px; color: #ccc;">${review.reasoning || ''}</div>
+                ${(review.concerns || []).map(c => `<div style="font-size: 0.78em; color: #eab308; margin-top: 3px;">Concern: ${c}</div>`).join('')}`;
+            loadMarketing();
+        }
+
+        async function approveCampaign() {
+            const id = document.getElementById('campaign-id-input').value;
+            if (!id) { alert('Enter campaign ID'); return; }
+            const data = await fetch(API + '/master-ai/marketing/approve', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({campaign_id: id}),
+            }).then(r => r.json());
+            document.getElementById('campaign-action-result').innerHTML = `<div class="alert info">Campaign ${data.status}: Budget $${data.budget || 0}</div>`;
+            loadMarketing();
+        }
+
+        async function rejectCampaign() {
+            const id = document.getElementById('campaign-id-input').value;
+            if (!id) { alert('Enter campaign ID'); return; }
+            const reason = prompt('Rejection reason:') || '';
+            const data = await fetch(API + '/master-ai/marketing/reject', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({campaign_id: id, reason}),
+            }).then(r => r.json());
+            document.getElementById('campaign-action-result').innerHTML = `<div class="alert critical">Campaign rejected: ${reason}</div>`;
+            loadMarketing();
+        }
+
+        async function generateContent() {
+            const id = document.getElementById('campaign-id-input').value;
+            if (!id) { alert('Enter campaign ID'); return; }
+            document.getElementById('campaign-action-result').innerHTML = '<div style="color: #888;">Generating content...</div>';
+            const data = await fetch(API + '/master-ai/marketing/content/' + id, {method: 'POST'}).then(r => r.json());
+            document.getElementById('campaign-action-result').innerHTML = `<div class="alert info">Content generated: ${Object.keys(data.content || {}).join(', ') || 'done'}</div>`;
+        }
+
+        async function generateLandingPage() {
+            const id = document.getElementById('campaign-id-input').value;
+            if (!id) { alert('Enter campaign ID'); return; }
+            document.getElementById('campaign-action-result').innerHTML = '<div style="color: #888;">Generating landing page...</div>';
+            const data = await fetch(API + '/master-ai/marketing/landing-page/' + id, {method: 'POST'}).then(r => r.json());
+            if (data.page_id) {
+                document.getElementById('campaign-action-result').innerHTML = `<div class="alert info">Landing page created: ${data.page_id}</div>`;
+            } else {
+                document.getElementById('campaign-action-result').innerHTML = `<div class="alert warning">${data.status || JSON.stringify(data)}</div>`;
+            }
+        }
+
+        async function justifyBudget() {
+            const id = document.getElementById('campaign-id-input').value;
+            if (!id) { alert('Enter campaign ID'); return; }
+            document.getElementById('campaign-action-result').innerHTML = '<div style="color: #888;">Marketing AI justifying budget...</div>';
+            const data = await fetch(API + '/master-ai/marketing/justify/' + id, {method: 'POST'}).then(r => r.json());
+            const j = data.justification || {};
+            document.getElementById('campaign-action-result').innerHTML = `
+                <div style="font-size: 0.85em;">
+                    <div class="cost-row"><span>Requested</span><span class="amount">$${j.requested_budget || 0}</span></div>
+                    <div class="cost-row"><span>Expected ROI</span><span class="amount">${j.expected_roi || '-'}</span></div>
+                    <div class="cost-row"><span>Cost per Acquisition</span><span class="amount">$${j.expected_cpa || '-'}</span></div>
+                    <div style="margin-top: 8px; color: #ccc; font-size: 0.82em;">${j.reasoning || ''}</div>
+                </div>`;
+        }
+
+        async function activateCampaign() {
+            const id = document.getElementById('campaign-id-input').value;
+            if (!id) { alert('Enter campaign ID'); return; }
+            const data = await fetch(API + '/master-ai/marketing/activate', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({campaign_id: id}),
+            }).then(r => r.json());
+            document.getElementById('campaign-action-result').innerHTML = `<div class="alert ${data.status === 'activated' ? 'info' : 'warning'}">${data.status || JSON.stringify(data)}</div>`;
+            loadMarketing();
+        }
+
+        async function pauseCampaign() {
+            const id = document.getElementById('campaign-id-input').value;
+            if (!id) { alert('Enter campaign ID'); return; }
+            const reason = prompt('Pause reason:') || '';
+            const data = await fetch(API + '/master-ai/marketing/pause', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({campaign_id: id, reason}),
+            }).then(r => r.json());
+            document.getElementById('campaign-action-result').innerHTML = `<div class="alert warning">Campaign paused: ${reason}</div>`;
+            loadMarketing();
+        }
+
+        async function terminateCampaign() {
+            const id = document.getElementById('campaign-id-input').value;
+            if (!id) { alert('Enter campaign ID'); return; }
+            if (!confirm('Terminate this campaign permanently?')) return;
+            const reason = prompt('Termination reason:') || '';
+            const data = await fetch(API + '/master-ai/marketing/terminate', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({campaign_id: id, reason}),
+            }).then(r => r.json());
+            document.getElementById('campaign-action-result').innerHTML = `<div class="alert critical">Campaign terminated</div>`;
+            loadMarketing();
+        }
+
+        async function loadMarketingReport() {
+            document.getElementById('marketing-report').innerHTML = '<div style="color: #888;">Generating full marketing report...</div>';
+            const data = await fetch(API + '/master-ai/marketing/report').then(r => r.json());
+            let html = '<div class="card" style="margin-top: 10px;">';
+            html += '<h3>Marketing AI Report</h3>';
+            html += `<div style="font-size: 0.85em;">
+                <div class="cost-row"><span>Status</span><span class="badge purple">${data.marketing_ai_status || '-'}</span></div>`;
+            if (data.gap_analysis) {
+                html += `<div style="margin-top: 10px; color: #888; font-size: 0.8em;">GAPS IDENTIFIED: ${(data.gap_analysis.critical_gaps || []).length}</div>`;
+            }
+            if (data.campaigns) {
+                const c = data.campaigns;
+                html += `<div class="cost-row"><span>Total Campaigns</span><span class="amount">${c.total || 0}</span></div>`;
+                html += `<div class="cost-row"><span>Active</span><span class="amount">${c.active || 0}</span></div>`;
+                html += `<div class="cost-row"><span>Budget Used</span><span class="amount">$${(c.total_spent || 0).toFixed(2)}/$${(c.total_budget || 0).toFixed(2)}</span></div>`;
+            }
+            if (data.recommendations && data.recommendations.length > 0) {
+                html += '<div style="margin-top: 10px; color: #888; font-size: 0.8em;">RECOMMENDATIONS:</div>';
+                data.recommendations.forEach(r => { html += `<div class="alert info">${r}</div>`; });
+            }
+            html += '</div></div>';
+            document.getElementById('marketing-report').innerHTML = html;
         }
 
         async function runMasterCycle() {
