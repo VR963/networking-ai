@@ -22,9 +22,9 @@ import json
 from typing import Optional
 
 import anthropic
-from supabase import create_client
 
-from app.config import ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_KEY
+from app.config import ANTHROPIC_API_KEY
+from app.database import get_db
 from app.services.network_learning import network_learning
 from app.services.agent_memory import agent_memory
 from app.services.hallucination_guard import hallucination_guard
@@ -38,9 +38,7 @@ AGENT_REVIEW_THRESHOLD = 3  # After this many human rejections, review agent
 
 
 def _get_supabase():
-    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
-        return None
-    return create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+    return get_db()
 
 
 class MasterAIGovernance:

@@ -31,9 +31,9 @@ from typing import Optional
 from datetime import datetime, timezone
 
 import anthropic
-from supabase import create_client
 
-from app.config import ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_KEY
+from app.config import ANTHROPIC_API_KEY
+from app.database import get_db
 
 
 # The Marketing AI's system prompt - crafted by Master AI
@@ -99,9 +99,7 @@ APPROVED_PLATFORMS = [
 
 
 def _get_supabase():
-    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
-        return None
-    return create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+    return get_db()
 
 
 class MarketingAIAgent:

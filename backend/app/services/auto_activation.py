@@ -13,10 +13,9 @@ Both talent and HM agents use the same activation logic.
 
 from typing import Optional
 
-from supabase import create_client
 from fastapi import HTTPException
 
-from app.config import SUPABASE_URL, SUPABASE_SERVICE_KEY
+from app.database import get_db
 from app.services.interview_service import interview_service
 from app.services.ai_profile_service import ai_profile_service
 from app.services.hallucination_guard import (
@@ -32,9 +31,7 @@ INTERVIEW_WEIGHT = 0.3
 
 
 def _get_supabase():
-    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
-        raise HTTPException(status_code=503, detail="Database not configured.")
-    return create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+    return get_db()
 
 
 class AutoActivation:

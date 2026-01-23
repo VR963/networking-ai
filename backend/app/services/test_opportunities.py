@@ -2,9 +2,9 @@ import json
 from typing import Optional
 
 import anthropic
-from supabase import create_client
 
-from app.config import ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_KEY
+from app.config import ANTHROPIC_API_KEY
+from app.database import get_db
 
 
 class TestOpportunities:
@@ -18,7 +18,6 @@ class TestOpportunities:
 
     def __init__(self):
         self._anthropic = None
-        self._supabase = None
 
     @property
     def anthropic_client(self):
@@ -28,9 +27,7 @@ class TestOpportunities:
 
     @property
     def supabase_client(self):
-        if self._supabase is None:
-            self._supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-        return self._supabase
+        return get_db()
 
     async def generate_test_opportunities(self, user_id: str) -> list[dict]:
         profile = await self._get_user_profile(user_id)

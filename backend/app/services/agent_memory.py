@@ -18,14 +18,11 @@ import json
 from typing import Optional
 from datetime import datetime
 
-from supabase import create_client
-from app.config import SUPABASE_URL, SUPABASE_SERVICE_KEY
+from app.database import get_db, get_cache, invalidate_agent
 
 
 def _get_supabase():
-    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
-        return None
-    return create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+    return get_db()
 
 
 class AgentMemory:
@@ -139,6 +136,11 @@ class AgentMemory:
 
     async def get_reputation(self, agent_id: str) -> int:
         """Get an agent's reputation score (0-100)."""
+        cache = get_cache()
+        cached = cache.get(f"agent:rep:{agent_id}")
+        if cached is not None:
+            return cached
+
         client = _get_supabase()
         if not client:
             return 50
@@ -150,9 +152,11 @@ class AgentMemory:
             .eq("id", agent_id)
             .execute()
         )
+        rep = 50
         if agent.data and agent.data[0].get("reputation") is not None:
-            return agent.data[0]["reputation"]
-        return 50  # Default
+            rep = agent.data[0]["reputation"]
+        cache.set(f"agent:rep:{agent_id}", rep)
+        return rep
 
     async def get_rejection_patterns(self, agent_id: str) -> list[str]:
         """Get patterns from what this agent's human keeps rejecting.
@@ -237,6 +241,7 @@ class AgentMemory:
 
         try:
             client.table("cv2_agents").update({"reputation": reputation}).eq("id", agent_id).execute()
+            invalidate_agent(agent_id)
         except Exception:
             pass
 

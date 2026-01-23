@@ -2,9 +2,9 @@ import json
 from typing import Optional
 
 import anthropic
-from supabase import create_client
 
-from app.config import ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_KEY, MAX_NEGOTIATION_TOKENS
+from app.config import ANTHROPIC_API_KEY, MAX_NEGOTIATION_TOKENS
+from app.database import get_db
 from app.services.industry_knowledge_modules import industry_knowledge
 
 
@@ -17,7 +17,6 @@ class A2AEngine:
 
     def __init__(self):
         self._anthropic = None
-        self._supabase = None
 
     @property
     def anthropic_client(self):
@@ -27,11 +26,7 @@ class A2AEngine:
 
     @property
     def supabase_client(self):
-        if self._supabase is None:
-            if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
-                raise RuntimeError("SUPABASE_URL and SUPABASE_SERVICE_KEY environment variables are required")
-            self._supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-        return self._supabase
+        return get_db()
 
     async def run_matching(self) -> dict:
         candidates = await self._get_candidates()

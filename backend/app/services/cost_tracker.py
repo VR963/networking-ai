@@ -18,8 +18,7 @@ import time
 from datetime import datetime, timezone
 from typing import Optional
 
-from supabase import create_client
-from app.config import SUPABASE_URL, SUPABASE_SERVICE_KEY
+from app.database import get_db
 
 
 # Model pricing per million tokens (USD)
@@ -44,9 +43,7 @@ OPERATION_CATEGORIES = {
 
 
 def _get_supabase():
-    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
-        return None
-    return create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+    return get_db()
 
 
 class CostTracker:

@@ -2,14 +2,13 @@ from typing import Optional
 
 import anthropic
 
-from app.config import ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_KEY
-from supabase import create_client
+from app.config import ANTHROPIC_API_KEY
+from app.database import get_db
 
 
 class QualityAnalyzer:
     def __init__(self):
         self._anthropic = None
-        self._supabase = None
 
     @property
     def anthropic_client(self):
@@ -19,9 +18,7 @@ class QualityAnalyzer:
 
     @property
     def supabase_client(self):
-        if self._supabase is None:
-            self._supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-        return self._supabase
+        return get_db()
 
     async def analyze(self, conversation_id: str) -> float:
         result = (

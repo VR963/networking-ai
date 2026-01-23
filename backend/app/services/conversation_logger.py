@@ -2,20 +2,16 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
-from supabase import create_client
-
-from app.config import SUPABASE_URL, SUPABASE_SERVICE_KEY
+from app.database import get_db
 
 
 class ConversationLogger:
     def __init__(self):
-        self._client = None
+        pass
 
     @property
     def client(self):
-        if self._client is None:
-            self._client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-        return self._client
+        return get_db()
 
     async def log_conversation(
         self, user_id: str, messages: list[dict], metadata: Optional[dict] = None

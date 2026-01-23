@@ -20,8 +20,7 @@ import json
 from typing import Optional
 from datetime import datetime, timezone
 
-from supabase import create_client
-from app.config import SUPABASE_URL, SUPABASE_SERVICE_KEY
+from app.database import get_db
 
 from app.services.ai_analytics import ai_analytics
 from app.services.cost_tracker import cost_tracker
@@ -34,9 +33,7 @@ from app.services.network_learning import network_learning
 
 
 def _get_supabase():
-    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
-        return None
-    return create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+    return get_db()
 
 
 class MasterAIControlCenter:

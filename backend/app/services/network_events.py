@@ -13,8 +13,7 @@ discovery → negotiation → memory → learning → governance
 import json
 from typing import Optional
 
-from supabase import create_client
-from app.config import SUPABASE_URL, SUPABASE_SERVICE_KEY
+from app.database import get_db
 
 from app.services.network_discovery import network_discovery
 from app.services.negotiation_protocol import negotiation_protocol
@@ -23,9 +22,7 @@ from app.services.network_learning import network_learning
 
 
 def _get_supabase():
-    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
-        return None
-    return create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+    return get_db()
 
 
 class NetworkEvents:

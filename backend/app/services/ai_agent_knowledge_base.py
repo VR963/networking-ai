@@ -1,8 +1,6 @@
 from typing import Optional
 
-from supabase import create_client
-
-from app.config import SUPABASE_URL, SUPABASE_SERVICE_KEY
+from app.database import get_db
 
 
 class AIAgentKnowledgeBase:
@@ -13,13 +11,11 @@ class AIAgentKnowledgeBase:
     """
 
     def __init__(self):
-        self._supabase = None
+        pass
 
     @property
     def supabase_client(self):
-        if self._supabase is None:
-            self._supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-        return self._supabase
+        return get_db()
 
     async def get_agent_knowledge(self, agent_id: str) -> Optional[dict]:
         result = (

@@ -1,9 +1,9 @@
 from typing import Optional
 
-from supabase import create_client
 import anthropic
 
-from app.config import ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_KEY
+from app.config import ANTHROPIC_API_KEY
+from app.database import get_db
 
 
 class CollectiveIntelligence:
@@ -11,7 +11,6 @@ class CollectiveIntelligence:
 
     def __init__(self):
         self._anthropic = None
-        self._supabase = None
 
     @property
     def anthropic_client(self):
@@ -21,9 +20,7 @@ class CollectiveIntelligence:
 
     @property
     def supabase_client(self):
-        if self._supabase is None:
-            self._supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-        return self._supabase
+        return get_db()
 
     async def share_pattern(self, user_id: str, industry: str, pattern: dict) -> None:
         record = {
