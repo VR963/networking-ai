@@ -36,16 +36,53 @@ async def chat_message(request: ChatRequest):
     # Build enriched context from knowledge base and learned patterns
     agent_context = {}
     user_patterns = []
+    pre_conversation_context = ""
     try:
         agent_context = await ai_agent_knowledge_base.build_agent_context(request.user_id)
         user_patterns = await dspy_learning.get_user_patterns(request.user_id)
     except Exception:
         pass  # Non-critical: proceed with base prompt if knowledge unavailable
 
+    # Fetch pre-conversation context from uploaded documents/social profiles
+    try:
+        from app.services.profile_analyzer import profile_analyzer
+        db_client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+
+        profile_data = (
+            db_client.table("cv2_profiles")
+            .select("social_analysis")
+            .eq("user_id", request.user_id)
+            .execute()
+        )
+        docs_data = (
+            db_client.table("cv2_documents")
+            .select("filename, doc_type, analysis")
+            .eq("user_id", request.user_id)
+            .execute()
+        )
+
+        cv_analysis = None
+        documents = []
+        for doc in (docs_data.data or []):
+            documents.append({"filename": doc.get("filename", ""), "doc_type": doc.get("doc_type", "")})
+            if doc.get("analysis") and doc.get("doc_type") == "cv":
+                cv_analysis = doc["analysis"]
+
+        social_analysis = (profile_data.data[0].get("social_analysis") if profile_data.data else None)
+
+        if cv_analysis or social_analysis or documents:
+            pre_conversation_context = await profile_analyzer.build_pre_conversation_context(
+                cv_analysis=cv_analysis,
+                social_analysis=social_analysis,
+                documents=documents if documents else None,
+            )
+    except Exception:
+        pass  # Pre-conversation context is non-critical
+
     try:
         client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
-        system_prompt = _build_system_prompt(request.context, agent_context, user_patterns)
+        system_prompt = _build_system_prompt(request.context, agent_context, user_patterns, pre_conversation_context)
 
         api_messages = [
             {"role": m["role"], "content": m["content"]}
@@ -96,6 +133,7 @@ def _build_system_prompt(
     context: dict,
     agent_context: dict = None,
     user_patterns: list = None,
+    pre_conversation_context: str = "",
 ) -> str:
     base = (
         "You are an AI career agent conducting a deep onboarding conversation. "
@@ -103,6 +141,10 @@ def _build_system_prompt(
         "fears, hidden criteria, and what truly matters to them professionally. "
         "Ask thoughtful follow-up questions. Listen for what they don't say explicitly."
     )
+
+    # Inject pre-conversation context from uploaded documents/social profiles
+    if pre_conversation_context:
+        base += f"\n\n{pre_conversation_context}"
 
     # Inject industry expertise from knowledge base
     industry = context.get("industry") or (agent_context or {}).get("industry")

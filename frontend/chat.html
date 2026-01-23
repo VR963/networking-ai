@@ -18,9 +18,12 @@
     </header>
 
     <main class="flex-1 max-w-3xl mx-auto w-full px-4 py-6 flex flex-col">
-        <!-- Setup -->
-        <div id="setup-panel" class="bg-white rounded-lg shadow p-6 mb-4">
-            <h2 class="text-lg font-semibold text-gray-900 mb-3">Start Your Onboarding</h2>
+        <!-- Setup: Step 1 - Identity -->
+        <div id="setup-step1" class="bg-white rounded-lg shadow p-6 mb-4">
+            <div class="flex items-center space-x-2 mb-3">
+                <span class="bg-indigo-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">1</span>
+                <h2 class="text-lg font-semibold text-gray-900">Who Are You?</h2>
+            </div>
             <p class="text-gray-600 text-sm mb-4">
                 Your AI agent will have a deep conversation to understand your values, goals,
                 and what truly matters to you professionally.
@@ -42,9 +45,75 @@
                     </select>
                 </div>
             </div>
-            <button onclick="startChat()" class="mt-4 bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition text-sm">
-                Start Conversation
+            <button onclick="goToStep2()" class="mt-4 bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition text-sm">
+                Next: Share Your Background
             </button>
+        </div>
+
+        <!-- Setup: Step 2 - Documents & Social -->
+        <div id="setup-step2" class="hidden bg-white rounded-lg shadow p-6 mb-4">
+            <div class="flex items-center space-x-2 mb-3">
+                <span class="bg-indigo-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">2</span>
+                <h2 class="text-lg font-semibold text-gray-900">Share Your Background</h2>
+            </div>
+            <p class="text-gray-600 text-sm mb-4">
+                Upload your CV and share professional links so your agent already knows your background.
+                It will then ask <em>deeper</em> questions about your values and what truly matters.
+                <span class="text-gray-400">(Optional but recommended)</span>
+            </p>
+
+            <!-- CV Upload -->
+            <div class="mb-5">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Upload CV / Resume</label>
+                <div id="cv-dropzone" class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-indigo-400 transition cursor-pointer"
+                    onclick="document.getElementById('cv-file-input').click()">
+                    <input type="file" id="cv-file-input" class="hidden" accept=".txt,.pdf,.doc,.docx,.md" onchange="handleFileUpload(event)">
+                    <p class="text-gray-500 text-sm" id="cv-upload-label">Click to upload CV (TXT, PDF, DOC)</p>
+                    <p class="text-gray-400 text-xs mt-1">Text will be extracted for AI analysis</p>
+                </div>
+                <div id="cv-analysis-result" class="hidden mt-2 bg-green-50 border border-green-200 rounded p-3 text-xs text-green-700"></div>
+            </div>
+
+            <!-- Other Documents -->
+            <div class="mb-5">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Certificates / Other Documents</label>
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-3 text-center hover:border-indigo-400 transition cursor-pointer"
+                    onclick="document.getElementById('other-file-input').click()">
+                    <input type="file" id="other-file-input" class="hidden" accept=".txt,.pdf,.doc,.docx,.md" multiple onchange="handleOtherFiles(event)">
+                    <p class="text-gray-500 text-xs">Add certificates, portfolio docs, etc.</p>
+                </div>
+                <div id="other-files-list" class="mt-2 space-y-1"></div>
+            </div>
+
+            <!-- Social Links -->
+            <div class="mb-5">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Professional Profiles</label>
+                <div class="grid grid-cols-1 gap-3">
+                    <div class="flex items-center space-x-2">
+                        <span class="text-gray-400 text-xs w-16">LinkedIn</span>
+                        <input type="url" id="linkedin-url" class="flex-1 border rounded-lg px-3 py-1.5 text-sm" placeholder="https://linkedin.com/in/yourname">
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-gray-400 text-xs w-16">GitHub</span>
+                        <input type="url" id="github-url" class="flex-1 border rounded-lg px-3 py-1.5 text-sm" placeholder="https://github.com/yourname">
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-gray-400 text-xs w-16">Portfolio</span>
+                        <input type="url" id="portfolio-url" class="flex-1 border rounded-lg px-3 py-1.5 text-sm" placeholder="https://yourportfolio.com">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center justify-between">
+                <button onclick="skipToChat()" class="text-gray-500 text-sm hover:text-gray-700">
+                    Skip, just start chatting
+                </button>
+                <button onclick="saveBackgroundAndStart()" id="save-bg-btn" class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition text-sm">
+                    Save & Start Conversation
+                </button>
+            </div>
+            <div id="upload-status" class="hidden mt-3 text-xs text-indigo-600 animate-pulse"></div>
         </div>
 
         <!-- Stage Progress Bar -->
@@ -99,8 +168,9 @@
         let industry = '';
         let conversationId = null;
         let learningCount = 0;
+        let uploadedCvText = '';
 
-        function startChat() {
+        function goToStep2() {
             userId = document.getElementById('user-id').value.trim();
             industry = document.getElementById('industry').value;
 
@@ -109,7 +179,146 @@
                 return;
             }
 
-            document.getElementById('setup-panel').classList.add('hidden');
+            // Create profile immediately so uploads can reference it
+            fetch('/user/profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userId, industry: industry || 'general' }),
+            });
+
+            document.getElementById('setup-step1').classList.add('hidden');
+            document.getElementById('setup-step2').classList.remove('hidden');
+        }
+
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            document.getElementById('cv-upload-label').textContent = `Uploading: ${file.name}...`;
+
+            const text = await readFileAsText(file);
+            if (!text || text.length < 50) {
+                document.getElementById('cv-upload-label').textContent = `Could not extract text from ${file.name}. Try a .txt file.`;
+                return;
+            }
+
+            uploadedCvText = text;
+
+            // Upload to backend for analysis
+            try {
+                const response = await fetch('/user/upload-document', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        filename: file.name,
+                        content_text: text,
+                        doc_type: 'cv',
+                    }),
+                });
+                const data = await response.json();
+
+                document.getElementById('cv-upload-label').textContent = `Uploaded: ${file.name}`;
+                document.getElementById('cv-dropzone').classList.remove('border-gray-300');
+                document.getElementById('cv-dropzone').classList.add('border-green-400', 'bg-green-50');
+
+                if (data.analysis && !data.analysis.error) {
+                    const resultEl = document.getElementById('cv-analysis-result');
+                    resultEl.classList.remove('hidden');
+                    resultEl.innerHTML = `
+                        <p class="font-medium">AI analyzed your CV:</p>
+                        <p>${data.analysis.current_role || ''} | ${data.analysis.experience_years || '?'} years</p>
+                        <p>Skills: ${(data.analysis.skills || []).slice(0, 8).join(', ')}</p>
+                        <p class="text-green-600 mt-1">Your agent will ask deeper questions based on this.</p>
+                    `;
+                }
+            } catch (e) {
+                document.getElementById('cv-upload-label').textContent = `Upload failed. Try again.`;
+            }
+        }
+
+        async function handleOtherFiles(event) {
+            const files = event.target.files;
+            const listEl = document.getElementById('other-files-list');
+
+            for (const file of files) {
+                const text = await readFileAsText(file);
+                if (!text) continue;
+
+                listEl.innerHTML += `<div class="text-xs text-gray-600 bg-gray-50 rounded px-2 py-1">${file.name} (uploading...)</div>`;
+
+                try {
+                    await fetch('/user/upload-document', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            user_id: userId,
+                            filename: file.name,
+                            content_text: text,
+                            doc_type: 'certificate',
+                        }),
+                    });
+                    listEl.lastElementChild.textContent = `${file.name} (uploaded)`;
+                    listEl.lastElementChild.classList.add('text-green-600');
+                } catch (e) {
+                    listEl.lastElementChild.textContent = `${file.name} (failed)`;
+                    listEl.lastElementChild.classList.add('text-red-500');
+                }
+            }
+        }
+
+        function readFileAsText(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = () => resolve(null);
+                reader.readAsText(file);
+            });
+        }
+
+        async function saveBackgroundAndStart() {
+            const btn = document.getElementById('save-bg-btn');
+            const statusEl = document.getElementById('upload-status');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+            statusEl.classList.remove('hidden');
+            statusEl.textContent = 'Saving your social links...';
+
+            // Save social links
+            const linkedin = document.getElementById('linkedin-url').value.trim();
+            const github = document.getElementById('github-url').value.trim();
+            const portfolio = document.getElementById('portfolio-url').value.trim();
+
+            if (linkedin || github || portfolio) {
+                try {
+                    await fetch('/user/social-links', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            user_id: userId,
+                            linkedin: linkedin || null,
+                            github: github || null,
+                            portfolio: portfolio || null,
+                        }),
+                    });
+                    statusEl.textContent = 'Links saved. Starting conversation...';
+                } catch (e) {
+                    // Non-critical
+                }
+            }
+
+            startChat();
+        }
+
+        function skipToChat() {
+            userId = document.getElementById('user-id').value.trim();
+            industry = document.getElementById('industry').value;
+            startChat();
+        }
+
+        function startChat() {
+            document.getElementById('setup-step1').classList.add('hidden');
+            document.getElementById('setup-step2').classList.add('hidden');
             document.getElementById('chat-container').classList.remove('hidden');
 
             // Show stage bar
@@ -119,12 +328,15 @@
             const calLink = document.querySelector('#calibration-prompt a');
             if (calLink) calLink.href = `/calibration.html?user_id=${encodeURIComponent(userId)}`;
 
-            // Send initial greeting from agent
-            appendMessage('assistant', 'Hello! I\'m your AI career agent. I\'m here to understand you deeply \u2014 your values, goals, what energizes you, and what you\'re looking for in your next opportunity. Let\'s have a real conversation. Tell me, what\'s on your mind professionally right now?');
-            conversationMessages.push({
-                role: 'assistant',
-                content: 'Hello! I\'m your AI career agent. I\'m here to understand you deeply \u2014 your values, goals, what energizes you, and what you\'re looking for in your next opportunity. Let\'s have a real conversation. Tell me, what\'s on your mind professionally right now?'
-            });
+            // Send initial greeting from agent (context-aware)
+            let greeting;
+            if (uploadedCvText) {
+                greeting = 'Hello! I\'ve reviewed your CV and professional background. I already know the facts \u2014 your skills, experience, and career path. Now I want to understand the person behind the resume. What gets you genuinely excited about your work? And what would you never compromise on, even for the perfect-looking opportunity?';
+            } else {
+                greeting = 'Hello! I\'m your AI career agent. I\'m here to understand you deeply \u2014 your values, goals, what energizes you, and what you\'re looking for in your next opportunity. Let\'s have a real conversation. Tell me, what\'s on your mind professionally right now?';
+            }
+            appendMessage('assistant', greeting);
+            conversationMessages.push({ role: 'assistant', content: greeting });
 
             document.getElementById('user-input').focus();
         }

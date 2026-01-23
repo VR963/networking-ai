@@ -32,6 +32,25 @@ class CandidateRegisterRequest(BaseModel):
     user_id: str
 
 
+class DocumentUploadRequest(BaseModel):
+    user_id: str
+    filename: str
+    content_text: str  # Extracted text content from the document
+    doc_type: str = "cv"  # cv, certificate, portfolio, other
+
+
+class SocialLinksRequest(BaseModel):
+    user_id: str
+    linkedin: Optional[str] = None
+    github: Optional[str] = None
+    portfolio: Optional[str] = None
+    other: list[str] = []
+
+
+class AnalyzeProfileRequest(BaseModel):
+    user_id: str
+
+
 # --- STAGES ---
 # onboarding: user is chatting with agent (initial)
 # calibration: user is doing test opportunities
@@ -80,6 +99,142 @@ async def create_or_update_profile(request: ProfileCreateRequest):
         pass  # User may already exist
 
     return {"status": "created", "user_id": request.user_id, "stage": "onboarding"}
+
+
+@router.post("/upload-document")
+async def upload_document(request: DocumentUploadRequest):
+    """Upload a document (CV, certificate, etc.) for AI analysis.
+
+    The content_text field should contain the extracted text from the document.
+    Frontend handles file reading; backend stores and analyzes the text content.
+    """
+    client = _get_supabase()
+
+    import uuid
+    doc_id = str(uuid.uuid4())
+
+    record = {
+        "id": doc_id,
+        "user_id": request.user_id,
+        "filename": request.filename,
+        "doc_type": request.doc_type,
+        "content_text": request.content_text[:50000],  # Limit size
+    }
+    client.table("cv2_documents").insert(record).execute()
+
+    # If it's a CV, trigger analysis immediately
+    analysis = None
+    if request.doc_type == "cv" and request.content_text.strip():
+        from app.services.profile_analyzer import profile_analyzer
+
+        # Get user industry for context
+        profile = client.table("cv2_profiles").select("industry").eq("user_id", request.user_id).execute()
+        industry = (profile.data[0]["industry"] if profile.data else "general")
+
+        analysis = await profile_analyzer.analyze_cv_text(request.content_text, industry)
+
+        # Store analysis result
+        if analysis and not analysis.get("error"):
+            client.table("cv2_documents").update({"analysis": analysis}).eq("id", doc_id).execute()
+
+            # Update profile summary with career trajectory
+            if analysis.get("career_trajectory"):
+                client.table("cv2_profiles").update({
+                    "summary": analysis["career_trajectory"]
+                }).eq("user_id", request.user_id).execute()
+
+    return {"status": "uploaded", "doc_id": doc_id, "analysis": analysis}
+
+
+@router.post("/social-links")
+async def save_social_links(request: SocialLinksRequest):
+    """Save social/professional profile links for the user.
+
+    Stores LinkedIn, GitHub, portfolio URLs and triggers analysis
+    to understand the user's professional presence.
+    """
+    client = _get_supabase()
+
+    links = {}
+    if request.linkedin:
+        links["linkedin"] = request.linkedin
+    if request.github:
+        links["github"] = request.github
+    if request.portfolio:
+        links["portfolio"] = request.portfolio
+    if request.other:
+        links["other"] = request.other
+
+    if not links:
+        return {"status": "no_links_provided"}
+
+    # Store links in profile
+    client.table("cv2_profiles").update({
+        "social_links": links
+    }).eq("user_id", request.user_id).execute()
+
+    # Analyze what the links reveal
+    from app.services.profile_analyzer import profile_analyzer
+    social_analysis = await profile_analyzer.analyze_social_profiles(links)
+
+    # Store analysis
+    if social_analysis and not social_analysis.get("error"):
+        client.table("cv2_profiles").update({
+            "social_analysis": social_analysis
+        }).eq("user_id", request.user_id).execute()
+
+    return {"status": "saved", "links": links, "analysis": social_analysis}
+
+
+@router.get("/profile-context/{user_id}")
+async def get_profile_context(user_id: str):
+    """Get the pre-conversation context built from documents and social profiles.
+
+    This is called by the chat system to enrich the AI agent's knowledge
+    before the conversation begins.
+    """
+    client = _get_supabase()
+
+    # Get profile with social analysis
+    profile_result = (
+        client.table("cv2_profiles")
+        .select("industry, social_links, social_analysis")
+        .eq("user_id", user_id)
+        .execute()
+    )
+
+    # Get document analyses
+    docs_result = (
+        client.table("cv2_documents")
+        .select("filename, doc_type, analysis")
+        .eq("user_id", user_id)
+        .execute()
+    )
+
+    cv_analysis = None
+    documents = []
+    for doc in (docs_result.data or []):
+        documents.append({"filename": doc["filename"], "doc_type": doc["doc_type"]})
+        if doc.get("analysis") and doc["doc_type"] == "cv":
+            cv_analysis = doc["analysis"]
+
+    social_analysis = None
+    if profile_result.data:
+        social_analysis = profile_result.data[0].get("social_analysis")
+
+    from app.services.profile_analyzer import profile_analyzer
+    context = await profile_analyzer.build_pre_conversation_context(
+        cv_analysis=cv_analysis,
+        social_analysis=social_analysis,
+        documents=documents if documents else None,
+    )
+
+    return {
+        "context": context,
+        "has_cv": cv_analysis is not None,
+        "has_social": social_analysis is not None,
+        "documents_count": len(documents),
+    }
 
 
 @router.get("/profile/{user_id}")
