@@ -2,8 +2,9 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 import anthropic
+from supabase import create_client
 
-from app.config import ANTHROPIC_API_KEY, QUALITY_THRESHOLD
+from app.config import ANTHROPIC_API_KEY, QUALITY_THRESHOLD, SUPABASE_URL, SUPABASE_SERVICE_KEY
 from app.services.conversation_logger import conversation_logger
 from app.services.quality_analyzer import quality_analyzer
 from app.services.dspy_learning import dspy_learning
@@ -28,6 +29,9 @@ class ChatResponse(BaseModel):
 async def chat_message(request: ChatRequest):
     if not ANTHROPIC_API_KEY:
         raise HTTPException(status_code=503, detail="ANTHROPIC_API_KEY environment variable is required")
+
+    # Ensure user profile exists (creates on first chat)
+    await _ensure_profile(request.user_id, request.context.get("industry", "general"))
 
     # Build enriched context from knowledge base and learned patterns
     agent_context = {}
@@ -135,3 +139,41 @@ def _build_system_prompt(
         )
 
     return base
+
+
+async def _ensure_profile(user_id: str, industry: str = "general") -> None:
+    """Create user profile on first chat if it doesn't exist.
+
+    This bridges the gap: chat is the entry point, and all downstream
+    services (calibration, A2A matching) depend on cv2_profiles existing.
+    """
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        return  # Skip if DB not configured
+
+    try:
+        client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+
+        existing = (
+            client.table("cv2_profiles")
+            .select("user_id")
+            .eq("user_id", user_id)
+            .execute()
+        )
+        if existing.data:
+            # Update industry if provided and different
+            if industry and industry != "general":
+                client.table("cv2_profiles").update({"industry": industry}).eq("user_id", user_id).execute()
+            return
+
+        # Create new profile
+        client.table("cv2_profiles").insert({
+            "user_id": user_id,
+            "industry": industry or "general",
+            "summary": "",
+            "stage": "onboarding",
+        }).execute()
+
+        # Ensure user exists in cv2_users
+        client.table("cv2_users").upsert({"id": user_id}).execute()
+    except Exception:
+        pass  # Profile creation failure should not block chat

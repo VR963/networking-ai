@@ -47,6 +47,31 @@
             </button>
         </div>
 
+        <!-- Stage Progress Bar -->
+        <div id="stage-bar" class="hidden mb-4 bg-white rounded-lg shadow p-4">
+            <div class="flex items-center justify-between text-xs">
+                <div class="flex items-center space-x-1">
+                    <span id="stage-dot" class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                    <span id="stage-label" class="text-gray-600 font-medium">Onboarding</span>
+                </div>
+                <div class="flex space-x-4 text-gray-400">
+                    <span class="stage-step text-indigo-600 font-medium" data-stage="onboarding">Chat</span>
+                    <span class="stage-step" data-stage="calibration">Calibrate</span>
+                    <span class="stage-step" data-stage="certified">Certify</span>
+                    <span class="stage-step" data-stage="matchable">Match</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calibration Prompt (shown after enough conversation) -->
+        <div id="calibration-prompt" class="hidden mb-4 bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+            <p class="text-indigo-800 text-sm font-medium">Your agent is getting to know you well.</p>
+            <p class="text-indigo-600 text-xs mt-1">Ready to test how well it understands you? Calibration reveals your hidden preferences.</p>
+            <a href="/calibration.html" class="mt-2 inline-block bg-indigo-600 text-white px-4 py-1.5 rounded text-xs hover:bg-indigo-700 transition">
+                Start Calibration
+            </a>
+        </div>
+
         <!-- Chat Messages -->
         <div id="chat-container" class="hidden flex-1 flex flex-col">
             <div id="messages" class="flex-1 overflow-y-auto space-y-4 mb-4 bg-white rounded-lg shadow p-4" style="max-height: 60vh;"></div>
@@ -86,6 +111,13 @@
 
             document.getElementById('setup-panel').classList.add('hidden');
             document.getElementById('chat-container').classList.remove('hidden');
+
+            // Show stage bar
+            showStageBar('onboarding');
+
+            // Update calibration link with user_id
+            const calLink = document.querySelector('#calibration-prompt a');
+            if (calLink) calLink.href = `/calibration.html?user_id=${encodeURIComponent(userId)}`;
 
             // Send initial greeting from agent
             appendMessage('assistant', 'Hello! I\'m your AI career agent. I\'m here to understand you deeply \u2014 your values, goals, what energizes you, and what you\'re looking for in your next opportunity. Let\'s have a real conversation. Tell me, what\'s on your mind professionally right now?');
@@ -197,6 +229,31 @@
             let text = `${turns} message${turns !== 1 ? 's' : ''} sent`;
             if (conversationId) text += ` | ID: ${conversationId.substring(0, 8)}...`;
             info.textContent = text;
+
+            // Show calibration prompt after 5+ user messages
+            if (turns >= 5) {
+                document.getElementById('calibration-prompt').classList.remove('hidden');
+            }
+        }
+
+        function showStageBar(stage) {
+            document.getElementById('stage-bar').classList.remove('hidden');
+            const stages = ['onboarding', 'calibration', 'certified', 'matchable'];
+            const labels = { onboarding: 'Onboarding', calibration: 'Calibrating', certified: 'Certified', matchable: 'Ready to Match' };
+            document.getElementById('stage-label').textContent = labels[stage] || stage;
+
+            document.querySelectorAll('.stage-step').forEach(el => {
+                const s = el.dataset.stage;
+                const idx = stages.indexOf(s);
+                const currentIdx = stages.indexOf(stage);
+                if (idx <= currentIdx) {
+                    el.classList.add('text-indigo-600', 'font-medium');
+                    el.classList.remove('text-gray-400');
+                } else {
+                    el.classList.remove('text-indigo-600', 'font-medium');
+                    el.classList.add('text-gray-400');
+                }
+            });
         }
 
         function escapeHtml(text) {

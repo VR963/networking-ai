@@ -42,8 +42,18 @@ class A2AEngine:
             for job in jobs:
                 match = await self._deep_negotiation(candidate, job)
                 if match and match.get("score", 0) >= 60:
-                    await self._store_match(candidate, job, match)
-                    matches.append(match)
+                    # Consensus model: both agents must agree
+                    consensus = await self._check_consensus(candidate, job, match)
+                    match["consensus"] = consensus
+                    if consensus.get("both_agree"):
+                        match["status"] = "mutual_agreement"
+                        await self._store_match(candidate, job, match)
+                        matches.append(match)
+                    else:
+                        # Store as pending - one side disagreed
+                        match["status"] = "pending_consensus"
+                        match["score"] = int(match["score"] * 0.7)  # Reduce score for non-consensus
+                        await self._store_match(candidate, job, match)
 
         return {"matches_found": len(matches), "matches": matches}
 
@@ -186,6 +196,67 @@ Return a JSON object with:
 
         return ""
 
+    async def _check_consensus(self, candidate: dict, job: dict, match: dict) -> dict:
+        """Consensus model: both candidate agent and job agent must independently agree.
+
+        Each agent evaluates from their user's perspective whether this match
+        should be presented. A match only becomes 'mutual_agreement' when both agree.
+        """
+        candidate_profile = json.dumps(candidate.get("profile", {}), indent=2)
+        job_profile = json.dumps(job.get("profile", {}), indent=2)
+        negotiation_result = json.dumps({
+            "score": match.get("score"),
+            "candidate_synopsis": match.get("candidate_synopsis", {}),
+            "hiring_manager_synopsis": match.get("hiring_manager_synopsis", {}),
+        }, indent=2)
+
+        prompt = f"""Two AI agents have completed a negotiation about a potential match.
+Now each agent must independently decide whether to present this opportunity to their user.
+
+CANDIDATE PROFILE:
+{candidate_profile}
+
+JOB PROFILE:
+{job_profile}
+
+NEGOTIATION RESULT:
+{negotiation_result}
+
+For each agent, answer: Would you recommend presenting this to your user?
+Consider: Is it worth their time? Does it align with what you know about them?
+Would presenting a weak match erode trust?
+
+Return JSON:
+{{
+    "candidate_agent_agrees": true/false,
+    "candidate_agent_reasoning": "brief explanation",
+    "job_agent_agrees": true/false,
+    "job_agent_reasoning": "brief explanation",
+    "both_agree": true/false
+}}"""
+
+        try:
+            response = self.anthropic_client.messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=500,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            text = response.content[0].text.strip()
+            if text.startswith("```"):
+                text = text.split("\n", 1)[1].rsplit("```", 1)[0]
+            result = json.loads(text)
+            # Ensure both_agree is consistent
+            result["both_agree"] = result.get("candidate_agent_agrees", False) and result.get("job_agent_agrees", False)
+            return result
+        except (json.JSONDecodeError, IndexError, Exception):
+            # Default: if negotiation score >= 75, assume consensus
+            return {
+                "candidate_agent_agrees": match.get("score", 0) >= 75,
+                "job_agent_agrees": match.get("score", 0) >= 75,
+                "both_agree": match.get("score", 0) >= 75,
+                "reasoning": "Fallback consensus based on score threshold",
+            }
+
     async def _store_match(self, candidate: dict, job: dict, match: dict) -> None:
         candidate_id = candidate.get("user_id", candidate.get("id", ""))
         job_id = job.get("job_id", job.get("id", ""))
@@ -197,9 +268,11 @@ Return a JSON object with:
             "job_id": job_id,
             "score": match.get("score", 0),
             "match_level": match.get("match_level", "no_match"),
+            "status": match.get("status", "mutual_agreement"),
             "candidate_synopsis": match.get("candidate_synopsis", {}),
             "hiring_manager_synopsis": match.get("hiring_manager_synopsis", {}),
             "negotiation_notes": match.get("negotiation_notes", ""),
+            "consensus": match.get("consensus", {}),
         }
         self.supabase_client.table("cv2_a2a_matches").upsert(record).execute()
 

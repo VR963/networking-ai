@@ -7,6 +7,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.a2a_routes import router as a2a_router
 from app.api.profile_chat import router as profile_chat_router
 from app.api.calibration import router as calibration_router
+from app.api.user_routes import router as user_router
+from app.api.job_routes import router as job_router
 from app.routes.master_ai_routes import router as master_ai_router
 
 app = FastAPI(title="CV 2.0 Platform", version="2.0.0")
@@ -45,6 +47,8 @@ async def general_exception_handler(request: Request, exc: Exception):
 app.include_router(a2a_router, prefix="/a2a", tags=["A2A Matching"])
 app.include_router(profile_chat_router, prefix="/chat", tags=["Profile Chat"])
 app.include_router(calibration_router, prefix="/calibration", tags=["Calibration"])
+app.include_router(user_router, prefix="/user", tags=["User Management"])
+app.include_router(job_router, prefix="/jobs", tags=["Job Management"])
 app.include_router(master_ai_router, prefix="/master-ai", tags=["Master AI"])
 
 

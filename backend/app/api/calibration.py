@@ -2,7 +2,9 @@ from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from supabase import create_client
 
+from app.config import SUPABASE_URL, SUPABASE_SERVICE_KEY
 from app.services.test_opportunities import test_opportunities
 
 router = APIRouter()
@@ -19,6 +21,24 @@ class ResponseRequest(BaseModel):
     rejection_reason: Optional[str] = None
 
 
+def _advance_to_calibration(user_id: str):
+    """Advance user stage to 'calibration' when they start generating test opportunities."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        return
+    try:
+        client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+        result = (
+            client.table("cv2_profiles")
+            .select("stage")
+            .eq("user_id", user_id)
+            .execute()
+        )
+        if result.data and result.data[0].get("stage") == "onboarding":
+            client.table("cv2_profiles").update({"stage": "calibration"}).eq("user_id", user_id).execute()
+    except Exception:
+        pass  # Stage advancement is non-critical
+
+
 def _handle_service_error(e: Exception):
     error_msg = str(e).lower()
     if "supabase_url" in error_msg or "supabase" in type(e).__name__.lower():
@@ -28,6 +48,9 @@ def _handle_service_error(e: Exception):
 
 @router.post("/generate")
 async def generate_opportunities(request: GenerateRequest):
+    # Advance user stage to calibration
+    _advance_to_calibration(request.user_id)
+
     try:
         opportunities = await test_opportunities.generate_test_opportunities(request.user_id)
     except Exception as e:

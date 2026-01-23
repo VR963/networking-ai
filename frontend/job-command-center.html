@@ -34,6 +34,70 @@
             </div>
         </div>
 
+        <!-- Job Creation Form (collapsible) -->
+        <div id="job-form-section" class="mb-6">
+            <button onclick="toggleJobForm()" class="text-indigo-600 text-sm font-medium hover:text-indigo-800 mb-3">
+                + Add New Job
+            </button>
+            <div id="job-form" class="hidden bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Create Job Listing</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
+                        <input type="text" id="job-title" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Senior Software Engineer">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Company</label>
+                        <input type="text" id="job-company" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Acme Corp">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Industry</label>
+                        <select id="job-industry" class="w-full border rounded-lg px-3 py-2 text-sm">
+                            <option value="technology">Technology</option>
+                            <option value="finance">Finance</option>
+                            <option value="healthcare">Healthcare</option>
+                            <option value="legal">Legal</option>
+                            <option value="hr">HR</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Salary Range</label>
+                        <input type="text" id="job-salary" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="$120k - $180k">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea id="job-description" rows="3" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Describe the role..."></textarea>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Requirements (comma-separated)</label>
+                        <input type="text" id="job-requirements" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Python, 5+ years, distributed systems">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Team Values (comma-separated)</label>
+                        <input type="text" id="job-values" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="ownership, collaboration, growth">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Culture Signals (comma-separated)</label>
+                        <input type="text" id="job-culture" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="remote-first, async, flat hierarchy">
+                    </div>
+                </div>
+                <div class="mt-4 flex space-x-3">
+                    <button onclick="createJob()" id="create-job-btn" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition text-sm">
+                        Create Job
+                    </button>
+                    <button onclick="toggleJobForm()" class="text-gray-600 text-sm hover:text-gray-800">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Jobs -->
+        <div id="jobs-section" class="mb-6">
+            <h3 class="text-sm font-medium text-gray-500 mb-2">Active Jobs</h3>
+            <div id="jobs-list" class="flex flex-wrap gap-2">
+                <span class="text-gray-400 text-xs">Loading...</span>
+            </div>
+        </div>
+
         <!-- Status Bar -->
         <div id="status-bar" class="mb-6 bg-white rounded-lg shadow p-4 flex items-center space-x-6 text-sm">
             <span class="text-gray-500">Loading status...</span>
@@ -139,6 +203,8 @@
                                 <div class="flex items-center space-x-3 mb-2">
                                     <span class="text-2xl font-bold ${scoreColor}">${score}%</span>
                                     <span class="text-xs px-2 py-1 rounded-full ${levelBadge}">${level.replace('_', ' ')}</span>
+                                    ${match.status === 'mutual_agreement' ? '<span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Mutual</span>' : ''}
+                                    ${match.status === 'pending_consensus' ? '<span class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Pending Consensus</span>' : ''}
                                 </div>
                                 <p class="text-gray-700 text-sm mb-3">${hmSynopsis.summary || 'No synopsis available'}</p>
                                 ${alignments.length ? `
@@ -262,9 +328,92 @@
             }
         }
 
+        function toggleJobForm() {
+            document.getElementById('job-form').classList.toggle('hidden');
+        }
+
+        async function createJob() {
+            const title = document.getElementById('job-title').value.trim();
+            const company = document.getElementById('job-company').value.trim();
+            if (!title || !company) {
+                alert('Title and company are required');
+                return;
+            }
+
+            const btn = document.getElementById('create-job-btn');
+            btn.disabled = true;
+            btn.textContent = 'Creating...';
+
+            const payload = {
+                title,
+                company,
+                industry: document.getElementById('job-industry').value,
+                description: document.getElementById('job-description').value.trim(),
+                salary_range: document.getElementById('job-salary').value.trim() || null,
+                requirements: document.getElementById('job-requirements').value.split(',').map(s => s.trim()).filter(Boolean),
+                values: document.getElementById('job-values').value.split(',').map(s => s.trim()).filter(Boolean),
+                culture: document.getElementById('job-culture').value.split(',').map(s => s.trim()).filter(Boolean),
+            };
+
+            try {
+                const response = await fetch('/jobs/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    toggleJobForm();
+                    loadJobs();
+                    loadStatus();
+                    // Clear form
+                    document.getElementById('job-title').value = '';
+                    document.getElementById('job-company').value = '';
+                    document.getElementById('job-description').value = '';
+                    document.getElementById('job-salary').value = '';
+                    document.getElementById('job-requirements').value = '';
+                    document.getElementById('job-values').value = '';
+                    document.getElementById('job-culture').value = '';
+                } else {
+                    alert(data.detail || 'Failed to create job');
+                }
+            } catch (e) {
+                alert('Connection error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Create Job';
+            }
+        }
+
+        async function loadJobs() {
+            try {
+                const response = await fetch('/jobs/list');
+                if (!response.ok) {
+                    document.getElementById('jobs-list').innerHTML = '<span class="text-amber-500 text-xs">Could not load jobs</span>';
+                    return;
+                }
+                const data = await response.json();
+                if (!data.jobs.length) {
+                    document.getElementById('jobs-list').innerHTML = '<span class="text-gray-400 text-xs">No jobs created yet. Add a job to start matching.</span>';
+                    return;
+                }
+                document.getElementById('jobs-list').innerHTML = data.jobs.map(job => {
+                    const profile = job.profile || {};
+                    return `<div class="bg-white border rounded-lg px-3 py-2 text-sm">
+                        <span class="font-medium text-gray-900">${profile.title || 'Untitled'}</span>
+                        <span class="text-gray-500 ml-1">at ${profile.company || '?'}</span>
+                        <span class="text-xs text-gray-400 ml-2">${profile.industry || ''}</span>
+                    </div>`;
+                }).join('');
+            } catch (e) {
+                document.getElementById('jobs-list').innerHTML = '<span class="text-red-500 text-xs">Connection error</span>';
+            }
+        }
+
         // Initialize
         loadStatus();
         loadMatches();
+        loadJobs();
     </script>
 </body>
 </html>
