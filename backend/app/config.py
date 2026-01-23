@@ -1,0 +1,9 @@
+import os
+
+
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
+SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+
+QUALITY_THRESHOLD = 7.0
+MAX_NEGOTIATION_TOKENS = 4000
