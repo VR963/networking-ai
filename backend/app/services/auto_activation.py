@@ -231,21 +231,30 @@ class AutoActivation:
         client.table("cv2_a2a_candidates").upsert(candidate_record).execute()
 
         # Register agent
+        agent_id = f"agent_{user_id}"
         agent_record = {
-            "id": f"agent_{user_id}",
+            "id": agent_id,
             "user_id": user_id,
             "agent_type": "talent",
             "industry": industry,
             "profile": ai_profile,
             "active": True,
+            "reputation": 50,
         }
         client.table("cv2_agents").upsert(agent_record).execute()
+
+        # Trigger network matching for new agent
+        try:
+            from app.services.network_events import network_events
+            await network_events.on_agent_activated(agent_id, "talent")
+        except Exception:
+            pass  # Network matching is non-blocking
 
         return {
             "status": "activated",
             "score": readiness["combined_score"],
             "profile_synopsis": ai_profile.get("synopsis", ""),
-            "agent_id": f"agent_{user_id}",
+            "agent_id": agent_id,
         }
 
     async def activate_hm_agent(self, user_id: str, job_id: str) -> dict:
@@ -309,22 +318,31 @@ class AutoActivation:
         }).eq("id", job_id).execute()
 
         # Register HM agent
+        agent_id = f"hm_agent_{job_id}"
         agent_record = {
-            "id": f"hm_agent_{job_id}",
+            "id": agent_id,
             "user_id": user_id,
             "job_id": job_id,
             "agent_type": "hm",
             "industry": industry,
             "profile": ai_profile,
             "active": True,
+            "reputation": 50,
         }
         client.table("cv2_agents").upsert(agent_record).execute()
+
+        # Trigger network matching for new agent
+        try:
+            from app.services.network_events import network_events
+            await network_events.on_agent_activated(agent_id, "hm")
+        except Exception:
+            pass  # Network matching is non-blocking
 
         return {
             "status": "activated",
             "score": readiness["combined_score"],
             "profile_synopsis": ai_profile.get("synopsis", ""),
-            "agent_id": f"hm_agent_{job_id}",
+            "agent_id": agent_id,
         }
 
     def _score_cv_analysis(self, cv_analysis: Optional[dict]) -> int:
