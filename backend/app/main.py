@@ -9,6 +9,7 @@ from app.api.profile_chat import router as profile_chat_router
 from app.api.calibration import router as calibration_router
 from app.api.user_routes import router as user_router
 from app.api.job_routes import router as job_router
+from app.api.onboarding import router as onboarding_router
 from app.routes.master_ai_routes import router as master_ai_router
 
 app = FastAPI(title="CV 2.0 Platform", version="2.0.0")
@@ -49,6 +50,7 @@ app.include_router(profile_chat_router, prefix="/chat", tags=["Profile Chat"])
 app.include_router(calibration_router, prefix="/calibration", tags=["Calibration"])
 app.include_router(user_router, prefix="/user", tags=["User Management"])
 app.include_router(job_router, prefix="/jobs", tags=["Job Management"])
+app.include_router(onboarding_router, prefix="/onboarding", tags=["Onboarding"])
 app.include_router(master_ai_router, prefix="/master-ai", tags=["Master AI"])
 
 

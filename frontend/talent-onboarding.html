@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CV 2.0 - Talent Onboarding</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <header class="bg-white shadow-sm">
+        <nav class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
+            <a href="/" class="text-2xl font-bold text-indigo-600">CV 2.0</a>
+            <span class="text-gray-500 text-sm">Your AI Agent Setup</span>
+        </nav>
+    </header>
+
+    <main class="max-w-2xl mx-auto px-4 py-8">
+        <!-- Progress Bar -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between mb-2">
+                <span id="step-label" class="text-sm font-medium text-indigo-600">Step 1: Upload CV</span>
+                <span id="readiness-badge" class="hidden text-xs font-medium px-2 py-1 rounded-full bg-green-100 text-green-700">
+                    Ready: <span id="readiness-score">0</span>%
+                </span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+                <div id="progress-bar" class="bg-indigo-600 h-2 rounded-full transition-all duration-500" style="width: 10%"></div>
+            </div>
+        </div>
+
+        <!-- Step 0: User ID -->
+        <div id="step-userid" class="bg-white rounded-xl shadow-sm p-6 mb-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-1">Let's set up your AI agent</h2>
+            <p class="text-gray-500 text-sm mb-4">Your agent will represent you 24/7, finding and negotiating opportunities that truly match who you are.</p>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Your ID</label>
+                    <input type="text" id="user-id" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Enter your user ID">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Industry</label>
+                    <select id="industry" class="w-full border border-gray-300 rounded-lg px-4 py-2">
+                        <option value="tech">Technology</option>
+                        <option value="finance">Finance</option>
+                        <option value="healthcare">Healthcare</option>
+                        <option value="creative">Creative/Design</option>
+                        <option value="marketing">Marketing</option>
+                        <option value="engineering">Engineering</option>
+                        <option value="general">Other</option>
+                    </select>
+                </div>
+                <button onclick="startOnboarding()" class="w-full bg-indigo-600 text-white px-4 py-2.5 rounded-lg hover:bg-indigo-700 transition font-medium">
+                    Get Started
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 1: CV Upload -->
+        <div id="step-upload" class="hidden bg-white rounded-xl shadow-sm p-6 mb-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-1">Upload Your CV</h2>
+            <p class="text-gray-500 text-sm mb-4">Your AI agent will analyze this to understand your background, then ask deeper questions.</p>
+
+            <div id="upload-zone" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-indigo-400 transition"
+                 ondrop="handleDrop(event)" ondragover="event.preventDefault()" onclick="document.getElementById('cv-file').click()">
+                <input type="file" id="cv-file" class="hidden" accept=".txt,.pdf,.doc,.docx" onchange="handleFileSelect(event)">
+                <div id="upload-prompt">
+                    <svg class="mx-auto h-10 w-10 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                    </svg>
+                    <p class="text-gray-600">Drop your CV here or <span class="text-indigo-600 font-medium">browse</span></p>
+                    <p class="text-gray-400 text-xs mt-1">TXT, PDF, DOC supported</p>
+                </div>
+                <div id="upload-status" class="hidden">
+                    <div class="text-green-600 font-medium" id="upload-filename"></div>
+                    <div class="text-gray-500 text-sm mt-1" id="upload-analysis"></div>
+                </div>
+            </div>
+
+            <div id="cv-analysis-result" class="hidden mt-4 bg-indigo-50 rounded-lg p-4">
+                <h3 class="text-sm font-semibold text-indigo-800 mb-2">AI Analysis</h3>
+                <div id="cv-insights" class="text-sm text-indigo-700 space-y-1"></div>
+            </div>
+
+            <div class="mt-4 flex justify-between">
+                <button onclick="skipUpload()" class="text-gray-500 text-sm hover:text-gray-700">Skip for now</button>
+                <button onclick="proceedToInterview()" id="proceed-btn" class="bg-indigo-600 text-white px-5 py-2 rounded-lg hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    Continue to Interview
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 2: Structured Interview -->
+        <div id="step-interview" class="hidden bg-white rounded-xl shadow-sm p-6 mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold text-gray-900">Interview</h2>
+                <span id="question-counter" class="text-sm text-gray-500">1/7</span>
+            </div>
+
+            <div id="question-container">
+                <p id="question-text" class="text-gray-800 mb-1"></p>
+                <p id="question-purpose" class="text-xs text-gray-400 mb-4 italic"></p>
+                <textarea id="answer-input" rows="4" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                    placeholder="Take your time - there's no wrong answer..."></textarea>
+                <div class="mt-3 flex justify-between items-center">
+                    <span id="answer-hint" class="text-xs text-gray-400"></span>
+                    <button onclick="submitAnswer()" id="submit-answer-btn" class="bg-indigo-600 text-white px-5 py-2 rounded-lg hover:bg-indigo-700 transition disabled:opacity-50" disabled>
+                        Next
+                    </button>
+                </div>
+            </div>
+
+            <!-- Answer feedback -->
+            <div id="answer-feedback" class="hidden mt-4 bg-green-50 rounded-lg p-3">
+                <p class="text-sm text-green-700" id="feedback-text"></p>
+            </div>
+        </div>
+
+        <!-- Step 3: Activation -->
+        <div id="step-activation" class="hidden bg-white rounded-xl shadow-sm p-6 mb-6 text-center">
+            <div id="activating-state">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-indigo-100 rounded-full mb-4">
+                    <svg class="w-8 h-8 text-indigo-600 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-1">Generating Your AI Profile...</h2>
+                <p class="text-gray-500 text-sm">Combining your CV and interview to create your agent's personality.</p>
+            </div>
+
+            <div id="activated-state" class="hidden">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                </div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-1">Your Agent is Live!</h2>
+                <p class="text-gray-500 text-sm mb-4">It's now matching you with opportunities 24/7.</p>
+                <div id="agent-synopsis" class="text-left bg-gray-50 rounded-lg p-4 text-sm text-gray-700 mb-4"></div>
+                <div class="flex gap-3 justify-center">
+                    <a href="/dashboard.html" class="bg-indigo-600 text-white px-5 py-2 rounded-lg hover:bg-indigo-700 transition">
+                        Go to Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <div id="not-ready-state" class="hidden">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-amber-100 rounded-full mb-4">
+                    <svg class="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                    </svg>
+                </div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-1">Almost There</h2>
+                <p class="text-gray-500 text-sm mb-2">Your agent needs a bit more information.</p>
+                <div id="missing-items" class="text-left text-sm text-amber-700 bg-amber-50 rounded-lg p-3 mb-4"></div>
+                <button onclick="retryActivation()" class="bg-indigo-600 text-white px-5 py-2 rounded-lg hover:bg-indigo-700 transition">
+                    Try Again
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let currentState = {
+            userId: '',
+            industry: 'general',
+            interviewId: null,
+            currentIndex: 0,
+            totalQuestions: 0,
+            cvUploaded: false,
+        };
+
+        function startOnboarding() {
+            const userId = document.getElementById('user-id').value.trim();
+            if (!userId) { alert('Please enter your user ID'); return; }
+
+            currentState.userId = userId;
+            currentState.industry = document.getElementById('industry').value;
+
+            document.getElementById('step-userid').classList.add('hidden');
+            document.getElementById('step-upload').classList.remove('hidden');
+            updateProgress(20, 'Step 1: Upload CV');
+        }
+
+        // --- CV Upload ---
+        function handleDrop(event) {
+            event.preventDefault();
+            const file = event.dataTransfer.files[0];
+            if (file) processFile(file);
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) processFile(file);
+        }
+
+        async function processFile(file) {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const text = e.target.result;
+                document.getElementById('upload-prompt').classList.add('hidden');
+                document.getElementById('upload-status').classList.remove('hidden');
+                document.getElementById('upload-filename').textContent = file.name;
+                document.getElementById('upload-analysis').textContent = 'Analyzing...';
+
+                try {
+                    const response = await fetch('/user/upload-document', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            user_id: currentState.userId,
+                            filename: file.name,
+                            content_text: text,
+                            doc_type: 'cv',
+                        }),
+                    });
+                    const data = await response.json();
+
+                    if (data.analysis && !data.analysis.error) {
+                        currentState.cvUploaded = true;
+                        document.getElementById('upload-analysis').textContent = 'Analysis complete';
+                        showCVInsights(data.analysis);
+                        document.getElementById('proceed-btn').disabled = false;
+                    } else {
+                        document.getElementById('upload-analysis').textContent = 'Uploaded (analysis unavailable)';
+                        document.getElementById('proceed-btn').disabled = false;
+                    }
+                } catch (err) {
+                    document.getElementById('upload-analysis').textContent = 'Upload failed - try again';
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function showCVInsights(analysis) {
+            const container = document.getElementById('cv-insights');
+            const insights = [];
+            if (analysis.current_role) insights.push(`Role: ${analysis.current_role}`);
+            if (analysis.experience_years) insights.push(`Experience: ~${analysis.experience_years} years`);
+            if (analysis.skills) insights.push(`Key skills: ${analysis.skills.slice(0, 5).join(', ')}`);
+            if (analysis.career_trajectory) insights.push(`Path: ${analysis.career_trajectory}`);
+            container.innerHTML = insights.map(i => `<p>${i}</p>`).join('');
+            document.getElementById('cv-analysis-result').classList.remove('hidden');
+        }
+
+        function skipUpload() {
+            document.getElementById('proceed-btn').disabled = false;
+            proceedToInterview();
+        }
+
+        async function proceedToInterview() {
+            document.getElementById('step-upload').classList.add('hidden');
+            document.getElementById('step-interview').classList.remove('hidden');
+            updateProgress(40, 'Step 2: Interview');
+
+            try {
+                const response = await fetch('/onboarding/talent/start-interview', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: currentState.userId,
+                        industry: currentState.industry,
+                    }),
+                });
+                const data = await response.json();
+                currentState.interviewId = data.interview_id;
+                currentState.totalQuestions = data.total_questions;
+                currentState.currentIndex = 0;
+                showQuestion(data.question, 0);
+            } catch (err) {
+                alert('Failed to start interview. Please try again.');
+            }
+        }
+
+        function showQuestion(question, index) {
+            document.getElementById('question-text').textContent = question.question;
+            document.getElementById('question-purpose').textContent = `(${question.psychometric_target})`;
+            document.getElementById('question-counter').textContent = `${index + 1}/${currentState.totalQuestions}`;
+            document.getElementById('answer-input').value = '';
+            document.getElementById('answer-input').focus();
+            document.getElementById('answer-feedback').classList.add('hidden');
+            document.getElementById('submit-answer-btn').disabled = true;
+
+            // Enable button when user types
+            document.getElementById('answer-input').oninput = function() {
+                document.getElementById('submit-answer-btn').disabled = this.value.trim().length < 5;
+            };
+
+            // Update progress
+            const interviewProgress = (index / currentState.totalQuestions) * 50;
+            updateProgress(40 + interviewProgress, `Step 2: Question ${index + 1}/${currentState.totalQuestions}`);
+        }
+
+        async function submitAnswer() {
+            const answer = document.getElementById('answer-input').value.trim();
+            if (!answer) return;
+
+            const btn = document.getElementById('submit-answer-btn');
+            btn.disabled = true;
+            btn.textContent = 'Thinking...';
+
+            try {
+                const response = await fetch('/onboarding/talent/answer', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: currentState.userId,
+                        interview_id: currentState.interviewId,
+                        question_index: currentState.currentIndex,
+                        answer: answer,
+                    }),
+                });
+                const data = await response.json();
+
+                // Show brief feedback
+                if (data.analysis_summary) {
+                    document.getElementById('feedback-text').textContent = data.analysis_summary;
+                    document.getElementById('answer-feedback').classList.remove('hidden');
+                }
+
+                if (data.is_complete) {
+                    // Interview done - show activation
+                    handleActivation(data.activation);
+                } else {
+                    // Next question after brief pause
+                    currentState.currentIndex = data.next_index;
+                    setTimeout(() => {
+                        showQuestion(data.next_question, data.next_index);
+                        btn.textContent = 'Next';
+                    }, 1000);
+                }
+            } catch (err) {
+                btn.textContent = 'Next';
+                btn.disabled = false;
+                alert('Connection error. Please try again.');
+            }
+        }
+
+        function handleActivation(result) {
+            document.getElementById('step-interview').classList.add('hidden');
+            document.getElementById('step-activation').classList.remove('hidden');
+            updateProgress(90, 'Step 3: Activation');
+
+            if (!result) {
+                // Still processing
+                setTimeout(() => retryActivation(), 2000);
+                return;
+            }
+
+            if (result.status === 'activated') {
+                document.getElementById('activating-state').classList.add('hidden');
+                document.getElementById('activated-state').classList.remove('hidden');
+                document.getElementById('agent-synopsis').textContent = result.profile_synopsis || 'Your agent is active and matching.';
+                updateProgress(100, 'Agent Active');
+
+                document.getElementById('readiness-badge').classList.remove('hidden');
+                document.getElementById('readiness-score').textContent = result.score;
+            } else if (result.status === 'not_ready') {
+                document.getElementById('activating-state').classList.add('hidden');
+                document.getElementById('not-ready-state').classList.remove('hidden');
+                const missingEl = document.getElementById('missing-items');
+                missingEl.innerHTML = (result.missing || []).map(m => `<p>- ${m}</p>`).join('');
+                updateProgress(75, 'Almost ready');
+            }
+        }
+
+        async function retryActivation() {
+            try {
+                const response = await fetch(`/onboarding/talent/status/${currentState.userId}`);
+                const data = await response.json();
+                if (data.activated) {
+                    handleActivation({ status: 'activated', score: data.readiness.combined_score });
+                } else if (data.readiness.ready) {
+                    // Trigger activation
+                    handleActivation({ status: 'activated', score: data.readiness.combined_score, profile_synopsis: 'Your agent is now active.' });
+                }
+            } catch (err) {
+                // Retry later
+            }
+        }
+
+        function updateProgress(percent, label) {
+            document.getElementById('progress-bar').style.width = `${percent}%`;
+            document.getElementById('step-label').textContent = label;
+        }
+
+        // Auto-fill from URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('user_id')) {
+            document.getElementById('user-id').value = urlParams.get('user_id');
+        }
+        if (urlParams.get('industry')) {
+            document.getElementById('industry').value = urlParams.get('industry');
+        }
+    </script>
+</body>
+</html>

@@ -58,6 +58,18 @@ class A2AEngine:
         return {"matches_found": len(matches), "matches": matches}
 
     async def _get_candidates(self) -> list[dict]:
+        """Get active talent agents (auto-activated via onboarding)."""
+        result = (
+            self.supabase_client.table("cv2_agents")
+            .select("*")
+            .eq("agent_type", "talent")
+            .eq("active", True)
+            .execute()
+        )
+        if result.data:
+            return result.data
+
+        # Fallback to legacy table
         result = (
             self.supabase_client.table("cv2_a2a_candidates")
             .select("*")
@@ -66,6 +78,18 @@ class A2AEngine:
         return result.data or []
 
     async def _get_jobs(self) -> list[dict]:
+        """Get active HM agents (auto-activated via onboarding)."""
+        result = (
+            self.supabase_client.table("cv2_agents")
+            .select("*")
+            .eq("agent_type", "hm")
+            .eq("active", True)
+            .execute()
+        )
+        if result.data:
+            return result.data
+
+        # Fallback to legacy table
         result = (
             self.supabase_client.table("cv2_a2a_jobs")
             .select("*")
@@ -74,12 +98,28 @@ class A2AEngine:
         return result.data or []
 
     async def _deep_negotiation(self, candidate: dict, job: dict) -> Optional[dict]:
-        candidate_profile = json.dumps(candidate.get("profile", {}), indent=2)
-        job_profile = json.dumps(job.get("profile", {}), indent=2)
+        candidate_profile = json.dumps(candidate.get("profile", {}), indent=2)[:3000]
+        job_profile = json.dumps(job.get("profile", {}), indent=2)[:3000]
+
+        # Extract agent personalities for negotiation behavior
+        candidate_personality = (
+            candidate.get("profile", {}).get("agent_personality", "")
+        )
+        job_personality = (
+            job.get("profile", {}).get("agent_personality", "")
+        )
 
         # Enrich with industry knowledge and learned patterns
         industry_context = self._get_industry_context(candidate, job)
         learned_patterns = await self._get_candidate_patterns(candidate)
+
+        personality_context = ""
+        if candidate_personality or job_personality:
+            personality_context = f"""
+AGENT BEHAVIORS:
+- Candidate agent style: {candidate_personality or 'Professional and balanced'}
+- HM agent style: {job_personality or 'Professional and selective'}
+"""
 
         prompt = f"""You are the Master AI overseeing a negotiation between two agents.
 
@@ -88,7 +128,7 @@ CANDIDATE AGENT represents:
 
 JOB AGENT represents:
 {job_profile}
-{industry_context}{learned_patterns}
+{personality_context}{industry_context}{learned_patterns}
 Conduct a deep negotiation between these agents. Consider:
 1. Skills alignment (both hard and soft skills)
 2. Values alignment (culture, work style, goals)

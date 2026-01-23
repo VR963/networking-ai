@@ -26,6 +26,8 @@ class JobCreateRequest(BaseModel):
     values: list[str] = []
     culture: list[str] = []
     salary_range: Optional[str] = None
+    location: Optional[str] = None
+    user_id: Optional[str] = None
     hiring_manager_id: Optional[str] = None
 
 
@@ -66,10 +68,31 @@ async def create_job(request: JobCreateRequest):
         "job_id": job_id,
         "industry": request.industry,
         "profile": job_profile,
-        "hiring_manager_id": request.hiring_manager_id,
+        "hiring_manager_id": request.hiring_manager_id or request.user_id,
         "active": True,
     }
     client.table("cv2_a2a_jobs").insert(record).execute()
+
+    # Also store flat record for auto-activation service
+    user_id = request.user_id or request.hiring_manager_id or ""
+    flat_record = {
+        "id": job_id,
+        "user_id": user_id,
+        "title": request.title,
+        "company": request.company,
+        "industry": request.industry,
+        "description": request.description,
+        "requirements": request.requirements,
+        "values": request.values,
+        "culture": request.culture,
+        "salary_range": request.salary_range,
+        "location": request.location,
+        "status": "draft",
+    }
+    try:
+        client.table("cv2_jobs").insert(flat_record).execute()
+    except Exception:
+        pass  # Table may not exist yet
 
     return {"status": "created", "job_id": job_id, "profile": job_profile}
 

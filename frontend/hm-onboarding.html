@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CV 2.0 - Hiring Manager Onboarding</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <header class="bg-white shadow-sm">
+        <nav class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
+            <a href="/" class="text-2xl font-bold text-indigo-600">CV 2.0</a>
+            <span class="text-gray-500 text-sm">Hiring Agent Setup</span>
+        </nav>
+    </header>
+
+    <main class="max-w-2xl mx-auto px-4 py-8">
+        <!-- Progress Bar -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between mb-2">
+                <span id="step-label" class="text-sm font-medium text-indigo-600">Step 1: Describe Role</span>
+                <span id="readiness-badge" class="hidden text-xs font-medium px-2 py-1 rounded-full bg-green-100 text-green-700">
+                    Ready: <span id="readiness-score">0</span>%
+                </span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+                <div id="progress-bar" class="bg-indigo-600 h-2 rounded-full transition-all duration-500" style="width: 10%"></div>
+            </div>
+        </div>
+
+        <!-- Step 0: User ID -->
+        <div id="step-userid" class="bg-white rounded-xl shadow-sm p-6 mb-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-1">Set up your hiring agent</h2>
+            <p class="text-gray-500 text-sm mb-4">Your agent will find and negotiate with talent agents 24/7, presenting only candidates that truly match your needs.</p>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Your ID</label>
+                <input type="text" id="user-id" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Enter your user ID">
+            </div>
+            <button onclick="startOnboarding()" class="mt-3 w-full bg-indigo-600 text-white px-4 py-2.5 rounded-lg hover:bg-indigo-700 transition font-medium">
+                Get Started
+            </button>
+        </div>
+
+        <!-- Step 1: Job Description -->
+        <div id="step-job" class="hidden bg-white rounded-xl shadow-sm p-6 mb-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-1">Describe the Role</h2>
+            <p class="text-gray-500 text-sm mb-4">The more detail you provide, the better your agent can match and negotiate.</p>
+
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
+                        <input type="text" id="job-title" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="e.g. Senior Engineer">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Company</label>
+                        <input type="text" id="job-company" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Your company">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Industry</label>
+                    <select id="job-industry" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                        <option value="tech">Technology</option>
+                        <option value="finance">Finance</option>
+                        <option value="healthcare">Healthcare</option>
+                        <option value="creative">Creative/Design</option>
+                        <option value="marketing">Marketing</option>
+                        <option value="engineering">Engineering</option>
+                        <option value="general">Other</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Role Description</label>
+                    <textarea id="job-description" rows="4" class="w-full border border-gray-300 rounded-lg px-3 py-2"
+                        placeholder="What does this role do? What impact does it have?"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Requirements (one per line)</label>
+                    <textarea id="job-requirements" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2"
+                        placeholder="5+ years experience&#10;React/TypeScript&#10;System design"></textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Salary Range</label>
+                        <input type="text" id="job-salary" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="e.g. $120k-$160k">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                        <input type="text" id="job-location" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="e.g. Remote / NYC">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Team Culture (optional)</label>
+                    <textarea id="job-culture" rows="2" class="w-full border border-gray-300 rounded-lg px-3 py-2"
+                        placeholder="What's it like to work on this team?"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Values (optional)</label>
+                    <input type="text" id="job-values" class="w-full border border-gray-300 rounded-lg px-3 py-2"
+                        placeholder="e.g. Ownership, Collaboration, Quality">
+                </div>
+            </div>
+
+            <button onclick="createJobAndProceed()" id="create-job-btn" class="mt-4 w-full bg-indigo-600 text-white px-4 py-2.5 rounded-lg hover:bg-indigo-700 transition font-medium">
+                Continue to Interview
+            </button>
+        </div>
+
+        <!-- Step 2: Structured Interview -->
+        <div id="step-interview" class="hidden bg-white rounded-xl shadow-sm p-6 mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold text-gray-900">Interview</h2>
+                <span id="question-counter" class="text-sm text-gray-500">1/5</span>
+            </div>
+            <p class="text-gray-500 text-xs mb-4">These questions help your agent understand what you REALLY want beyond the job description.</p>
+
+            <div id="question-container">
+                <p id="question-text" class="text-gray-800 mb-1"></p>
+                <p id="question-purpose" class="text-xs text-gray-400 mb-4 italic"></p>
+                <textarea id="answer-input" rows="4" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                    placeholder="Be honest - your agent works better when it truly understands you..."></textarea>
+                <div class="mt-3 flex justify-between items-center">
+                    <span id="answer-hint" class="text-xs text-gray-400"></span>
+                    <button onclick="submitAnswer()" id="submit-answer-btn" class="bg-indigo-600 text-white px-5 py-2 rounded-lg hover:bg-indigo-700 transition disabled:opacity-50" disabled>
+                        Next
+                    </button>
+                </div>
+            </div>
+
+            <div id="answer-feedback" class="hidden mt-4 bg-green-50 rounded-lg p-3">
+                <p class="text-sm text-green-700" id="feedback-text"></p>
+            </div>
+        </div>
+
+        <!-- Step 3: Activation -->
+        <div id="step-activation" class="hidden bg-white rounded-xl shadow-sm p-6 mb-6 text-center">
+            <div id="activating-state">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-indigo-100 rounded-full mb-4">
+                    <svg class="w-8 h-8 text-indigo-600 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-1">Generating Hiring Agent...</h2>
+                <p class="text-gray-500 text-sm">Building your agent's evaluation criteria and personality.</p>
+            </div>
+
+            <div id="activated-state" class="hidden">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                </div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-1">Hiring Agent Active!</h2>
+                <p class="text-gray-500 text-sm mb-4">It's now negotiating with talent agents to find your ideal candidate.</p>
+                <div id="agent-synopsis" class="text-left bg-gray-50 rounded-lg p-4 text-sm text-gray-700 mb-4"></div>
+                <div class="flex gap-3 justify-center">
+                    <a href="/job-command-center.html" class="bg-indigo-600 text-white px-5 py-2 rounded-lg hover:bg-indigo-700 transition">
+                        View Matches
+                    </a>
+                </div>
+            </div>
+
+            <div id="not-ready-state" class="hidden">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-amber-100 rounded-full mb-4">
+                    <svg class="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                    </svg>
+                </div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-1">Almost There</h2>
+                <p class="text-gray-500 text-sm mb-2">Your hiring agent needs more information.</p>
+                <div id="missing-items" class="text-left text-sm text-amber-700 bg-amber-50 rounded-lg p-3 mb-4"></div>
+                <button onclick="retryActivation()" class="bg-indigo-600 text-white px-5 py-2 rounded-lg hover:bg-indigo-700 transition">
+                    Try Again
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let currentState = {
+            userId: '',
+            jobId: null,
+            industry: 'general',
+            interviewId: null,
+            currentIndex: 0,
+            totalQuestions: 0,
+        };
+
+        function startOnboarding() {
+            const userId = document.getElementById('user-id').value.trim();
+            if (!userId) { alert('Please enter your user ID'); return; }
+
+            currentState.userId = userId;
+            document.getElementById('step-userid').classList.add('hidden');
+            document.getElementById('step-job').classList.remove('hidden');
+            updateProgress(15, 'Step 1: Describe Role');
+        }
+
+        // --- Job Creation ---
+        async function createJobAndProceed() {
+            const title = document.getElementById('job-title').value.trim();
+            const company = document.getElementById('job-company').value.trim();
+            if (!title || !company) {
+                alert('Title and company are required');
+                return;
+            }
+
+            const btn = document.getElementById('create-job-btn');
+            btn.disabled = true;
+            btn.textContent = 'Creating...';
+
+            const requirements = document.getElementById('job-requirements').value
+                .split('\n').map(r => r.trim()).filter(r => r);
+            const values = document.getElementById('job-values').value
+                .split(',').map(v => v.trim()).filter(v => v);
+            const industry = document.getElementById('job-industry').value;
+
+            currentState.industry = industry;
+
+            try {
+                const response = await fetch('/jobs/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: currentState.userId,
+                        title: title,
+                        company: company,
+                        industry: industry,
+                        description: document.getElementById('job-description').value.trim(),
+                        requirements: requirements,
+                        salary_range: document.getElementById('job-salary').value.trim(),
+                        location: document.getElementById('job-location').value.trim(),
+                        culture: document.getElementById('job-culture').value.trim(),
+                        values: values,
+                    }),
+                });
+
+                const data = await response.json();
+                if (data.job_id) {
+                    currentState.jobId = data.job_id;
+                    startInterview();
+                } else {
+                    alert(data.detail || 'Failed to create job');
+                    btn.disabled = false;
+                    btn.textContent = 'Continue to Interview';
+                }
+            } catch (err) {
+                alert('Connection error');
+                btn.disabled = false;
+                btn.textContent = 'Continue to Interview';
+            }
+        }
+
+        async function startInterview() {
+            document.getElementById('step-job').classList.add('hidden');
+            document.getElementById('step-interview').classList.remove('hidden');
+            updateProgress(40, 'Step 2: Interview');
+
+            try {
+                const response = await fetch('/onboarding/hm/start-interview', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: currentState.userId,
+                        job_id: currentState.jobId,
+                        industry: currentState.industry,
+                    }),
+                });
+                const data = await response.json();
+                currentState.interviewId = data.interview_id;
+                currentState.totalQuestions = data.total_questions;
+                currentState.currentIndex = 0;
+                showQuestion(data.question, 0);
+            } catch (err) {
+                alert('Failed to start interview');
+            }
+        }
+
+        function showQuestion(question, index) {
+            document.getElementById('question-text').textContent = question.question;
+            document.getElementById('question-purpose').textContent = `(${question.psychometric_target})`;
+            document.getElementById('question-counter').textContent = `${index + 1}/${currentState.totalQuestions}`;
+            document.getElementById('answer-input').value = '';
+            document.getElementById('answer-input').focus();
+            document.getElementById('answer-feedback').classList.add('hidden');
+            document.getElementById('submit-answer-btn').disabled = true;
+
+            document.getElementById('answer-input').oninput = function() {
+                document.getElementById('submit-answer-btn').disabled = this.value.trim().length < 5;
+            };
+
+            const interviewProgress = (index / currentState.totalQuestions) * 50;
+            updateProgress(40 + interviewProgress, `Step 2: Question ${index + 1}/${currentState.totalQuestions}`);
+        }
+
+        async function submitAnswer() {
+            const answer = document.getElementById('answer-input').value.trim();
+            if (!answer) return;
+
+            const btn = document.getElementById('submit-answer-btn');
+            btn.disabled = true;
+            btn.textContent = 'Thinking...';
+
+            try {
+                const response = await fetch('/onboarding/hm/answer', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: currentState.userId,
+                        interview_id: currentState.interviewId,
+                        question_index: currentState.currentIndex,
+                        answer: answer,
+                    }),
+                });
+                const data = await response.json();
+
+                if (data.analysis_summary) {
+                    document.getElementById('feedback-text').textContent = data.analysis_summary;
+                    document.getElementById('answer-feedback').classList.remove('hidden');
+                }
+
+                if (data.is_complete) {
+                    handleActivation(data.activation);
+                } else {
+                    currentState.currentIndex = data.next_index;
+                    setTimeout(() => {
+                        showQuestion(data.next_question, data.next_index);
+                        btn.textContent = 'Next';
+                    }, 1000);
+                }
+            } catch (err) {
+                btn.textContent = 'Next';
+                btn.disabled = false;
+                alert('Connection error');
+            }
+        }
+
+        function handleActivation(result) {
+            document.getElementById('step-interview').classList.add('hidden');
+            document.getElementById('step-activation').classList.remove('hidden');
+            updateProgress(90, 'Step 3: Activation');
+
+            if (!result) {
+                setTimeout(() => retryActivation(), 2000);
+                return;
+            }
+
+            if (result.status === 'activated') {
+                document.getElementById('activating-state').classList.add('hidden');
+                document.getElementById('activated-state').classList.remove('hidden');
+                document.getElementById('agent-synopsis').textContent = result.profile_synopsis || 'Your hiring agent is active and matching.';
+                updateProgress(100, 'Agent Active');
+                document.getElementById('readiness-badge').classList.remove('hidden');
+                document.getElementById('readiness-score').textContent = result.score;
+            } else if (result.status === 'not_ready') {
+                document.getElementById('activating-state').classList.add('hidden');
+                document.getElementById('not-ready-state').classList.remove('hidden');
+                document.getElementById('missing-items').innerHTML = (result.missing || []).map(m => `<p>- ${m}</p>`).join('');
+                updateProgress(75, 'Almost ready');
+            }
+        }
+
+        async function retryActivation() {
+            try {
+                const response = await fetch(`/onboarding/hm/status/${currentState.userId}/${currentState.jobId}`);
+                const data = await response.json();
+                if (data.activated) {
+                    handleActivation({ status: 'activated', score: data.readiness.combined_score });
+                }
+            } catch (err) {}
+        }
+
+        function updateProgress(percent, label) {
+            document.getElementById('progress-bar').style.width = `${percent}%`;
+            document.getElementById('step-label').textContent = label;
+        }
+
+        // URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('user_id')) {
+            document.getElementById('user-id').value = urlParams.get('user_id');
+        }
+    </script>
+</body>
+</html>
