@@ -302,22 +302,28 @@ ALTER TABLE cv2_conversations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cv2_notifications ENABLE ROW LEVEL SECURITY;
 
 -- Users can only read/write their own data
-CREATE POLICY IF NOT EXISTS "users_own_data" ON cv2_users
+DROP POLICY IF EXISTS "users_own_data" ON cv2_users;
+CREATE POLICY "users_own_data" ON cv2_users
     FOR ALL USING (auth.uid() = id);
 
-CREATE POLICY IF NOT EXISTS "profiles_own_data" ON cv2_profiles
+DROP POLICY IF EXISTS "profiles_own_data" ON cv2_profiles;
+CREATE POLICY "profiles_own_data" ON cv2_profiles
     FOR ALL USING (auth.uid() = user_id);
 
-CREATE POLICY IF NOT EXISTS "documents_own_data" ON cv2_documents
+DROP POLICY IF EXISTS "documents_own_data" ON cv2_documents;
+CREATE POLICY "documents_own_data" ON cv2_documents
     FOR ALL USING (auth.uid() = user_id);
 
-CREATE POLICY IF NOT EXISTS "interviews_own_data" ON cv2_interviews
+DROP POLICY IF EXISTS "interviews_own_data" ON cv2_interviews;
+CREATE POLICY "interviews_own_data" ON cv2_interviews
     FOR ALL USING (auth.uid() = user_id);
 
-CREATE POLICY IF NOT EXISTS "conversations_own_data" ON cv2_conversations
+DROP POLICY IF EXISTS "conversations_own_data" ON cv2_conversations;
+CREATE POLICY "conversations_own_data" ON cv2_conversations
     FOR ALL USING (auth.uid() = user_id);
 
-CREATE POLICY IF NOT EXISTS "notifications_own_data" ON cv2_notifications
+DROP POLICY IF EXISTS "notifications_own_data" ON cv2_notifications;
+CREATE POLICY "notifications_own_data" ON cv2_notifications
     FOR ALL USING (auth.uid() = user_id);
 
 -- Service role bypasses RLS (used by backend)
@@ -335,14 +341,19 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS set_updated_at ON cv2_users;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON cv2_users
     FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+DROP TRIGGER IF EXISTS set_updated_at ON cv2_profiles;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON cv2_profiles
     FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+DROP TRIGGER IF EXISTS set_updated_at ON cv2_agents;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON cv2_agents
     FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+DROP TRIGGER IF EXISTS set_updated_at ON cv2_a2a_candidates;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON cv2_a2a_candidates
     FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+DROP TRIGGER IF EXISTS set_updated_at ON cv2_jobs;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON cv2_jobs
     FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON cv2_a2a_matches
