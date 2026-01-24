@@ -251,7 +251,7 @@ const APP = {
                 </div>
             </div>
         `;
-    }
+    },
     /**
      * Register service worker for PWA + push notifications.
      */
