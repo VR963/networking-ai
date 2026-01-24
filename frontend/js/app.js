@@ -252,7 +252,87 @@ const APP = {
             </div>
         `;
     }
+    /**
+     * Register service worker for PWA + push notifications.
+     */
+    async registerServiceWorker() {
+        if (!('serviceWorker' in navigator)) return null;
+        try {
+            const reg = await navigator.serviceWorker.register('/sw.js');
+            this._swRegistration = reg;
+            return reg;
+        } catch (e) {
+            console.warn('SW registration failed:', e);
+            return null;
+        }
+    },
+
+    /**
+     * Request push notification permission and subscribe.
+     * Returns the subscription object or null.
+     */
+    async subscribePush() {
+        if (!('Notification' in window)) return null;
+
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') return null;
+
+        const reg = this._swRegistration || await this.registerServiceWorker();
+        if (!reg) return null;
+
+        try {
+            // For demo/testing, use a placeholder VAPID key
+            // In production, replace with your actual VAPID public key
+            const vapidKey = window.CV2_VAPID_PUBLIC_KEY || 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkCs7q_4aG9l7oy5m_MnEbRM7g0ChCVJFoFmg5xBWo';
+            const subscription = await reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: this._urlBase64ToUint8Array(vapidKey),
+            });
+
+            // Send subscription to backend
+            await this.api('/user/push-subscribe', {
+                method: 'POST',
+                body: { subscription: subscription.toJSON() },
+            });
+
+            return subscription;
+        } catch (e) {
+            console.warn('Push subscription failed:', e);
+            return null;
+        }
+    },
+
+    /**
+     * Show a local notification (for testing without push server).
+     */
+    async showLocalNotification(title, body, url) {
+        if (Notification.permission !== 'granted') {
+            await Notification.requestPermission();
+        }
+        if (Notification.permission !== 'granted') return;
+
+        const reg = this._swRegistration || await this.registerServiceWorker();
+        if (!reg) return;
+
+        reg.showNotification(title, {
+            body,
+            icon: '/icons/icon-192.svg',
+            tag: 'cv2-local-' + Date.now(),
+            data: { url: url || '/dashboard.html' },
+            vibrate: [100, 50, 100],
+        });
+    },
+
+    _urlBase64ToUint8Array(base64String) {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+        const rawData = atob(base64);
+        return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+    },
 };
 
 // Auto-initialize when DOM is ready
-document.addEventListener('DOMContentLoaded', () => APP.init());
+document.addEventListener('DOMContentLoaded', () => {
+    APP.init();
+    APP.registerServiceWorker();
+});

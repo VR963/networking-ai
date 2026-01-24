@@ -64,9 +64,20 @@
         .tab-content.active { display: block; }
 
         .grid { display: grid; gap: 15px; }
-        .grid-2 { grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); }
-        .grid-3 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
-        .grid-4 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+        .grid-2 { grid-template-columns: repeat(auto-fit, minmax(min(400px, 100%), 1fr)); }
+        .grid-3 { grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); }
+        .grid-4 { grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); }
+
+        @media (max-width: 768px) {
+            .header { padding: 15px; flex-wrap: wrap; gap: 10px; }
+            .header h1 { font-size: 1.1em; }
+            .nav-tabs { padding: 0 10px; }
+            .nav-tab { padding: 10px 12px; font-size: 0.78em; }
+            .content { padding: 15px; }
+            .actions { flex-direction: column; }
+            .actions .btn { width: 100%; text-align: center; }
+            .input-group { flex-direction: column; }
+        }
 
         .card {
             background: #12121e;
