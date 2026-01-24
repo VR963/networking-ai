@@ -1,0 +1,244 @@
+/* CV 2.0 Design System
+ * Swiss Design: Grid, typography, whitespace
+ * Revolut Polish: Cards, transitions, modern dark/light
+ */
+
+:root {
+    /* Typography - Swiss: clean, geometric */
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+
+    /* Colors - Minimal palette */
+    --color-primary: #4F46E5;
+    --color-primary-light: #818CF8;
+    --color-primary-dark: #3730A3;
+    --color-success: #10B981;
+    --color-warning: #F59E0B;
+    --color-danger: #EF4444;
+
+    /* Neutrals */
+    --color-black: #0F0F0F;
+    --color-gray-900: #1A1A2E;
+    --color-gray-800: #2D2D44;
+    --color-gray-700: #4A4A68;
+    --color-gray-500: #7C7C9A;
+    --color-gray-300: #C4C4D4;
+    --color-gray-100: #F4F4F8;
+    --color-white: #FFFFFF;
+
+    /* Spacing - 8px grid */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 24px;
+    --space-6: 32px;
+    --space-7: 48px;
+    --space-8: 64px;
+
+    /* Radius */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    --radius-full: 9999px;
+
+    /* Shadows - subtle, layered */
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+    --shadow-lg: 0 8px 24px rgba(0,0,0,0.08);
+    --shadow-card: 0 2px 8px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.04);
+
+    /* Transitions */
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Base */
+* { box-sizing: border-box; }
+
+body {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    color: var(--color-black);
+    background: var(--color-white);
+    line-height: 1.5;
+}
+
+/* Typography Scale */
+.text-display { font-size: 3.5rem; font-weight: 700; line-height: 1.1; letter-spacing: -0.03em; }
+.text-h1 { font-size: 2.25rem; font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; }
+.text-h2 { font-size: 1.5rem; font-weight: 600; line-height: 1.3; letter-spacing: -0.01em; }
+.text-h3 { font-size: 1.125rem; font-weight: 600; line-height: 1.4; }
+.text-body { font-size: 1rem; line-height: 1.6; }
+.text-small { font-size: 0.875rem; line-height: 1.5; }
+.text-caption { font-size: 0.75rem; line-height: 1.4; letter-spacing: 0.02em; }
+.text-overline { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+
+/* Cards - Revolut style */
+.card {
+    background: var(--color-white);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    padding: var(--space-5);
+    transition: box-shadow var(--transition-fast);
+}
+.card:hover { box-shadow: var(--shadow-md); }
+.card-interactive { cursor: pointer; }
+.card-interactive:active { transform: scale(0.99); }
+
+/* Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-weight: 500;
+    font-size: 0.9375rem;
+    padding: 12px 24px;
+    border-radius: var(--radius-sm);
+    border: none;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    text-decoration: none;
+}
+.btn-primary {
+    background: var(--color-primary);
+    color: white;
+}
+.btn-primary:hover { background: var(--color-primary-dark); }
+.btn-secondary {
+    background: var(--color-gray-100);
+    color: var(--color-black);
+}
+.btn-secondary:hover { background: var(--color-gray-300); }
+.btn-ghost {
+    background: transparent;
+    color: var(--color-primary);
+}
+.btn-ghost:hover { background: var(--color-gray-100); }
+.btn-lg { padding: 16px 32px; font-size: 1.0625rem; border-radius: var(--radius-md); }
+
+/* Input */
+.input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1.5px solid var(--color-gray-300);
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    font-family: var(--font-sans);
+    transition: border-color var(--transition-fast);
+    background: var(--color-white);
+}
+.input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+.input-label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--color-gray-700);
+    margin-bottom: 6px;
+}
+
+/* Badge / Pill */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+.badge-primary { background: rgba(79,70,229,0.1); color: var(--color-primary); }
+.badge-success { background: rgba(16,185,129,0.1); color: var(--color-success); }
+.badge-warning { background: rgba(245,158,11,0.1); color: var(--color-warning); }
+.badge-danger { background: rgba(239,68,68,0.1); color: var(--color-danger); }
+
+/* Mobile Bottom Navigation */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--color-white);
+    border-top: 1px solid var(--color-gray-100);
+    display: flex;
+    justify-content: space-around;
+    padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+    z-index: 100;
+}
+.bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 12px;
+    font-size: 0.625rem;
+    font-weight: 500;
+    color: var(--color-gray-500);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+.bottom-nav-item.active { color: var(--color-primary); }
+.bottom-nav-item svg { width: 22px; height: 22px; }
+
+/* Status Dot */
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+.status-dot-active { background: var(--color-success); }
+.status-dot-pending { background: var(--color-warning); }
+.status-dot-inactive { background: var(--color-gray-300); }
+
+/* Progress Ring */
+.progress-ring {
+    width: 48px;
+    height: 48px;
+}
+.progress-ring circle {
+    fill: none;
+    stroke-width: 4;
+    stroke-linecap: round;
+    transform: rotate(-90deg);
+    transform-origin: center;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.animate-in { animation: fadeIn 0.3s ease-out forwards; }
+.animate-slide-up { animation: slideUp 0.4s ease-out forwards; }
+
+/* Utility: safe area padding for mobile */
+.safe-bottom { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+
+/* Dark sections */
+.section-dark {
+    background: var(--color-gray-900);
+    color: var(--color-white);
+}
+
+/* Responsive grid */
+.grid-responsive {
+    display: grid;
+    gap: var(--space-4);
+}
+@media (min-width: 768px) {
+    .grid-responsive { grid-template-columns: repeat(2, 1fr); gap: var(--space-5); }
+}
+@media (min-width: 1024px) {
+    .grid-responsive { grid-template-columns: repeat(3, 1fr); }
+}

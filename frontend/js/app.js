@@ -220,38 +220,36 @@ const APP = {
 
         const navLink = (href, label) => {
             const active = currentPath === href || currentPath === href.replace('.html', '');
-            return `<a href="${href}" class="px-3 py-2 rounded-md text-sm font-medium ${
-                active ? 'text-indigo-600 bg-indigo-50' : 'text-gray-600 hover:text-indigo-600 hover:bg-gray-50'
+            return `<a href="${href}" class="text-sm ${
+                active ? 'text-[#4F46E5] font-medium' : 'text-gray-500 hover:text-gray-900'
             } transition">${label}</a>`;
         };
 
+        navEl.className = 'fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-b border-gray-100 z-50';
         navEl.innerHTML = `
-            <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between items-center h-16">
-                    <a href="/" class="text-2xl font-bold text-indigo-600">CV 2.0</a>
-                    <div class="hidden md:flex items-center space-x-1">
-                        ${isAuthed ? `
-                            ${navLink('/dashboard.html', 'Dashboard')}
-                            ${navLink('/talent-onboarding.html', 'Talent')}
-                            ${navLink('/hm-onboarding.html', 'Hiring')}
-                            ${navLink('/job-command-center.html', 'Matches')}
-                            ${navLink('/network-dashboard.html', 'Network')}
-                        ` : `
-                            ${navLink('/talent-onboarding.html', 'For Talent')}
-                            ${navLink('/hm-onboarding.html', 'For Hiring')}
-                        `}
-                    </div>
-                    <div class="flex items-center space-x-3">
-                        ${isAuthed ? `
-                            <span class="text-sm text-gray-500 hidden sm:block">${this._user.email || this._user.id}</span>
-                            <button onclick="APP.signOut()" class="text-sm text-red-600 hover:text-red-700 font-medium">Sign Out</button>
-                        ` : `
-                            <a href="/auth.html" class="text-sm text-indigo-600 hover:text-indigo-700 font-medium">Sign In</a>
-                            <a href="/auth.html?mode=signup" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 transition">Get Started</a>
-                        `}
-                    </div>
+            <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+                <a href="/" class="text-xl font-bold tracking-tight text-gray-900">CV<span style="color:#4F46E5">2.0</span></a>
+                <div class="hidden md:flex items-center gap-6">
+                    ${isAuthed ? `
+                        ${navLink('/dashboard.html', 'Dashboard')}
+                        ${navLink('/talent-app.html', 'Talent')}
+                        ${navLink('/hm-onboarding.html', 'Hiring')}
+                        ${navLink('/job-command-center.html', 'Matches')}
+                    ` : `
+                        ${navLink('/talent-app.html', 'For Talent')}
+                        ${navLink('/hm-onboarding.html', 'For Hiring')}
+                    `}
                 </div>
-            </nav>
+                <div class="flex items-center gap-4">
+                    ${isAuthed ? `
+                        <span class="text-xs text-gray-400 hidden sm:block">${this._user.email || this._user.id}</span>
+                        <button onclick="APP.signOut()" class="text-sm text-red-500 hover:text-red-700 font-medium transition">Sign Out</button>
+                    ` : `
+                        <a href="/auth.html" class="text-sm text-gray-600 hover:text-gray-900 font-medium transition">Sign In</a>
+                        <a href="/auth.html?mode=signup" class="bg-[#4F46E5] text-white px-4 py-2 rounded-lg text-sm hover:bg-[#3730A3] transition">Get Started</a>
+                    `}
+                </div>
+            </div>
         `;
     }
 };

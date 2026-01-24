@@ -3,91 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - CV 2.0</title>
+    <title>Dashboard — CV 2.0</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/design.css">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        brand: { DEFAULT: '#4F46E5', light: '#818CF8', dark: '#3730A3' }
+                    }
+                }
+            }
+        }
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/js/app.js"></script>
 </head>
-<body class="bg-gray-50 min-h-screen">
-    <div id="cv2-nav" class="bg-white shadow-sm"></div>
-
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Welcome Header -->
-        <div class="mb-8">
-            <h1 class="text-2xl font-bold text-gray-900" id="welcome-msg">Welcome back</h1>
-            <p class="text-gray-500 mt-1">Here's the status of your AI agent.</p>
-        </div>
-
-        <!-- Status Cards -->
-        <div class="grid md:grid-cols-4 gap-4 mb-8">
-            <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                <p class="text-sm text-gray-500">Stage</p>
-                <p class="text-xl font-bold text-indigo-600 mt-1" id="stat-stage">-</p>
+<body class="bg-gray-50/50 min-h-screen font-sans antialiased">
+    <!-- Top Nav -->
+    <nav class="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-b border-gray-100 z-50">
+        <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+            <a href="/" class="text-xl font-bold tracking-tight text-gray-900">CV<span class="text-brand">2.0</span></a>
+            <div class="hidden md:flex items-center gap-6">
+                <span class="text-sm text-brand font-medium">Dashboard</span>
+                <a href="/talent-app.html" class="text-sm text-gray-500 hover:text-gray-900 transition">Talent</a>
+                <a href="/hm-onboarding.html" class="text-sm text-gray-500 hover:text-gray-900 transition">Hiring</a>
+                <a href="/job-command-center.html" class="text-sm text-gray-500 hover:text-gray-900 transition">Matches</a>
             </div>
-            <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                <p class="text-sm text-gray-500">Agent Status</p>
-                <p class="text-xl font-bold text-green-600 mt-1" id="stat-agent">Inactive</p>
-            </div>
-            <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                <p class="text-sm text-gray-500">Matches</p>
-                <p class="text-xl font-bold text-gray-900 mt-1" id="stat-matches">0</p>
-            </div>
-            <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                <p class="text-sm text-gray-500">Readiness</p>
-                <p class="text-xl font-bold text-gray-900 mt-1" id="stat-readiness">-</p>
+            <div class="flex items-center gap-4">
+                <span id="user-email" class="text-caption text-gray-400 hidden sm:block"></span>
+                <button onclick="APP.signOut()" class="text-sm text-red-500 hover:text-red-700 font-medium transition">Sign Out</button>
             </div>
         </div>
+    </nav>
 
-        <!-- Main Content Grid -->
-        <div class="grid lg:grid-cols-3 gap-6">
-            <!-- Left: Progress / Actions -->
-            <div class="lg:col-span-2 space-y-6">
-                <!-- Onboarding Progress -->
-                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Your Journey</h2>
-                    <div class="space-y-3" id="journey-steps">
-                        <!-- Filled dynamically -->
+    <main class="pt-28 pb-16 px-6">
+        <div class="max-w-5xl mx-auto">
+            <!-- Welcome -->
+            <div class="mb-10">
+                <h1 class="text-h1 text-gray-900" id="welcome-msg">Welcome back</h1>
+                <p class="text-body text-gray-500 mt-1">Here's the status of your AI agent.</p>
+            </div>
+
+            <!-- Stat Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+                <div class="card p-5">
+                    <p class="text-caption text-gray-400 mb-1">Stage</p>
+                    <p class="text-h3 text-brand" id="stat-stage">-</p>
+                </div>
+                <div class="card p-5">
+                    <p class="text-caption text-gray-400 mb-1">Agent Status</p>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span id="stat-agent-dot" class="status-dot status-dot-inactive"></span>
+                        <p class="text-h3 text-gray-900" id="stat-agent">Inactive</p>
                     </div>
                 </div>
-
-                <!-- Recent Matches -->
-                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-lg font-semibold text-gray-900">Recent Matches</h2>
-                        <a href="/job-command-center.html" class="text-sm text-indigo-600 hover:text-indigo-700">View All</a>
-                    </div>
-                    <div id="matches-list" class="space-y-3">
-                        <p class="text-gray-400 text-sm">No matches yet. Complete onboarding to activate your agent.</p>
-                    </div>
+                <div class="card p-5">
+                    <p class="text-caption text-gray-400 mb-1">Matches</p>
+                    <p class="text-h3 text-gray-900" id="stat-matches">0</p>
+                </div>
+                <div class="card p-5">
+                    <p class="text-caption text-gray-400 mb-1">Readiness</p>
+                    <p class="text-h3 text-gray-900" id="stat-readiness">-</p>
                 </div>
             </div>
 
-            <!-- Right: Quick Actions -->
-            <div class="space-y-6">
-                <!-- Quick Actions Card -->
-                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-                    <div class="space-y-2" id="quick-actions">
-                        <a href="/talent-onboarding.html" class="block w-full text-left px-4 py-3 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition text-sm font-medium">
-                            Start Talent Onboarding
-                        </a>
-                        <a href="/hm-onboarding.html" class="block w-full text-left px-4 py-3 rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100 transition text-sm font-medium">
-                            Post a Job
-                        </a>
-                        <a href="/chat.html" class="block w-full text-left px-4 py-3 rounded-lg bg-gray-50 text-gray-700 hover:bg-gray-100 transition text-sm font-medium">
-                            Chat with Agent
-                        </a>
-                        <a href="/calibration.html" class="block w-full text-left px-4 py-3 rounded-lg bg-gray-50 text-gray-700 hover:bg-gray-100 transition text-sm font-medium">
-                            Run Calibration
-                        </a>
+            <!-- Main Grid -->
+            <div class="grid lg:grid-cols-3 gap-6">
+                <!-- Left: Journey + Matches -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- Journey -->
+                    <div class="card p-6">
+                        <h2 class="text-h3 text-gray-900 mb-5">Your Journey</h2>
+                        <div id="journey-steps" class="space-y-4">
+                            <!-- Filled dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Recent Matches -->
+                    <div class="card p-6">
+                        <div class="flex justify-between items-center mb-5">
+                            <h2 class="text-h3 text-gray-900">Recent Matches</h2>
+                            <a href="/job-command-center.html" class="text-sm text-brand font-medium hover:text-brand-dark transition">View All</a>
+                        </div>
+                        <div id="matches-list" class="space-y-3">
+                            <p class="text-small text-gray-400">No matches yet. Complete onboarding to activate your agent.</p>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Profile Summary -->
-                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Profile</h2>
-                    <div id="profile-summary" class="text-sm text-gray-600">
-                        <p class="text-gray-400">Loading profile...</p>
+                <!-- Right: Quick Actions + Profile -->
+                <div class="space-y-6">
+                    <!-- Quick Actions -->
+                    <div class="card p-6">
+                        <h2 class="text-h3 text-gray-900 mb-4">Quick Actions</h2>
+                        <div class="space-y-2" id="quick-actions">
+                            <a href="/talent-app.html" class="block p-3 rounded-lg border border-gray-100 hover:border-brand/30 hover:bg-brand/5 transition text-sm font-medium text-gray-700 hover:text-brand">
+                                Open Talent App
+                            </a>
+                            <a href="/hm-onboarding.html" class="block p-3 rounded-lg border border-gray-100 hover:border-brand/30 hover:bg-brand/5 transition text-sm font-medium text-gray-700 hover:text-brand">
+                                Post a Job
+                            </a>
+                            <a href="/job-command-center.html" class="block p-3 rounded-lg border border-gray-100 hover:border-brand/30 hover:bg-brand/5 transition text-sm font-medium text-gray-700 hover:text-brand">
+                                View Matches
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Profile Summary -->
+                    <div class="card p-6">
+                        <h2 class="text-h3 text-gray-900 mb-4">Profile</h2>
+                        <div id="profile-summary" class="text-small text-gray-600">
+                            <p class="text-gray-400">Loading...</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -104,7 +136,6 @@
     };
 
     document.addEventListener('DOMContentLoaded', async () => {
-        // Wait for APP to initialize
         await new Promise(r => setTimeout(r, 150));
 
         if (!APP.isAuthenticated()) {
@@ -112,9 +143,10 @@
             return;
         }
 
-        const userId = APP.getUserId();
-        document.getElementById('welcome-msg').textContent = `Welcome back`;
+        const user = APP.getUser();
+        document.getElementById('user-email').textContent = user.email || user.id || '';
 
+        const userId = APP.getUserId();
         await Promise.all([
             loadProfile(userId),
             loadMatches(userId),
@@ -125,7 +157,6 @@
         try {
             const data = await APP.api(`/user/profile/${userId}`);
             if (!data || data.detail) {
-                // No profile yet
                 renderNewUserState();
                 return;
             }
@@ -135,13 +166,13 @@
 
             const isActive = stage === 'matchable';
             document.getElementById('stat-agent').textContent = isActive ? 'Active' : 'Building';
-            document.getElementById('stat-agent').className = `text-xl font-bold mt-1 ${isActive ? 'text-green-600' : 'text-yellow-600'}`;
+            document.getElementById('stat-agent-dot').className = `status-dot ${isActive ? 'status-dot-active' : 'status-dot-pending'}`;
 
             if (data.activation_score) {
                 document.getElementById('stat-readiness').textContent = Math.round(data.activation_score * 100) + '%';
             }
 
-            renderJourney(stage, data);
+            renderJourney(stage);
             renderProfile(data);
         } catch (e) {
             renderNewUserState();
@@ -151,43 +182,42 @@
     function renderNewUserState() {
         document.getElementById('stat-stage').textContent = 'New';
         document.getElementById('journey-steps').innerHTML = `
-            <p class="text-gray-500 text-sm mb-4">You haven't started onboarding yet. Choose your path:</p>
-            <div class="grid grid-cols-2 gap-3">
-                <a href="/talent-onboarding.html" class="p-4 border-2 border-indigo-200 rounded-lg text-center hover:border-indigo-400 transition">
-                    <div class="text-2xl mb-1">&#128188;</div>
-                    <p class="font-medium text-sm">I'm a Candidate</p>
+            <p class="text-small text-gray-500 mb-5">You haven't started onboarding yet. Choose your path:</p>
+            <div class="grid grid-cols-2 gap-4">
+                <a href="/talent-app.html" class="card card-interactive p-5 text-center !shadow-none border border-gray-100 hover:border-brand/30">
+                    <p class="text-h2 mb-2">&#128100;</p>
+                    <p class="text-sm font-medium text-gray-900">I'm a Candidate</p>
+                    <p class="text-caption text-gray-400 mt-1">Find opportunities</p>
                 </a>
-                <a href="/hm-onboarding.html" class="p-4 border-2 border-purple-200 rounded-lg text-center hover:border-purple-400 transition">
-                    <div class="text-2xl mb-1">&#128188;</div>
-                    <p class="font-medium text-sm">I'm Hiring</p>
+                <a href="/hm-onboarding.html" class="card card-interactive p-5 text-center !shadow-none border border-gray-100 hover:border-brand/30">
+                    <p class="text-h2 mb-2">&#128188;</p>
+                    <p class="text-sm font-medium text-gray-900">I'm Hiring</p>
+                    <p class="text-caption text-gray-400 mt-1">Find talent</p>
                 </a>
             </div>
         `;
     }
 
-    function renderJourney(currentStage, profile) {
+    function renderJourney(currentStage) {
         const currentIdx = STAGES.indexOf(currentStage);
         const stepsHtml = STAGES.map((stage, idx) => {
             let status = 'pending';
             if (idx < currentIdx) status = 'completed';
             else if (idx === currentIdx) status = 'current';
 
-            const colors = {
-                completed: 'bg-green-500 text-white',
-                current: 'bg-indigo-500 text-white',
-                pending: 'bg-gray-200 text-gray-400',
-            };
-            const textColor = status === 'completed' ? 'text-green-700' :
-                              status === 'current' ? 'text-indigo-700' : 'text-gray-400';
+            const dotClass = status === 'completed' ? 'bg-green-500 text-white' :
+                            status === 'current' ? 'bg-brand text-white' : 'bg-gray-200 text-gray-400';
+            const textClass = status === 'completed' ? 'text-green-700' :
+                             status === 'current' ? 'text-brand' : 'text-gray-400';
 
             return `
-                <div class="flex items-center space-x-3">
-                    <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${colors[status]}">
-                        ${status === 'completed' ? '&#10003;' : idx + 1}
+                <div class="flex items-center gap-4">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${dotClass} flex-shrink-0">
+                        ${status === 'completed' ? '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>' : idx + 1}
                     </div>
                     <div>
-                        <p class="font-medium text-sm ${textColor}">${STAGE_LABELS[stage]}</p>
-                        <p class="text-xs text-gray-400">${getStageDescription(stage)}</p>
+                        <p class="text-sm font-medium ${textClass}">${STAGE_LABELS[stage]}</p>
+                        <p class="text-caption text-gray-400">${getStageDescription(stage)}</p>
                     </div>
                 </div>
             `;
@@ -209,14 +239,14 @@
     function renderProfile(data) {
         const el = document.getElementById('profile-summary');
         el.innerHTML = `
-            <div class="space-y-2">
+            <div class="space-y-3">
                 <div class="flex justify-between">
-                    <span class="text-gray-500">Industry</span>
-                    <span class="font-medium">${data.industry || 'General'}</span>
+                    <span class="text-gray-400">Industry</span>
+                    <span class="font-medium text-gray-700">${data.industry || 'General'}</span>
                 </div>
                 ${data.summary ? `
-                    <div class="pt-2 border-t border-gray-100">
-                        <p class="text-gray-600 text-xs">${data.summary.slice(0, 150)}${data.summary.length > 150 ? '...' : ''}</p>
+                    <div class="pt-3 border-t border-gray-100">
+                        <p class="text-gray-600 text-caption leading-relaxed">${data.summary.slice(0, 150)}${data.summary.length > 150 ? '...' : ''}</p>
                     </div>
                 ` : ''}
             </div>
@@ -234,23 +264,21 @@
             if (allMatches.length === 0) return;
 
             const matchesHtml = allMatches.slice(0, 5).map(m => `
-                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div class="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:border-brand/20 transition">
                     <div>
                         <p class="text-sm font-medium text-gray-900">Match #${(m.id || '').slice(0, 8)}</p>
-                        <p class="text-xs text-gray-500">Score: ${Math.round((m.score || 0) * 100)}%</p>
+                        <p class="text-caption text-gray-400">Score: ${Math.round((m.score || 0) * 100)}%</p>
                     </div>
-                    <span class="text-xs px-2 py-1 rounded-full ${
-                        m.status === 'accepted' ? 'bg-green-100 text-green-700' :
-                        m.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                        'bg-yellow-100 text-yellow-700'
+                    <span class="badge ${
+                        m.status === 'accepted' ? 'badge-success' :
+                        m.status === 'rejected' ? 'badge-danger' :
+                        'badge-warning'
                     }">${m.status || 'proposed'}</span>
                 </div>
             `).join('');
 
             document.getElementById('matches-list').innerHTML = matchesHtml;
-        } catch (e) {
-            // Matches not available yet
-        }
+        } catch (e) {}
     }
 </script>
 </body>
