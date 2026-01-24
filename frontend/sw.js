@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cv2-v1';
+const CACHE_NAME = 'cv2-v2';
 const ASSETS = [
   '/',
   '/index.html',
@@ -8,6 +8,7 @@ const ASSETS = [
   '/hm-onboarding.html',
   '/job-command-center.html',
   '/css/design.css',
+  '/js/config.js',
   '/js/app.js',
   '/manifest.json',
 ];

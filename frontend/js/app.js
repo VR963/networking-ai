@@ -255,7 +255,7 @@ const APP = {
     /**
      * Register service worker for PWA + push notifications.
      */
-    async registerServiceWorker() {
+    registerServiceWorker: async function() {
         if (!('serviceWorker' in navigator)) return null;
         try {
             const reg = await navigator.serviceWorker.register('/sw.js');
@@ -271,7 +271,7 @@ const APP = {
      * Request push notification permission and subscribe.
      * Returns the subscription object or null.
      */
-    async subscribePush() {
+    subscribePush: async function() {
         if (!('Notification' in window)) return null;
 
         const permission = await Notification.requestPermission();
@@ -305,7 +305,7 @@ const APP = {
     /**
      * Show a local notification (for testing without push server).
      */
-    async showLocalNotification(title, body, url) {
+    showLocalNotification: async function(title, body, url) {
         if (Notification.permission !== 'granted') {
             await Notification.requestPermission();
         }
