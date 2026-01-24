@@ -2,6 +2,9 @@
 -- Run this against your Supabase SQL editor to create all tables.
 -- All tables use RLS (Row Level Security) policies defined at the bottom.
 
+-- Enable required extensions
+CREATE EXTENSION IF NOT EXISTS "vector";
+
 -- ============================================================
 -- CORE USER TABLES
 -- ============================================================
@@ -356,7 +359,9 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON cv2_a2a_candidates
 DROP TRIGGER IF EXISTS set_updated_at ON cv2_jobs;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON cv2_jobs
     FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+DROP TRIGGER IF EXISTS set_updated_at ON cv2_a2a_matches;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON cv2_a2a_matches
     FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+DROP TRIGGER IF EXISTS set_updated_at ON cv2_marketing_campaigns;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON cv2_marketing_campaigns
     FOR EACH ROW EXECUTE FUNCTION update_updated_at();
