@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - CV 2.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/js/app.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div id="cv2-nav" class="bg-white shadow-sm"></div>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Welcome Header -->
+        <div class="mb-8">
+            <h1 class="text-2xl font-bold text-gray-900" id="welcome-msg">Welcome back</h1>
+            <p class="text-gray-500 mt-1">Here's the status of your AI agent.</p>
+        </div>
+
+        <!-- Status Cards -->
+        <div class="grid md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+                <p class="text-sm text-gray-500">Stage</p>
+                <p class="text-xl font-bold text-indigo-600 mt-1" id="stat-stage">-</p>
+            </div>
+            <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+                <p class="text-sm text-gray-500">Agent Status</p>
+                <p class="text-xl font-bold text-green-600 mt-1" id="stat-agent">Inactive</p>
+            </div>
+            <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+                <p class="text-sm text-gray-500">Matches</p>
+                <p class="text-xl font-bold text-gray-900 mt-1" id="stat-matches">0</p>
+            </div>
+            <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+                <p class="text-sm text-gray-500">Readiness</p>
+                <p class="text-xl font-bold text-gray-900 mt-1" id="stat-readiness">-</p>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid lg:grid-cols-3 gap-6">
+            <!-- Left: Progress / Actions -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Onboarding Progress -->
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Your Journey</h2>
+                    <div class="space-y-3" id="journey-steps">
+                        <!-- Filled dynamically -->
+                    </div>
+                </div>
+
+                <!-- Recent Matches -->
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-semibold text-gray-900">Recent Matches</h2>
+                        <a href="/job-command-center.html" class="text-sm text-indigo-600 hover:text-indigo-700">View All</a>
+                    </div>
+                    <div id="matches-list" class="space-y-3">
+                        <p class="text-gray-400 text-sm">No matches yet. Complete onboarding to activate your agent.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Quick Actions -->
+            <div class="space-y-6">
+                <!-- Quick Actions Card -->
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
+                    <div class="space-y-2" id="quick-actions">
+                        <a href="/talent-onboarding.html" class="block w-full text-left px-4 py-3 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition text-sm font-medium">
+                            Start Talent Onboarding
+                        </a>
+                        <a href="/hm-onboarding.html" class="block w-full text-left px-4 py-3 rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100 transition text-sm font-medium">
+                            Post a Job
+                        </a>
+                        <a href="/chat.html" class="block w-full text-left px-4 py-3 rounded-lg bg-gray-50 text-gray-700 hover:bg-gray-100 transition text-sm font-medium">
+                            Chat with Agent
+                        </a>
+                        <a href="/calibration.html" class="block w-full text-left px-4 py-3 rounded-lg bg-gray-50 text-gray-700 hover:bg-gray-100 transition text-sm font-medium">
+                            Run Calibration
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Profile Summary -->
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Profile</h2>
+                    <div id="profile-summary" class="text-sm text-gray-600">
+                        <p class="text-gray-400">Loading profile...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+<script>
+    const STAGES = ['onboarding', 'calibration', 'certified', 'matchable'];
+    const STAGE_LABELS = {
+        onboarding: 'Onboarding',
+        calibration: 'Calibration',
+        certified: 'Certified',
+        matchable: 'Matchable'
+    };
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Wait for APP to initialize
+        await new Promise(r => setTimeout(r, 150));
+
+        if (!APP.isAuthenticated()) {
+            window.location.href = '/auth.html?redirect=/dashboard.html';
+            return;
+        }
+
+        const userId = APP.getUserId();
+        document.getElementById('welcome-msg').textContent = `Welcome back`;
+
+        await Promise.all([
+            loadProfile(userId),
+            loadMatches(userId),
+        ]);
+    });
+
+    async function loadProfile(userId) {
+        try {
+            const data = await APP.api(`/user/profile/${userId}`);
+            if (!data || data.detail) {
+                // No profile yet
+                renderNewUserState();
+                return;
+            }
+
+            const stage = data.stage || 'onboarding';
+            document.getElementById('stat-stage').textContent = STAGE_LABELS[stage] || stage;
+
+            const isActive = stage === 'matchable';
+            document.getElementById('stat-agent').textContent = isActive ? 'Active' : 'Building';
+            document.getElementById('stat-agent').className = `text-xl font-bold mt-1 ${isActive ? 'text-green-600' : 'text-yellow-600'}`;
+
+            if (data.activation_score) {
+                document.getElementById('stat-readiness').textContent = Math.round(data.activation_score * 100) + '%';
+            }
+
+            renderJourney(stage, data);
+            renderProfile(data);
+        } catch (e) {
+            renderNewUserState();
+        }
+    }
+
+    function renderNewUserState() {
+        document.getElementById('stat-stage').textContent = 'New';
+        document.getElementById('journey-steps').innerHTML = `
+            <p class="text-gray-500 text-sm mb-4">You haven't started onboarding yet. Choose your path:</p>
+            <div class="grid grid-cols-2 gap-3">
+                <a href="/talent-onboarding.html" class="p-4 border-2 border-indigo-200 rounded-lg text-center hover:border-indigo-400 transition">
+                    <div class="text-2xl mb-1">&#128188;</div>
+                    <p class="font-medium text-sm">I'm a Candidate</p>
+                </a>
+                <a href="/hm-onboarding.html" class="p-4 border-2 border-purple-200 rounded-lg text-center hover:border-purple-400 transition">
+                    <div class="text-2xl mb-1">&#128188;</div>
+                    <p class="font-medium text-sm">I'm Hiring</p>
+                </a>
+            </div>
+        `;
+    }
+
+    function renderJourney(currentStage, profile) {
+        const currentIdx = STAGES.indexOf(currentStage);
+        const stepsHtml = STAGES.map((stage, idx) => {
+            let status = 'pending';
+            if (idx < currentIdx) status = 'completed';
+            else if (idx === currentIdx) status = 'current';
+
+            const colors = {
+                completed: 'bg-green-500 text-white',
+                current: 'bg-indigo-500 text-white',
+                pending: 'bg-gray-200 text-gray-400',
+            };
+            const textColor = status === 'completed' ? 'text-green-700' :
+                              status === 'current' ? 'text-indigo-700' : 'text-gray-400';
+
+            return `
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${colors[status]}">
+                        ${status === 'completed' ? '&#10003;' : idx + 1}
+                    </div>
+                    <div>
+                        <p class="font-medium text-sm ${textColor}">${STAGE_LABELS[stage]}</p>
+                        <p class="text-xs text-gray-400">${getStageDescription(stage)}</p>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        document.getElementById('journey-steps').innerHTML = stepsHtml;
+    }
+
+    function getStageDescription(stage) {
+        const descriptions = {
+            onboarding: 'Upload CV, complete AI interview',
+            calibration: 'Respond to test opportunities',
+            certified: 'AI agent verified by Master AI',
+            matchable: 'Agent actively matching 24/7',
+        };
+        return descriptions[stage] || '';
+    }
+
+    function renderProfile(data) {
+        const el = document.getElementById('profile-summary');
+        el.innerHTML = `
+            <div class="space-y-2">
+                <div class="flex justify-between">
+                    <span class="text-gray-500">Industry</span>
+                    <span class="font-medium">${data.industry || 'General'}</span>
+                </div>
+                ${data.summary ? `
+                    <div class="pt-2 border-t border-gray-100">
+                        <p class="text-gray-600 text-xs">${data.summary.slice(0, 150)}${data.summary.length > 150 ? '...' : ''}</p>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    async function loadMatches(userId) {
+        try {
+            const data = await APP.api(`/network/matches/${userId}`);
+            if (!data) return;
+
+            const allMatches = [...(data.as_talent || []), ...(data.as_hm || [])];
+            document.getElementById('stat-matches').textContent = allMatches.length;
+
+            if (allMatches.length === 0) return;
+
+            const matchesHtml = allMatches.slice(0, 5).map(m => `
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">Match #${(m.id || '').slice(0, 8)}</p>
+                        <p class="text-xs text-gray-500">Score: ${Math.round((m.score || 0) * 100)}%</p>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded-full ${
+                        m.status === 'accepted' ? 'bg-green-100 text-green-700' :
+                        m.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                        'bg-yellow-100 text-yellow-700'
+                    }">${m.status || 'proposed'}</span>
+                </div>
+            `).join('');
+
+            document.getElementById('matches-list').innerHTML = matchesHtml;
+        } catch (e) {
+            // Matches not available yet
+        }
+    }
+</script>
+</body>
+</html>

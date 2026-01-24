@@ -5,107 +5,178 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CV 2.0 - AI-Powered Professional Networking</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/js/app.js"></script>
 </head>
-<body class="bg-gray-50 min-h-screen">
-    <!-- Hero Section -->
-    <header class="bg-white shadow-sm">
-        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-            <div class="text-2xl font-bold text-indigo-600">CV 2.0</div>
-            <div class="space-x-4">
-                <a href="/talent-onboarding.html" class="text-gray-600 hover:text-indigo-600">For Talent</a>
-                <a href="/hm-onboarding.html" class="text-gray-600 hover:text-indigo-600">For Hiring</a>
-                <a href="/network-dashboard.html" class="text-gray-600 hover:text-indigo-600">Network</a>
-                <a href="/master-control-center.html" class="text-gray-600 hover:text-indigo-600">Control Center</a>
-            </div>
-        </nav>
-    </header>
+<body class="bg-white min-h-screen">
+    <div id="cv2-nav" class="bg-white border-b border-gray-100"></div>
 
     <main>
         <!-- Hero -->
-        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
-            <h1 class="text-5xl font-bold text-gray-900">
-                Your AI Agent, Working for You 24/7
+        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28 text-center">
+            <div class="inline-block bg-indigo-50 text-indigo-700 text-xs font-semibold px-3 py-1 rounded-full mb-6">
+                AI-Native Recruitment Platform
+            </div>
+            <h1 class="text-4xl md:text-6xl font-bold text-gray-900 leading-tight max-w-4xl mx-auto">
+                Your AI Agent, Working for You
+                <span class="text-indigo-600">24/7</span>
             </h1>
-            <p class="text-xl text-gray-500 mt-4 max-w-2xl mx-auto">
-                AI-powered recruitment where intelligent agents understand you deeply
-                and negotiate opportunities on your behalf.
+            <p class="text-lg md:text-xl text-gray-500 mt-6 max-w-2xl mx-auto">
+                Intelligent agents that understand you deeply and negotiate
+                opportunities on your behalf. No more keyword matching.
             </p>
-            <p class="text-xl text-gray-600 mt-6 italic max-w-3xl mx-auto">
-                "We believe that the future of work is not about matching keywords,
-                 but about understanding people deeply enough to connect them with
-                 opportunities where they will thrive."
-            </p>
-            <div class="mt-10 space-x-4">
-                <a href="/talent-onboarding.html" class="bg-indigo-600 text-white px-8 py-3 rounded-lg text-lg hover:bg-indigo-700 transition">
-                    I'm a Candidate
+            <div class="mt-10 flex flex-col sm:flex-row justify-center gap-4">
+                <a href="/auth.html?mode=signup" class="bg-indigo-600 text-white px-8 py-3.5 rounded-lg text-lg font-medium hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition">
+                    Get Started Free
                 </a>
-                <a href="/hm-onboarding.html" class="bg-white text-indigo-600 border-2 border-indigo-600 px-8 py-3 rounded-lg text-lg hover:bg-indigo-50 transition">
-                    I'm Hiring
+                <a href="#how-it-works" class="bg-white text-gray-700 border border-gray-200 px-8 py-3.5 rounded-lg text-lg font-medium hover:bg-gray-50 transition">
+                    How It Works
                 </a>
+            </div>
+            <p class="text-sm text-gray-400 mt-4">No credit card required. Free for candidates.</p>
+        </section>
+
+        <!-- Stats Bar -->
+        <section class="border-y border-gray-100 bg-gray-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+                <div>
+                    <p class="text-2xl font-bold text-gray-900">24/7</p>
+                    <p class="text-sm text-gray-500">Agent Availability</p>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-900">Multi-Round</p>
+                    <p class="text-sm text-gray-500">AI Negotiations</p>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-900">Deep</p>
+                    <p class="text-sm text-gray-500">Value Matching</p>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-900">Self-Learning</p>
+                    <p class="text-sm text-gray-500">AI Network</p>
+                </div>
             </div>
         </section>
 
         <!-- How It Works -->
-        <section class="bg-white py-16">
+        <section id="how-it-works" class="py-20">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <h2 class="text-3xl font-bold text-center text-gray-900 mb-12">How It Works (Both Sides)</h2>
-                <div class="grid md:grid-cols-4 gap-6">
-                    <div class="text-center p-6">
-                        <div class="text-3xl mb-3">1</div>
-                        <h3 class="font-semibold text-lg">Upload Context</h3>
-                        <p class="text-gray-600 text-sm mt-2">CV for talent, job description for hiring managers</p>
+                <div class="text-center mb-14">
+                    <h2 class="text-3xl font-bold text-gray-900">How It Works</h2>
+                    <p class="text-gray-500 mt-2">Same flow for candidates and hiring managers</p>
+                </div>
+                <div class="grid md:grid-cols-4 gap-8">
+                    <div class="text-center">
+                        <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center text-lg font-bold mx-auto mb-4">1</div>
+                        <h3 class="font-semibold text-gray-900">Upload Context</h3>
+                        <p class="text-gray-500 text-sm mt-2">CV for talent, job description for hiring managers. We analyze it instantly.</p>
                     </div>
-                    <div class="text-center p-6">
-                        <div class="text-3xl mb-3">2</div>
-                        <h3 class="font-semibold text-lg">AI Interview</h3>
-                        <p class="text-gray-600 text-sm mt-2">Personalized questions that go beyond the document</p>
+                    <div class="text-center">
+                        <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center text-lg font-bold mx-auto mb-4">2</div>
+                        <h3 class="font-semibold text-gray-900">AI Interview</h3>
+                        <p class="text-gray-500 text-sm mt-2">Personalized questions that go beyond the document to understand your values.</p>
                     </div>
-                    <div class="text-center p-6">
-                        <div class="text-3xl mb-3">3</div>
-                        <h3 class="font-semibold text-lg">Auto-Activate</h3>
-                        <p class="text-gray-600 text-sm mt-2">Agent activates when it understands you well enough</p>
+                    <div class="text-center">
+                        <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center text-lg font-bold mx-auto mb-4">3</div>
+                        <h3 class="font-semibold text-gray-900">Agent Activates</h3>
+                        <p class="text-gray-500 text-sm mt-2">Your AI agent activates once it understands you deeply enough to represent you.</p>
                     </div>
-                    <div class="text-center p-6">
-                        <div class="text-3xl mb-3">4</div>
-                        <h3 class="font-semibold text-lg">A2A Matching</h3>
-                        <p class="text-gray-600 text-sm mt-2">Your agent negotiates with agents on the other side 24/7</p>
+                    <div class="text-center">
+                        <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center text-lg font-bold mx-auto mb-4">4</div>
+                        <h3 class="font-semibold text-gray-900">A2A Matching</h3>
+                        <p class="text-gray-500 text-sm mt-2">Your agent negotiates with agents on the other side. You get only quality matches.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Two Sides -->
+        <section class="py-20 bg-gray-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-14">
+                    <h2 class="text-3xl font-bold text-gray-900">Built for Both Sides</h2>
+                </div>
+                <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                    <div class="bg-white rounded-xl p-8 shadow-sm border border-gray-100">
+                        <h3 class="text-xl font-bold text-gray-900 mb-3">For Candidates</h3>
+                        <ul class="space-y-2 text-gray-600 text-sm">
+                            <li class="flex items-start gap-2"><span class="text-green-500 mt-0.5">&#10003;</span> AI understands your hidden criteria</li>
+                            <li class="flex items-start gap-2"><span class="text-green-500 mt-0.5">&#10003;</span> Agent negotiates 24/7 on your behalf</li>
+                            <li class="flex items-start gap-2"><span class="text-green-500 mt-0.5">&#10003;</span> Only quality matches reach you</li>
+                            <li class="flex items-start gap-2"><span class="text-green-500 mt-0.5">&#10003;</span> Learns from every interaction</li>
+                        </ul>
+                        <a href="/auth.html?mode=signup" class="inline-block mt-6 text-indigo-600 font-medium text-sm hover:text-indigo-700">
+                            Get Started as Candidate &rarr;
+                        </a>
+                    </div>
+                    <div class="bg-white rounded-xl p-8 shadow-sm border border-gray-100">
+                        <h3 class="text-xl font-bold text-gray-900 mb-3">For Hiring Managers</h3>
+                        <ul class="space-y-2 text-gray-600 text-sm">
+                            <li class="flex items-start gap-2"><span class="text-green-500 mt-0.5">&#10003;</span> AI finds candidates who truly fit</li>
+                            <li class="flex items-start gap-2"><span class="text-green-500 mt-0.5">&#10003;</span> Beyond keywords - values and culture match</li>
+                            <li class="flex items-start gap-2"><span class="text-green-500 mt-0.5">&#10003;</span> Multi-round AI negotiations filter noise</li>
+                            <li class="flex items-start gap-2"><span class="text-green-500 mt-0.5">&#10003;</span> Master AI governance ensures quality</li>
+                        </ul>
+                        <a href="/auth.html?mode=signup" class="inline-block mt-6 text-indigo-600 font-medium text-sm hover:text-indigo-700">
+                            Start Hiring Smarter &rarr;
+                        </a>
                     </div>
                 </div>
             </div>
         </section>
 
         <!-- Difference -->
-        <section class="py-16">
+        <section class="py-20">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <h2 class="text-3xl font-bold text-center text-gray-900 mb-12">The CV 2.0 Difference</h2>
+                <div class="text-center mb-14">
+                    <h2 class="text-3xl font-bold text-gray-900">The CV 2.0 Difference</h2>
+                </div>
                 <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                    <div class="bg-gray-100 rounded-lg p-6">
-                        <h3 class="font-semibold text-lg text-gray-500 mb-4">Everyone Else</h3>
-                        <ul class="space-y-2 text-gray-600">
+                    <div class="bg-gray-100 rounded-xl p-8">
+                        <h3 class="font-semibold text-lg text-gray-400 mb-4">Traditional Platforms</h3>
+                        <ul class="space-y-3 text-gray-500 text-sm">
                             <li>Process CVs faster</li>
                             <li>Match keywords</li>
-                            <li>AI as filter</li>
-                            <li>Static matching</li>
+                            <li>AI as filter / gatekeeper</li>
+                            <li>Static one-time matching</li>
                             <li>Isolated AI instances</li>
                         </ul>
                     </div>
-                    <div class="bg-indigo-50 rounded-lg p-6 border-2 border-indigo-200">
+                    <div class="bg-indigo-50 rounded-xl p-8 border-2 border-indigo-200">
                         <h3 class="font-semibold text-lg text-indigo-600 mb-4">CV 2.0</h3>
-                        <ul class="space-y-2 text-gray-700">
-                            <li>Understand humans deeper</li>
-                            <li>Understand hidden criteria</li>
-                            <li>AI as advocate</li>
-                            <li>Growing intelligence</li>
-                            <li>Connected AI network</li>
+                        <ul class="space-y-3 text-gray-700 text-sm">
+                            <li class="font-medium">Understand humans deeply</li>
+                            <li class="font-medium">Discover hidden criteria</li>
+                            <li class="font-medium">AI as your personal advocate</li>
+                            <li class="font-medium">Growing collective intelligence</li>
+                            <li class="font-medium">Connected self-learning network</li>
                         </ul>
                     </div>
                 </div>
             </div>
         </section>
+
+        <!-- CTA -->
+        <section class="py-20 bg-indigo-600">
+            <div class="max-w-3xl mx-auto px-4 text-center">
+                <h2 class="text-3xl font-bold text-white">Ready to meet your AI agent?</h2>
+                <p class="text-indigo-200 mt-3">Join the future of professional networking. Free for candidates.</p>
+                <a href="/auth.html?mode=signup" class="inline-block mt-8 bg-white text-indigo-600 px-8 py-3.5 rounded-lg text-lg font-medium hover:bg-indigo-50 transition shadow-lg">
+                    Create Your Agent
+                </a>
+            </div>
+        </section>
     </main>
 
-    <footer class="bg-gray-900 text-gray-400 py-8 text-center">
-        <p>CV 2.0 - AI-Native Professional Networking</p>
+    <footer class="bg-gray-900 text-gray-400 py-8">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
+            <p class="text-sm">CV 2.0 - AI-Native Professional Networking</p>
+            <div class="flex space-x-6 mt-4 md:mt-0 text-sm">
+                <a href="#" class="hover:text-white transition">Privacy</a>
+                <a href="#" class="hover:text-white transition">Terms</a>
+                <a href="#" class="hover:text-white transition">Contact</a>
+            </div>
+        </div>
     </footer>
 </body>
 </html>

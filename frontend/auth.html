@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In - CV 2.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/js/app.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+    <div id="cv2-nav" class="bg-white shadow-sm"></div>
+
+    <main class="flex-1 flex items-center justify-center px-4 py-12">
+        <div class="w-full max-w-md">
+            <!-- Logo -->
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-indigo-600">CV 2.0</h1>
+                <p class="text-gray-500 mt-2" id="auth-subtitle">Sign in to your account</p>
+            </div>
+
+            <!-- Auth Card -->
+            <div class="bg-white rounded-xl shadow-lg p-8">
+                <!-- Tab Toggle -->
+                <div class="flex mb-6 bg-gray-100 rounded-lg p-1">
+                    <button id="tab-signin" onclick="switchTab('signin')"
+                        class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition bg-white shadow text-indigo-600">
+                        Sign In
+                    </button>
+                    <button id="tab-signup" onclick="switchTab('signup')"
+                        class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition text-gray-500">
+                        Sign Up
+                    </button>
+                </div>
+
+                <!-- Error/Success Messages -->
+                <div id="auth-message" class="hidden mb-4 p-3 rounded-lg text-sm"></div>
+
+                <!-- Form -->
+                <form id="auth-form" onsubmit="handleSubmit(event)">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                            <input type="email" id="email" required
+                                class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                                placeholder="you@example.com">
+                        </div>
+                        <div>
+                            <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                            <input type="password" id="password" required minlength="6"
+                                class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                                placeholder="Min. 6 characters">
+                        </div>
+
+                        <!-- Confirm password (signup only) -->
+                        <div id="confirm-field" class="hidden">
+                            <label for="confirm" class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                            <input type="password" id="confirm"
+                                class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                                placeholder="Repeat password">
+                        </div>
+                    </div>
+
+                    <button type="submit" id="submit-btn"
+                        class="w-full mt-6 bg-indigo-600 text-white py-2.5 px-4 rounded-lg font-medium hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-200 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        Sign In
+                    </button>
+                </form>
+
+                <!-- Divider -->
+                <div class="mt-6 flex items-center">
+                    <div class="flex-1 border-t border-gray-200"></div>
+                    <span class="px-3 text-sm text-gray-400">or</span>
+                    <div class="flex-1 border-t border-gray-200"></div>
+                </div>
+
+                <!-- Demo Mode -->
+                <button onclick="demoSignIn()"
+                    class="w-full mt-4 bg-gray-100 text-gray-700 py-2.5 px-4 rounded-lg font-medium hover:bg-gray-200 transition text-sm">
+                    Continue in Demo Mode (no account needed)
+                </button>
+            </div>
+
+            <!-- Footer note -->
+            <p class="text-center text-xs text-gray-400 mt-6">
+                By signing up, you agree to our Terms of Service and Privacy Policy.
+            </p>
+        </div>
+    </main>
+
+<script>
+    let currentTab = 'signin';
+
+    // Check URL params
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('mode') === 'signup') {
+        switchTab('signup');
+    }
+
+    // If already authenticated, redirect
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            if (APP.isAuthenticated()) {
+                const redirect = params.get('redirect') || '/dashboard.html';
+                window.location.href = redirect;
+            }
+        }, 100);
+    });
+
+    function switchTab(tab) {
+        currentTab = tab;
+        const signinBtn = document.getElementById('tab-signin');
+        const signupBtn = document.getElementById('tab-signup');
+        const confirmField = document.getElementById('confirm-field');
+        const submitBtn = document.getElementById('submit-btn');
+        const subtitle = document.getElementById('auth-subtitle');
+
+        if (tab === 'signin') {
+            signinBtn.className = 'flex-1 py-2 px-4 rounded-md text-sm font-medium transition bg-white shadow text-indigo-600';
+            signupBtn.className = 'flex-1 py-2 px-4 rounded-md text-sm font-medium transition text-gray-500';
+            confirmField.classList.add('hidden');
+            submitBtn.textContent = 'Sign In';
+            subtitle.textContent = 'Sign in to your account';
+        } else {
+            signupBtn.className = 'flex-1 py-2 px-4 rounded-md text-sm font-medium transition bg-white shadow text-indigo-600';
+            signinBtn.className = 'flex-1 py-2 px-4 rounded-md text-sm font-medium transition text-gray-500';
+            confirmField.classList.remove('hidden');
+            submitBtn.textContent = 'Create Account';
+            subtitle.textContent = 'Create your AI agent account';
+        }
+        hideMessage();
+    }
+
+    async function handleSubmit(e) {
+        e.preventDefault();
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        const submitBtn = document.getElementById('submit-btn');
+
+        if (currentTab === 'signup') {
+            const confirm = document.getElementById('confirm').value;
+            if (password !== confirm) {
+                showMessage('Passwords do not match.', 'error');
+                return;
+            }
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Please wait...';
+
+        try {
+            let result;
+            if (currentTab === 'signin') {
+                result = await APP.signIn(email, password);
+            } else {
+                result = await APP.signUp(email, password);
+            }
+
+            if (result.error) {
+                showMessage(result.error.message || 'Authentication failed.', 'error');
+            } else {
+                if (currentTab === 'signup') {
+                    showMessage('Account created! Check your email to confirm, or continue below.', 'success');
+                }
+                const redirect = params.get('redirect') || '/dashboard.html';
+                window.location.href = redirect;
+            }
+        } catch (err) {
+            showMessage('Connection error. Please try again.', 'error');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = currentTab === 'signin' ? 'Sign In' : 'Create Account';
+        }
+    }
+
+    async function demoSignIn() {
+        const demoId = 'demo-' + Math.random().toString(36).slice(2, 8);
+        await APP.signIn(demoId + '@demo.cv2', 'demo-mode');
+        window.location.href = '/dashboard.html';
+    }
+
+    function showMessage(text, type) {
+        const el = document.getElementById('auth-message');
+        el.textContent = text;
+        el.className = `mb-4 p-3 rounded-lg text-sm ${
+            type === 'error' ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'
+        }`;
+        el.classList.remove('hidden');
+    }
+
+    function hideMessage() {
+        document.getElementById('auth-message').classList.add('hidden');
+    }
+</script>
+</body>
+</html>

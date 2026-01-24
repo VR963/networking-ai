@@ -1,0 +1,260 @@
+/**
+ * CV 2.0 - Shared Application Module
+ * Handles auth state, navigation, and API communication.
+ *
+ * Usage: Include this script before page-specific scripts.
+ *   <script src="/js/app.js"></script>
+ */
+
+const APP = {
+    // Configuration - set via environment or defaults
+    API_URL: window.CV2_API_URL || '',
+    SUPABASE_URL: window.CV2_SUPABASE_URL || '',
+    SUPABASE_ANON_KEY: window.CV2_SUPABASE_ANON_KEY || '',
+
+    // Auth state
+    _user: null,
+    _session: null,
+    _supabase: null,
+
+    /**
+     * Initialize the app module. Call on every page load.
+     */
+    async init() {
+        // Load config from meta tags if present
+        const metaApi = document.querySelector('meta[name="api-url"]');
+        const metaSupa = document.querySelector('meta[name="supabase-url"]');
+        const metaKey = document.querySelector('meta[name="supabase-anon-key"]');
+        if (metaApi) this.API_URL = metaApi.content;
+        if (metaSupa) this.SUPABASE_URL = metaSupa.content;
+        if (metaKey) this.SUPABASE_ANON_KEY = metaKey.content;
+
+        // Try to restore session
+        await this.restoreSession();
+
+        // Render navigation
+        this.renderNav();
+    },
+
+    /**
+     * Initialize Supabase client (lazy, loaded from CDN).
+     */
+    getSupabase() {
+        if (this._supabase) return this._supabase;
+        if (!window.supabase || !this.SUPABASE_URL || !this.SUPABASE_ANON_KEY) {
+            return null;
+        }
+        this._supabase = window.supabase.createClient(
+            this.SUPABASE_URL,
+            this.SUPABASE_ANON_KEY
+        );
+        return this._supabase;
+    },
+
+    /**
+     * Restore session from Supabase or localStorage fallback.
+     */
+    async restoreSession() {
+        const sb = this.getSupabase();
+        if (sb) {
+            try {
+                const { data } = await sb.auth.getSession();
+                if (data.session) {
+                    this._session = data.session;
+                    this._user = data.session.user;
+                    return;
+                }
+            } catch (e) {
+                console.debug('Supabase session restore failed:', e);
+            }
+        }
+
+        // Fallback: check localStorage for dev/demo mode
+        const stored = localStorage.getItem('cv2_user');
+        if (stored) {
+            try {
+                this._user = JSON.parse(stored);
+            } catch (e) {
+                localStorage.removeItem('cv2_user');
+            }
+        }
+    },
+
+    /**
+     * Sign up with email/password.
+     */
+    async signUp(email, password) {
+        const sb = this.getSupabase();
+        if (!sb) {
+            // Fallback: demo mode - create local user
+            const user = { id: crypto.randomUUID(), email, role: 'user' };
+            this._user = user;
+            localStorage.setItem('cv2_user', JSON.stringify(user));
+            return { user, error: null };
+        }
+
+        const { data, error } = await sb.auth.signUp({ email, password });
+        if (!error && data.user) {
+            this._user = data.user;
+            this._session = data.session;
+        }
+        return { user: data?.user, error };
+    },
+
+    /**
+     * Sign in with email/password.
+     */
+    async signIn(email, password) {
+        const sb = this.getSupabase();
+        if (!sb) {
+            // Fallback: demo mode
+            const user = { id: email, email, role: 'user' };
+            this._user = user;
+            localStorage.setItem('cv2_user', JSON.stringify(user));
+            return { user, error: null };
+        }
+
+        const { data, error } = await sb.auth.signInWithPassword({ email, password });
+        if (!error && data.user) {
+            this._user = data.user;
+            this._session = data.session;
+        }
+        return { user: data?.user, error };
+    },
+
+    /**
+     * Sign out.
+     */
+    async signOut() {
+        const sb = this.getSupabase();
+        if (sb) {
+            await sb.auth.signOut();
+        }
+        this._user = null;
+        this._session = null;
+        localStorage.removeItem('cv2_user');
+        window.location.href = '/';
+    },
+
+    /**
+     * Get the current authenticated user.
+     */
+    getUser() {
+        return this._user;
+    },
+
+    /**
+     * Get the user ID (works with both Supabase and demo mode).
+     */
+    getUserId() {
+        return this._user?.id || null;
+    },
+
+    /**
+     * Check if user is authenticated.
+     */
+    isAuthenticated() {
+        return this._user !== null;
+    },
+
+    /**
+     * Get auth token for API calls.
+     */
+    getToken() {
+        return this._session?.access_token || null;
+    },
+
+    /**
+     * Make an authenticated API call.
+     */
+    async api(path, options = {}) {
+        const url = `${this.API_URL}${path}`;
+        const headers = {
+            'Content-Type': 'application/json',
+            ...(options.headers || {}),
+        };
+
+        const token = this.getToken();
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(url, {
+            ...options,
+            headers,
+            body: options.body ? JSON.stringify(options.body) : undefined,
+        });
+
+        if (response.status === 401) {
+            // Token expired - try refresh
+            await this.restoreSession();
+            if (!this.isAuthenticated()) {
+                window.location.href = '/auth.html';
+                return null;
+            }
+        }
+
+        return response.json();
+    },
+
+    /**
+     * Require authentication - redirect to login if not authenticated.
+     */
+    requireAuth() {
+        if (!this.isAuthenticated()) {
+            window.location.href = '/auth.html?redirect=' + encodeURIComponent(window.location.pathname);
+            return false;
+        }
+        return true;
+    },
+
+    /**
+     * Render the navigation bar.
+     */
+    renderNav() {
+        const navEl = document.getElementById('cv2-nav');
+        if (!navEl) return;
+
+        const isAuthed = this.isAuthenticated();
+        const currentPath = window.location.pathname;
+
+        const navLink = (href, label) => {
+            const active = currentPath === href || currentPath === href.replace('.html', '');
+            return `<a href="${href}" class="px-3 py-2 rounded-md text-sm font-medium ${
+                active ? 'text-indigo-600 bg-indigo-50' : 'text-gray-600 hover:text-indigo-600 hover:bg-gray-50'
+            } transition">${label}</a>`;
+        };
+
+        navEl.innerHTML = `
+            <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <a href="/" class="text-2xl font-bold text-indigo-600">CV 2.0</a>
+                    <div class="hidden md:flex items-center space-x-1">
+                        ${isAuthed ? `
+                            ${navLink('/dashboard.html', 'Dashboard')}
+                            ${navLink('/talent-onboarding.html', 'Talent')}
+                            ${navLink('/hm-onboarding.html', 'Hiring')}
+                            ${navLink('/job-command-center.html', 'Matches')}
+                            ${navLink('/network-dashboard.html', 'Network')}
+                        ` : `
+                            ${navLink('/talent-onboarding.html', 'For Talent')}
+                            ${navLink('/hm-onboarding.html', 'For Hiring')}
+                        `}
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        ${isAuthed ? `
+                            <span class="text-sm text-gray-500 hidden sm:block">${this._user.email || this._user.id}</span>
+                            <button onclick="APP.signOut()" class="text-sm text-red-600 hover:text-red-700 font-medium">Sign Out</button>
+                        ` : `
+                            <a href="/auth.html" class="text-sm text-indigo-600 hover:text-indigo-700 font-medium">Sign In</a>
+                            <a href="/auth.html?mode=signup" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 transition">Get Started</a>
+                        `}
+                    </div>
+                </div>
+            </nav>
+        `;
+    }
+};
+
+// Auto-initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', () => APP.init());
