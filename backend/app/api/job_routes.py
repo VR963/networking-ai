@@ -4,17 +4,16 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from supabase import create_client
-
-from app.config import SUPABASE_URL, SUPABASE_SERVICE_KEY
+from app.database import get_db
 
 router = APIRouter()
 
 
 def _get_supabase():
-    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
-        raise HTTPException(status_code=503, detail="Database not configured. Set SUPABASE_URL and SUPABASE_SERVICE_KEY.")
-    return create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+    client = get_db()
+    if not client:
+        raise HTTPException(status_code=503, detail="Database not configured.")
+    return client
 
 
 class JobCreateRequest(BaseModel):

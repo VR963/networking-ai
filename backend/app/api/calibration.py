@@ -2,9 +2,7 @@ from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from supabase import create_client
-
-from app.config import SUPABASE_URL, SUPABASE_SERVICE_KEY
+from app.database import get_db
 from app.services.test_opportunities import test_opportunities
 
 router = APIRouter()
@@ -23,10 +21,10 @@ class ResponseRequest(BaseModel):
 
 def _advance_to_calibration(user_id: str):
     """Advance user stage to 'calibration' when they start generating test opportunities."""
-    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
-        return
     try:
-        client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+        client = get_db()
+        if not client:
+            return
         result = (
             client.table("cv2_profiles")
             .select("stage")

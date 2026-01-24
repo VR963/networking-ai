@@ -3,17 +3,16 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from supabase import create_client
-
-from app.config import SUPABASE_URL, SUPABASE_SERVICE_KEY
+from app.database import get_db
 
 router = APIRouter()
 
 
 def _get_supabase():
-    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
-        raise HTTPException(status_code=503, detail="Database not configured. Set SUPABASE_URL and SUPABASE_SERVICE_KEY.")
-    return create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+    client = get_db()
+    if not client:
+        raise HTTPException(status_code=503, detail="Database not configured.")
+    return client
 
 
 class ProfileCreateRequest(BaseModel):
@@ -142,6 +141,19 @@ async def upload_document(request: DocumentUploadRequest):
                 client.table("cv2_profiles").update({
                     "summary": analysis["career_trajectory"]
                 }).eq("user_id", request.user_id).execute()
+
+    # Index in RAG store for semantic retrieval
+    try:
+        from app.services.embedding_store import embedding_store
+        await embedding_store.index_content(
+            content_type="document",
+            content_id=doc_id,
+            text_content=request.content_text[:5000],
+            user_id=request.user_id,
+            metadata={"doc_type": request.doc_type},
+        )
+    except Exception:
+        pass  # RAG indexing is non-critical
 
     return {"status": "uploaded", "doc_id": doc_id, "analysis": analysis}
 

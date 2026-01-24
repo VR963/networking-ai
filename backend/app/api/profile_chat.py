@@ -2,9 +2,8 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 import anthropic
-from supabase import create_client
-
-from app.config import ANTHROPIC_API_KEY, QUALITY_THRESHOLD, SUPABASE_URL, SUPABASE_SERVICE_KEY
+from app.config import ANTHROPIC_API_KEY, QUALITY_THRESHOLD
+from app.database import get_db
 from app.services.conversation_logger import conversation_logger
 from app.services.quality_analyzer import quality_analyzer
 from app.services.dspy_learning import dspy_learning
@@ -46,7 +45,7 @@ async def chat_message(request: ChatRequest):
     # Fetch pre-conversation context from uploaded documents/social profiles
     try:
         from app.services.profile_analyzer import profile_analyzer
-        db_client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+        db_client = get_db()
 
         profile_data = (
             db_client.table("cv2_profiles")
@@ -79,10 +78,29 @@ async def chat_message(request: ChatRequest):
     except Exception:
         pass  # Pre-conversation context is non-critical
 
+    # RAG: Retrieve semantically relevant past context
+    rag_context = ""
+    try:
+        from app.services.embedding_store import embedding_store
+        last_message = next(
+            (m["content"] for m in reversed(request.messages) if m.get("role") == "user"),
+            "",
+        )
+        if last_message:
+            rag_context = await embedding_store.get_context_for_agent(
+                agent_id=request.user_id,
+                query=last_message,
+            )
+    except Exception:
+        pass  # RAG is non-critical enhancement
+
     try:
         client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
-        system_prompt = _build_system_prompt(request.context, agent_context, user_patterns, pre_conversation_context)
+        system_prompt = _build_system_prompt(
+            request.context, agent_context, user_patterns,
+            pre_conversation_context, rag_context,
+        )
 
         api_messages = [
             {"role": m["role"], "content": m["content"]}
@@ -134,6 +152,7 @@ def _build_system_prompt(
     agent_context: dict = None,
     user_patterns: list = None,
     pre_conversation_context: str = "",
+    rag_context: str = "",
 ) -> str:
     base = (
         "You are an AI career agent conducting a deep onboarding conversation. "
@@ -174,6 +193,10 @@ def _build_system_prompt(
                 + "\nBuild on this knowledge. Don't re-ask what you already know. Go deeper."
             )
 
+    # Inject RAG-retrieved context from past interactions
+    if rag_context:
+        base += f"\n\nRelevant context from previous interactions:\n{rag_context}"
+
     if context.get("stage") == "calibration":
         base += (
             "\n\nYou are in calibration mode. The user just rejected a test opportunity. "
@@ -189,11 +212,10 @@ async def _ensure_profile(user_id: str, industry: str = "general") -> None:
     This bridges the gap: chat is the entry point, and all downstream
     services (calibration, A2A matching) depend on cv2_profiles existing.
     """
-    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
-        return  # Skip if DB not configured
-
     try:
-        client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+        client = get_db()
+        if not client:
+            return
 
         existing = (
             client.table("cv2_profiles")

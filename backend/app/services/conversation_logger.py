@@ -1,13 +1,23 @@
+import logging
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
 from app.database import get_db
 
+logger = logging.getLogger(__name__)
+
 
 class ConversationLogger:
     def __init__(self):
-        pass
+        self._embedding_store = None
+
+    @property
+    def embedding_store(self):
+        if self._embedding_store is None:
+            from app.services.embedding_store import embedding_store
+            self._embedding_store = embedding_store
+        return self._embedding_store
 
     @property
     def client(self):
@@ -26,6 +36,23 @@ class ConversationLogger:
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
         self.client.table("cv2_conversations").insert(record).execute()
+
+        # Index in RAG store for semantic retrieval in future conversations
+        try:
+            text_content = " ".join(
+                m.get("content", "") for m in messages if m.get("content")
+            )
+            if text_content.strip():
+                await self.embedding_store.index_content(
+                    content_type="conversation",
+                    content_id=conversation_id,
+                    text_content=text_content[:5000],
+                    user_id=user_id,
+                    metadata=metadata or {},
+                )
+        except Exception as e:
+            logger.debug(f"RAG indexing failed for conversation: {e}")
+
         return conversation_id
 
     async def get_conversation(self, conversation_id: str) -> Optional[dict]:

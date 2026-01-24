@@ -22,9 +22,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from supabase import create_client
-
-from app.config import SUPABASE_URL, SUPABASE_SERVICE_KEY
+from app.database import get_db
 from app.services.interview_service import interview_service
 from app.services.auto_activation import auto_activation
 
@@ -32,9 +30,10 @@ router = APIRouter()
 
 
 def _get_supabase():
-    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+    client = get_db()
+    if not client:
         raise HTTPException(status_code=503, detail="Database not configured.")
-    return create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+    return client
 
 
 # --- Request Models ---
