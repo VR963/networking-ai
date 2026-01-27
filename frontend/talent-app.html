@@ -22,6 +22,7 @@
         }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="/js/config.js"></script>
     <script src="/js/env.js" onerror=""></script>
     <script src="/js/app.js"></script>
@@ -241,6 +242,11 @@
     };
 
     document.addEventListener('DOMContentLoaded', async () => {
+        // Initialize PDF.js worker
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+
         await new Promise(r => setTimeout(r, 150));
         if (!APP.isAuthenticated()) {
             window.location.href = '/auth.html?redirect=/talent-app.html';
@@ -371,32 +377,84 @@
         const file = event.target.files[0];
         if (!file) return;
 
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            const text = e.target.result;
-            try {
-                await APP.api('/user/upload-document', {
-                    method: 'POST',
-                    body: {
-                        user_id: state.userId,
-                        filename: file.name,
-                        content_text: text.slice(0, 50000),
-                        doc_type: 'cv'
-                    }
+        const uploadArea = document.getElementById('cv-upload-area');
+        const originalHTML = uploadArea.innerHTML;
+
+        // Show loading state
+        uploadArea.innerHTML = `
+            <svg class="w-8 h-8 text-brand mx-auto mb-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            <p class="text-small text-gray-500">Processing ${file.name}...</p>
+        `;
+
+        try {
+            let text = '';
+
+            if (file.name.toLowerCase().endsWith('.pdf')) {
+                // Extract text from PDF using pdf.js
+                text = await extractPDFText(file);
+            } else {
+                // Read as text for .txt, .doc files
+                text = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.onerror = reject;
+                    reader.readAsText(file);
                 });
-                const statusEl = document.getElementById('cv-status');
-                statusEl.classList.remove('hidden');
-                statusEl.querySelector('p').textContent = `${file.name} uploaded`;
-                document.getElementById('cv-upload-area').innerHTML = `
-                    <svg class="w-8 h-8 text-green-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/></svg>
-                    <p class="text-small text-green-700 font-medium">${file.name}</p>
-                    <p class="text-caption text-gray-400 mt-1">Tap to replace</p>
-                `;
-            } catch (e) {
-                alert('Upload failed. Try again.');
             }
-        };
-        reader.readAsText(file);
+
+            if (!text || text.trim().length < 50) {
+                throw new Error('Could not extract text from file. Please try a different format.');
+            }
+
+            const response = await APP.api('/user/upload-document', {
+                method: 'POST',
+                body: {
+                    user_id: state.userId,
+                    filename: file.name,
+                    content_text: text.slice(0, 50000),
+                    doc_type: 'cv'
+                }
+            });
+
+            if (response && response.error) {
+                throw new Error(response.error);
+            }
+
+            const statusEl = document.getElementById('cv-status');
+            statusEl.classList.remove('hidden');
+            statusEl.querySelector('p').textContent = `${file.name} uploaded`;
+            uploadArea.innerHTML = `
+                <svg class="w-8 h-8 text-green-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/></svg>
+                <p class="text-small text-green-700 font-medium">${file.name}</p>
+                <p class="text-caption text-gray-400 mt-1">Tap to replace</p>
+            `;
+
+            // Reload profile to reflect any analysis
+            await loadProfile();
+
+        } catch (e) {
+            console.error('Upload error:', e);
+            uploadArea.innerHTML = originalHTML;
+            alert(e.message || 'Upload failed. Please try again with a different file.');
+        }
+    }
+
+    async function extractPDFText(file) {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let fullText = '';
+
+        for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items.map(item => item.str).join(' ');
+            fullText += pageText + '\n';
+        }
+
+        return fullText;
     }
 
     async function updateIndustry() {

@@ -179,11 +179,17 @@ const APP = {
             headers['Authorization'] = `Bearer ${token}`;
         }
 
-        const response = await fetch(url, {
-            ...options,
-            headers,
-            body: options.body ? JSON.stringify(options.body) : undefined,
-        });
+        let response;
+        try {
+            response = await fetch(url, {
+                ...options,
+                headers,
+                body: options.body ? JSON.stringify(options.body) : undefined,
+            });
+        } catch (e) {
+            console.error('API fetch error:', e);
+            return { error: 'Network error. Please check your connection.' };
+        }
 
         if (response.status === 401) {
             // Token expired - try refresh
@@ -194,7 +200,23 @@ const APP = {
             }
         }
 
-        return response.json();
+        // Handle non-OK responses
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`API error ${response.status}:`, errorText);
+            try {
+                return JSON.parse(errorText);
+            } catch {
+                return { error: `Server error: ${response.status}`, detail: errorText };
+            }
+        }
+
+        try {
+            return await response.json();
+        } catch (e) {
+            console.error('API JSON parse error:', e);
+            return { error: 'Invalid response from server' };
+        }
     },
 
     /**
