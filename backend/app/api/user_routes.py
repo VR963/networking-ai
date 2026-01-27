@@ -112,6 +112,26 @@ async def upload_document(request: DocumentUploadRequest):
     import uuid
     doc_id = str(uuid.uuid4())
 
+    # Ensure user exists in cv2_users (required for foreign key)
+    try:
+        client.table("cv2_users").upsert({"id": request.user_id}).execute()
+    except Exception:
+        pass  # User may already exist
+
+    # Ensure profile exists
+    existing_profile = (
+        client.table("cv2_profiles")
+        .select("user_id")
+        .eq("user_id", request.user_id)
+        .execute()
+    )
+    if not existing_profile.data:
+        client.table("cv2_profiles").insert({
+            "user_id": request.user_id,
+            "industry": "general",
+            "stage": "onboarding",
+        }).execute()
+
     record = {
         "id": doc_id,
         "user_id": request.user_id,
@@ -119,7 +139,11 @@ async def upload_document(request: DocumentUploadRequest):
         "doc_type": request.doc_type,
         "content_text": request.content_text[:50000],  # Limit size
     }
-    client.table("cv2_documents").insert(record).execute()
+
+    try:
+        client.table("cv2_documents").insert(record).execute()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save document: {str(e)}")
 
     # If it's a CV, trigger analysis immediately
     analysis = None
@@ -251,7 +275,7 @@ async def get_profile_context(user_id: str):
 
 @router.get("/profile/{user_id}")
 async def get_profile(user_id: str):
-    """Get a user's profile including their current stage."""
+    """Get a user's profile including their current stage. Auto-creates if missing."""
     client = _get_supabase()
     result = (
         client.table("cv2_profiles")
@@ -260,7 +284,24 @@ async def get_profile(user_id: str):
         .execute()
     )
     if not result.data:
-        raise HTTPException(status_code=404, detail="Profile not found. Start a conversation first.")
+        # Auto-create user and profile for new users
+        try:
+            client.table("cv2_users").upsert({"id": user_id}).execute()
+        except Exception:
+            pass
+
+        new_profile = {
+            "user_id": user_id,
+            "industry": "general",
+            "stage": "onboarding",
+            "summary": "",
+        }
+        try:
+            client.table("cv2_profiles").insert(new_profile).execute()
+            return new_profile
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to create profile: {str(e)}")
+
     return result.data[0]
 
 

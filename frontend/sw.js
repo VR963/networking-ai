@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cv2-v2';
+const CACHE_NAME = 'cv2-v3';
 const ASSETS = [
   '/',
   '/index.html',
@@ -34,19 +34,39 @@ self.addEventListener('activate', (event) => {
 // Fetch — network first, fallback to cache
 self.addEventListener('fetch', (event) => {
   const { request } = event;
+  const url = new URL(request.url);
 
-  // Skip non-GET and API calls
-  if (request.method !== 'GET' || request.url.includes('/api/') || request.url.includes('/a2a/') || request.url.includes('/master-ai/') || request.url.includes('/jobs/') || request.url.includes('/onboarding/') || request.url.includes('/user/') || request.url.includes('/network/')) {
+  // Skip non-GET, non-http(s), and API calls
+  if (
+    request.method !== 'GET' ||
+    !url.protocol.startsWith('http') ||
+    url.pathname.startsWith('/api/') ||
+    url.pathname.startsWith('/a2a/') ||
+    url.pathname.startsWith('/master-ai/') ||
+    url.pathname.startsWith('/jobs/') ||
+    url.pathname.startsWith('/onboarding/') ||
+    url.pathname.startsWith('/user/') ||
+    url.pathname.startsWith('/chat/') ||
+    url.pathname.startsWith('/calibration/') ||
+    url.pathname.startsWith('/network/') ||
+    url.pathname.startsWith('/health')
+  ) {
     return;
   }
 
   event.respondWith(
     fetch(request)
       .then((response) => {
-        // Cache successful responses
-        if (response.ok) {
+        // Cache successful responses (only http/https)
+        if (response.ok && url.protocol.startsWith('http')) {
           const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          caches.open(CACHE_NAME).then((cache) => {
+            try {
+              cache.put(request, clone);
+            } catch (e) {
+              // Ignore cache errors (e.g., for chrome-extension URLs)
+            }
+          });
         }
         return response;
       })
