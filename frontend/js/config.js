@@ -11,5 +11,6 @@ window.CV2_SUPABASE_URL = 'https://tksllvfftstxyecfzwwj.supabase.co';
 // Must start with 'eyJ...' — paste your key below:
 window.CV2_SUPABASE_ANON_KEY = '';
 
-// Backend API URL (leave empty if served from same origin)
-window.CV2_API_URL = '';
+// Backend API URL (set this if frontend is served separately from backend)
+// Leave empty if served from same origin (recommended: use backend to serve frontend)
+window.CV2_API_URL = window.location.port === '8080' ? 'http://localhost:8000' : '';
