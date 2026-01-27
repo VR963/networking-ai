@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CV 2.0 - Agent Onboarding</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/js/config.js"></script>
+    <script src="/js/env.js" onerror=""></script>
+    <script src="/js/app.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+    <div id="cv2-nav" class="bg-white shadow-sm"></div>
+
+    <main class="flex-1 max-w-3xl mx-auto w-full px-4 pt-20 pb-6 flex flex-col">
+        <!-- Setup: Step 1 - Identity -->
+        <div id="setup-step1" class="bg-white rounded-lg shadow p-6 mb-4">
+            <div class="flex items-center space-x-2 mb-3">
+                <span class="bg-indigo-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">1</span>
+                <h2 class="text-lg font-semibold text-gray-900">Who Are You?</h2>
+            </div>
+            <p class="text-gray-600 text-sm mb-4">
+                Your AI agent will have a deep conversation to understand your values, goals,
+                and what truly matters to you professionally.
+            </p>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Your User ID</label>
+                    <input type="text" id="user-id" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Enter your user ID">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Industry</label>
+                    <select id="industry" class="w-full border rounded-lg px-3 py-2 text-sm">
+                        <option value="">Select...</option>
+                        <option value="technology">Technology</option>
+                        <option value="finance">Finance</option>
+                        <option value="healthcare">Healthcare</option>
+                        <option value="legal">Legal</option>
+                        <option value="hr">HR</option>
+                    </select>
+                </div>
+            </div>
+            <button onclick="goToStep2()" class="mt-4 bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition text-sm">
+                Next: Share Your Background
+            </button>
+        </div>
+
+        <!-- Setup: Step 2 - Documents & Social -->
+        <div id="setup-step2" class="hidden bg-white rounded-lg shadow p-6 mb-4">
+            <div class="flex items-center space-x-2 mb-3">
+                <span class="bg-indigo-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">2</span>
+                <h2 class="text-lg font-semibold text-gray-900">Share Your Background</h2>
+            </div>
+            <p class="text-gray-600 text-sm mb-4">
+                Upload your CV and share professional links so your agent already knows your background.
+                It will then ask <em>deeper</em> questions about your values and what truly matters.
+                <span class="text-gray-400">(Optional but recommended)</span>
+            </p>
+
+            <!-- CV Upload -->
+            <div class="mb-5">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Upload CV / Resume</label>
+                <div id="cv-dropzone" class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-indigo-400 transition cursor-pointer"
+                    onclick="document.getElementById('cv-file-input').click()">
+                    <input type="file" id="cv-file-input" class="hidden" accept=".txt,.pdf,.doc,.docx,.md" onchange="handleFileUpload(event)">
+                    <p class="text-gray-500 text-sm" id="cv-upload-label">Click to upload CV (TXT, PDF, DOC)</p>
+                    <p class="text-gray-400 text-xs mt-1">Text will be extracted for AI analysis</p>
+                </div>
+                <div id="cv-analysis-result" class="hidden mt-2 bg-green-50 border border-green-200 rounded p-3 text-xs text-green-700"></div>
+            </div>
+
+            <!-- Other Documents -->
+            <div class="mb-5">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Certificates / Other Documents</label>
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-3 text-center hover:border-indigo-400 transition cursor-pointer"
+                    onclick="document.getElementById('other-file-input').click()">
+                    <input type="file" id="other-file-input" class="hidden" accept=".txt,.pdf,.doc,.docx,.md" multiple onchange="handleOtherFiles(event)">
+                    <p class="text-gray-500 text-xs">Add certificates, portfolio docs, etc.</p>
+                </div>
+                <div id="other-files-list" class="mt-2 space-y-1"></div>
+            </div>
+
+            <!-- Social Links -->
+            <div class="mb-5">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Professional Profiles</label>
+                <div class="grid grid-cols-1 gap-3">
+                    <div class="flex items-center space-x-2">
+                        <span class="text-gray-400 text-xs w-16">LinkedIn</span>
+                        <input type="url" id="linkedin-url" class="flex-1 border rounded-lg px-3 py-1.5 text-sm" placeholder="https://linkedin.com/in/yourname">
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-gray-400 text-xs w-16">GitHub</span>
+                        <input type="url" id="github-url" class="flex-1 border rounded-lg px-3 py-1.5 text-sm" placeholder="https://github.com/yourname">
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-gray-400 text-xs w-16">Portfolio</span>
+                        <input type="url" id="portfolio-url" class="flex-1 border rounded-lg px-3 py-1.5 text-sm" placeholder="https://yourportfolio.com">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center justify-between">
+                <button onclick="skipToChat()" class="text-gray-500 text-sm hover:text-gray-700">
+                    Skip, just start chatting
+                </button>
+                <button onclick="saveBackgroundAndStart()" id="save-bg-btn" class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition text-sm">
+                    Save & Start Conversation
+                </button>
+            </div>
+            <div id="upload-status" class="hidden mt-3 text-xs text-indigo-600 animate-pulse"></div>
+        </div>
+
+        <!-- Stage Progress Bar -->
+        <div id="stage-bar" class="hidden mb-4 bg-white rounded-lg shadow p-4">
+            <div class="flex items-center justify-between text-xs">
+                <div class="flex items-center space-x-1">
+                    <span id="stage-dot" class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                    <span id="stage-label" class="text-gray-600 font-medium">Onboarding</span>
+                </div>
+                <div class="flex space-x-4 text-gray-400">
+                    <span class="stage-step text-indigo-600 font-medium" data-stage="onboarding">Chat</span>
+                    <span class="stage-step" data-stage="calibration">Calibrate</span>
+                    <span class="stage-step" data-stage="certified">Certify</span>
+                    <span class="stage-step" data-stage="matchable">Match</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calibration Prompt (shown after enough conversation) -->
+        <div id="calibration-prompt" class="hidden mb-4 bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+            <p class="text-indigo-800 text-sm font-medium">Your agent is getting to know you well.</p>
+            <p class="text-indigo-600 text-xs mt-1">Ready to test how well it understands you? Calibration reveals your hidden preferences.</p>
+            <a href="/calibration.html" class="mt-2 inline-block bg-indigo-600 text-white px-4 py-1.5 rounded text-xs hover:bg-indigo-700 transition">
+                Start Calibration
+            </a>
+        </div>
+
+        <!-- Chat Messages -->
+        <div id="chat-container" class="hidden flex-1 flex flex-col">
+            <div id="messages" class="flex-1 overflow-y-auto space-y-4 mb-4 bg-white rounded-lg shadow p-4" style="max-height: 60vh;"></div>
+
+            <!-- Input -->
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="flex space-x-3">
+                    <textarea id="user-input" rows="2" class="flex-1 border rounded-lg px-3 py-2 text-sm resize-none"
+                        placeholder="Tell me about yourself..." onkeydown="handleKeyDown(event)"></textarea>
+                    <button onclick="sendMessage()" id="send-btn" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition text-sm self-end">
+                        Send
+                    </button>
+                </div>
+                <div class="mt-2 flex justify-between items-center text-xs text-gray-400">
+                    <span id="conversation-info"></span>
+                    <span>Press Shift+Enter for new line</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let conversationMessages = [];
+        let userId = '';
+        let industry = '';
+        let conversationId = null;
+        let learningCount = 0;
+        let uploadedCvText = '';
+
+        function goToStep2() {
+            userId = document.getElementById('user-id').value.trim();
+            industry = document.getElementById('industry').value;
+
+            if (!userId) {
+                alert('Please enter your user ID');
+                return;
+            }
+
+            // Create profile immediately so uploads can reference it
+            fetch('/user/profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userId, industry: industry || 'general' }),
+            });
+
+            document.getElementById('setup-step1').classList.add('hidden');
+            document.getElementById('setup-step2').classList.remove('hidden');
+        }
+
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            document.getElementById('cv-upload-label').textContent = `Uploading: ${file.name}...`;
+
+            const text = await readFileAsText(file);
+            if (!text || text.length < 50) {
+                document.getElementById('cv-upload-label').textContent = `Could not extract text from ${file.name}. Try a .txt file.`;
+                return;
+            }
+
+            uploadedCvText = text;
+
+            // Upload to backend for analysis
+            try {
+                const response = await fetch('/user/upload-document', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        filename: file.name,
+                        content_text: text,
+                        doc_type: 'cv',
+                    }),
+                });
+                const data = await response.json();
+
+                document.getElementById('cv-upload-label').textContent = `Uploaded: ${file.name}`;
+                document.getElementById('cv-dropzone').classList.remove('border-gray-300');
+                document.getElementById('cv-dropzone').classList.add('border-green-400', 'bg-green-50');
+
+                if (data.analysis && !data.analysis.error) {
+                    const resultEl = document.getElementById('cv-analysis-result');
+                    resultEl.classList.remove('hidden');
+                    resultEl.innerHTML = `
+                        <p class="font-medium">AI analyzed your CV:</p>
+                        <p>${data.analysis.current_role || ''} | ${data.analysis.experience_years || '?'} years</p>
+                        <p>Skills: ${(data.analysis.skills || []).slice(0, 8).join(', ')}</p>
+                        <p class="text-green-600 mt-1">Your agent will ask deeper questions based on this.</p>
+                    `;
+                }
+            } catch (e) {
+                document.getElementById('cv-upload-label').textContent = `Upload failed. Try again.`;
+            }
+        }
+
+        async function handleOtherFiles(event) {
+            const files = event.target.files;
+            const listEl = document.getElementById('other-files-list');
+
+            for (const file of files) {
+                const text = await readFileAsText(file);
+                if (!text) continue;
+
+                listEl.innerHTML += `<div class="text-xs text-gray-600 bg-gray-50 rounded px-2 py-1">${file.name} (uploading...)</div>`;
+
+                try {
+                    await fetch('/user/upload-document', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            user_id: userId,
+                            filename: file.name,
+                            content_text: text,
+                            doc_type: 'certificate',
+                        }),
+                    });
+                    listEl.lastElementChild.textContent = `${file.name} (uploaded)`;
+                    listEl.lastElementChild.classList.add('text-green-600');
+                } catch (e) {
+                    listEl.lastElementChild.textContent = `${file.name} (failed)`;
+                    listEl.lastElementChild.classList.add('text-red-500');
+                }
+            }
+        }
+
+        function readFileAsText(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = () => resolve(null);
+                reader.readAsText(file);
+            });
+        }
+
+        async function saveBackgroundAndStart() {
+            const btn = document.getElementById('save-bg-btn');
+            const statusEl = document.getElementById('upload-status');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+            statusEl.classList.remove('hidden');
+            statusEl.textContent = 'Saving your social links...';
+
+            // Save social links
+            const linkedin = document.getElementById('linkedin-url').value.trim();
+            const github = document.getElementById('github-url').value.trim();
+            const portfolio = document.getElementById('portfolio-url').value.trim();
+
+            if (linkedin || github || portfolio) {
+                try {
+                    await fetch('/user/social-links', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            user_id: userId,
+                            linkedin: linkedin || null,
+                            github: github || null,
+                            portfolio: portfolio || null,
+                        }),
+                    });
+                    statusEl.textContent = 'Links saved. Starting conversation...';
+                } catch (e) {
+                    // Non-critical
+                }
+            }
+
+            startChat();
+        }
+
+        function skipToChat() {
+            userId = document.getElementById('user-id').value.trim();
+            industry = document.getElementById('industry').value;
+            startChat();
+        }
+
+        function startChat() {
+            document.getElementById('setup-step1').classList.add('hidden');
+            document.getElementById('setup-step2').classList.add('hidden');
+            document.getElementById('chat-container').classList.remove('hidden');
+
+            // Show stage bar
+            showStageBar('onboarding');
+
+            // Update calibration link with user_id
+            const calLink = document.querySelector('#calibration-prompt a');
+            if (calLink) calLink.href = `/calibration.html?user_id=${encodeURIComponent(userId)}`;
+
+            // Send initial greeting from agent (context-aware)
+            let greeting;
+            if (uploadedCvText) {
+                greeting = 'Hello! I\'ve reviewed your CV and professional background. I already know the facts \u2014 your skills, experience, and career path. Now I want to understand the person behind the resume. What gets you genuinely excited about your work? And what would you never compromise on, even for the perfect-looking opportunity?';
+            } else {
+                greeting = 'Hello! I\'m your AI career agent. I\'m here to understand you deeply \u2014 your values, goals, what energizes you, and what you\'re looking for in your next opportunity. Let\'s have a real conversation. Tell me, what\'s on your mind professionally right now?';
+            }
+            appendMessage('assistant', greeting);
+            conversationMessages.push({ role: 'assistant', content: greeting });
+
+            document.getElementById('user-input').focus();
+        }
+
+        function handleKeyDown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('user-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            input.value = '';
+            appendMessage('user', text);
+            conversationMessages.push({ role: 'user', content: text });
+
+            // Show typing indicator
+            const typingId = showTyping();
+
+            try {
+                const response = await fetch('/chat/message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        messages: conversationMessages,
+                        context: { industry: industry },
+                    }),
+                });
+
+                removeTyping(typingId);
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    appendMessage('system', `Error: ${err.detail}`);
+                    return;
+                }
+
+                const data = await response.json();
+                appendMessage('assistant', data.response);
+                conversationMessages.push({ role: 'assistant', content: data.response });
+
+                if (data.conversation_id) {
+                    conversationId = data.conversation_id;
+                }
+                if (data.learning_triggered) {
+                    learningCount++;
+                    document.getElementById('learning-indicator').classList.remove('hidden');
+                    document.getElementById('learning-indicator').textContent = `Learning (${learningCount})`;
+                }
+
+                updateConversationInfo();
+            } catch (error) {
+                removeTyping(typingId);
+                appendMessage('system', 'Connection error. Please try again.');
+            }
+        }
+
+        function appendMessage(role, content) {
+            const container = document.getElementById('messages');
+            const div = document.createElement('div');
+
+            if (role === 'user') {
+                div.className = 'flex justify-end';
+                div.innerHTML = `<div class="bg-indigo-600 text-white px-4 py-2 rounded-lg rounded-br-sm max-w-[80%] text-sm whitespace-pre-wrap">${escapeHtml(content)}</div>`;
+            } else if (role === 'assistant') {
+                div.className = 'flex justify-start';
+                div.innerHTML = `<div class="bg-gray-100 text-gray-800 px-4 py-2 rounded-lg rounded-bl-sm max-w-[80%] text-sm whitespace-pre-wrap">${escapeHtml(content)}</div>`;
+            } else {
+                div.className = 'flex justify-center';
+                div.innerHTML = `<div class="text-red-500 text-xs">${escapeHtml(content)}</div>`;
+            }
+
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function showTyping() {
+            const container = document.getElementById('messages');
+            const div = document.createElement('div');
+            const id = 'typing-' + Date.now();
+            div.id = id;
+            div.className = 'flex justify-start';
+            div.innerHTML = '<div class="bg-gray-100 text-gray-500 px-4 py-2 rounded-lg text-sm animate-pulse">Thinking...</div>';
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+            return id;
+        }
+
+        function removeTyping(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        function updateConversationInfo() {
+            const info = document.getElementById('conversation-info');
+            const turns = conversationMessages.filter(m => m.role === 'user').length;
+            let text = `${turns} message${turns !== 1 ? 's' : ''} sent`;
+            if (conversationId) text += ` | ID: ${conversationId.substring(0, 8)}...`;
+            info.textContent = text;
+
+            // Show calibration prompt after 5+ user messages
+            if (turns >= 5) {
+                document.getElementById('calibration-prompt').classList.remove('hidden');
+            }
+        }
+
+        function showStageBar(stage) {
+            document.getElementById('stage-bar').classList.remove('hidden');
+            const stages = ['onboarding', 'calibration', 'certified', 'matchable'];
+            const labels = { onboarding: 'Onboarding', calibration: 'Calibrating', certified: 'Certified', matchable: 'Ready to Match' };
+            document.getElementById('stage-label').textContent = labels[stage] || stage;
+
+            document.querySelectorAll('.stage-step').forEach(el => {
+                const s = el.dataset.stage;
+                const idx = stages.indexOf(s);
+                const currentIdx = stages.indexOf(stage);
+                if (idx <= currentIdx) {
+                    el.classList.add('text-indigo-600', 'font-medium');
+                    el.classList.remove('text-gray-400');
+                } else {
+                    el.classList.remove('text-indigo-600', 'font-medium');
+                    el.classList.add('text-gray-400');
+                }
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

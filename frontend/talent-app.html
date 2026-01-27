@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#4F46E5">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="/icons/icon-192.svg" type="image/svg+xml">
+    <title>CV 2.0</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/design.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: {
+                fontFamily: { sans: ['Inter', 'sans-serif'] },
+                colors: { brand: { DEFAULT: '#4F46E5', light: '#818CF8', dark: '#3730A3' } }
+            }}
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/js/config.js"></script>
+    <script src="/js/env.js" onerror=""></script>
+    <script src="/js/app.js"></script>
+    <style>
+        body { overscroll-behavior: none; }
+        .view { display: none; }
+        .view.active { display: flex; flex-direction: column; }
+        .chat-bubble { max-width: 85%; animation: fadeIn 0.2s ease-out; }
+        .chat-bubble-user { background: var(--color-primary); color: white; border-radius: 18px 18px 4px 18px; }
+        .chat-bubble-ai { background: var(--color-gray-100); color: var(--color-black); border-radius: 18px 18px 18px 4px; }
+        .typing-dot { animation: typingBounce 1.2s infinite; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typingBounce {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-4px); }
+        }
+        .match-card { transition: transform 0.2s ease; }
+        .match-card:active { transform: scale(0.98); }
+    </style>
+</head>
+<body class="bg-white min-h-screen font-sans antialiased overflow-hidden h-screen flex flex-col">
+    <!-- Top Bar -->
+    <header class="flex-shrink-0 px-5 pt-[env(safe-area-inset-top)] bg-white border-b border-gray-100">
+        <div class="h-14 flex items-center justify-between">
+            <h1 class="text-lg font-bold tracking-tight">CV<span class="text-brand">2.0</span></h1>
+            <div class="flex items-center gap-3">
+                <span id="agent-status" class="badge badge-primary text-xs">Setting up</span>
+                <button onclick="APP.signOut()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Views Container -->
+    <div class="flex-1 overflow-hidden relative">
+        <!-- HOME VIEW -->
+        <div id="view-home" class="view active h-full overflow-y-auto px-5 py-6 safe-bottom">
+            <!-- Welcome Card -->
+            <div class="card mb-5 p-5">
+                <p class="text-caption text-gray-400 mb-1">Welcome back</p>
+                <h2 class="text-h2" id="home-greeting">Set up your agent</h2>
+                <div class="mt-4 flex items-center gap-3">
+                    <div class="flex-1 bg-gray-100 rounded-full h-2">
+                        <div id="home-progress-bar" class="bg-brand rounded-full h-2 transition-all" style="width:0%"></div>
+                    </div>
+                    <span id="home-progress-text" class="text-caption text-gray-500">0%</span>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="grid grid-cols-2 gap-3 mb-5">
+                <button onclick="switchView('chat')" class="card card-interactive p-4 text-left">
+                    <svg class="w-6 h-6 text-brand mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                    <p class="text-small font-medium">Chat</p>
+                    <p class="text-caption text-gray-400">Talk to your agent</p>
+                </button>
+                <button onclick="switchView('profile')" class="card card-interactive p-4 text-left">
+                    <svg class="w-6 h-6 text-brand mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <p class="text-small font-medium">Profile</p>
+                    <p class="text-caption text-gray-400">Upload CV</p>
+                </button>
+            </div>
+
+            <!-- Matches Section -->
+            <div class="mb-4">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-h3">Matches</h3>
+                    <button onclick="switchView('matches')" class="text-caption text-brand font-medium">See all</button>
+                </div>
+                <div id="home-matches" class="space-y-2">
+                    <div class="card p-4 flex items-center justify-between">
+                        <p class="text-small text-gray-400">No matches yet</p>
+                        <span class="badge badge-primary">Pending</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CHAT VIEW -->
+        <div id="view-chat" class="view h-full flex-col">
+            <!-- Chat Header -->
+            <div class="flex-shrink-0 px-5 py-3 border-b border-gray-100 flex items-center gap-3">
+                <button onclick="switchView('home')" class="text-gray-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                </button>
+                <div class="w-8 h-8 rounded-full bg-brand/10 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-brand" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                </div>
+                <div>
+                    <p class="text-small font-medium">Your AI Agent</p>
+                    <p class="text-caption text-gray-400">Online</p>
+                </div>
+            </div>
+            <!-- Chat Messages -->
+            <div id="chat-messages" class="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+                <div class="flex justify-start">
+                    <div class="chat-bubble chat-bubble-ai px-4 py-3 text-small">
+                        Hi! I'm your AI career agent. Tell me about yourself — what do you do, and what matters most to you in your next role?
+                    </div>
+                </div>
+            </div>
+            <!-- Chat Input -->
+            <div class="flex-shrink-0 px-4 py-3 border-t border-gray-100 bg-white" style="padding-bottom: calc(12px + env(safe-area-inset-bottom))">
+                <div class="flex items-end gap-2">
+                    <textarea id="chat-input" rows="1" placeholder="Message your agent..."
+                        class="flex-1 input !py-2.5 !px-4 !rounded-2xl resize-none text-small"
+                        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"
+                        oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+                    <button onclick="sendMessage()" class="w-10 h-10 rounded-full bg-brand flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19V5m0 0l-7 7m7-7l7 7"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MATCHES VIEW -->
+        <div id="view-matches" class="view h-full overflow-y-auto px-5 py-5 safe-bottom">
+            <div class="flex items-center gap-3 mb-5">
+                <button onclick="switchView('home')" class="text-gray-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                </button>
+                <h2 class="text-h2">Your Matches</h2>
+            </div>
+            <div id="matches-list" class="space-y-3">
+                <div class="card p-5 text-center">
+                    <svg class="w-12 h-12 text-gray-200 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    <p class="text-small text-gray-400">Your agent is building your profile.</p>
+                    <p class="text-caption text-gray-300 mt-1">Matches will appear here once your agent is active.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- PROFILE VIEW -->
+        <div id="view-profile" class="view h-full overflow-y-auto px-5 py-5 safe-bottom">
+            <div class="flex items-center gap-3 mb-5">
+                <button onclick="switchView('home')" class="text-gray-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                </button>
+                <h2 class="text-h2">Your Profile</h2>
+            </div>
+
+            <!-- CV Upload -->
+            <div class="card mb-4 p-5">
+                <h3 class="text-h3 mb-3">CV / Resume</h3>
+                <div id="cv-upload-area" class="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center cursor-pointer hover:border-brand/40 transition"
+                     onclick="document.getElementById('cv-file').click()">
+                    <svg class="w-8 h-8 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                    <p class="text-small text-gray-500">Tap to upload your CV</p>
+                    <p class="text-caption text-gray-300 mt-1">PDF or text</p>
+                </div>
+                <input type="file" id="cv-file" class="hidden" accept=".pdf,.txt,.doc,.docx" onchange="handleCVUpload(event)">
+                <div id="cv-status" class="hidden mt-3 p-3 bg-green-50 rounded-lg">
+                    <p class="text-small text-green-700 font-medium">CV uploaded</p>
+                </div>
+            </div>
+
+            <!-- Industry -->
+            <div class="card mb-4 p-5">
+                <label class="input-label">Industry</label>
+                <select id="industry-select" class="input" onchange="updateIndustry()">
+                    <option value="technology">Technology</option>
+                    <option value="finance">Finance</option>
+                    <option value="healthcare">Healthcare</option>
+                    <option value="marketing">Marketing</option>
+                    <option value="legal">Legal</option>
+                    <option value="engineering">Engineering</option>
+                    <option value="design">Design</option>
+                    <option value="general">Other</option>
+                </select>
+            </div>
+
+            <!-- Stage Info -->
+            <div class="card p-5">
+                <h3 class="text-h3 mb-3">Agent Status</h3>
+                <div id="profile-stage-info" class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-small text-gray-500">Stage</span>
+                        <span id="profile-stage" class="badge badge-primary">Onboarding</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-small text-gray-500">Readiness</span>
+                        <span id="profile-readiness" class="text-small font-medium">0%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <a href="#" onclick="switchView('home');return false" class="bottom-nav-item active" id="nav-home">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+            Home
+        </a>
+        <a href="#" onclick="switchView('chat');return false" class="bottom-nav-item" id="nav-chat">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+            Chat
+        </a>
+        <a href="#" onclick="switchView('matches');return false" class="bottom-nav-item" id="nav-matches">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            Matches
+        </a>
+        <a href="#" onclick="switchView('profile');return false" class="bottom-nav-item" id="nav-profile">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+            Profile
+        </a>
+    </nav>
+
+<script>
+    let state = {
+        userId: null,
+        messages: [],
+        stage: 'onboarding',
+        industry: 'technology',
+    };
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        await new Promise(r => setTimeout(r, 150));
+        if (!APP.isAuthenticated()) {
+            window.location.href = '/auth.html?redirect=/talent-app.html';
+            return;
+        }
+        state.userId = APP.getUserId();
+        await loadProfile();
+    });
+
+    // --- View Switching ---
+    function switchView(view) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.getElementById(`view-${view}`).classList.add('active');
+        document.querySelectorAll('.bottom-nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById(`nav-${view}`)?.classList.add('active');
+        if (view === 'chat') {
+            const input = document.getElementById('chat-input');
+            setTimeout(() => input.focus(), 300);
+        }
+    }
+
+    // --- Chat ---
+    async function sendMessage() {
+        const input = document.getElementById('chat-input');
+        const text = input.value.trim();
+        if (!text) return;
+
+        input.value = '';
+        input.style.height = 'auto';
+
+        // Add user bubble
+        addChatBubble(text, 'user');
+        state.messages.push({ role: 'user', content: text });
+
+        // Show typing
+        showTyping();
+
+        try {
+            const data = await APP.api('/chat/message', {
+                method: 'POST',
+                body: {
+                    user_id: state.userId,
+                    messages: state.messages,
+                    context: { industry: state.industry, stage: state.stage }
+                }
+            });
+
+            hideTyping();
+            if (data && data.response) {
+                state.messages.push({ role: 'assistant', content: data.response });
+                addChatBubble(data.response, 'ai');
+            }
+        } catch (e) {
+            hideTyping();
+            addChatBubble('Connection issue. Please try again.', 'ai');
+        }
+    }
+
+    function addChatBubble(text, type) {
+        const container = document.getElementById('chat-messages');
+        const wrapper = document.createElement('div');
+        wrapper.className = `flex ${type === 'user' ? 'justify-end' : 'justify-start'}`;
+        wrapper.innerHTML = `<div class="chat-bubble chat-bubble-${type} px-4 py-3 text-small">${escapeHtml(text)}</div>`;
+        container.appendChild(wrapper);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function showTyping() {
+        const container = document.getElementById('chat-messages');
+        const el = document.createElement('div');
+        el.id = 'typing-indicator';
+        el.className = 'flex justify-start';
+        el.innerHTML = `<div class="chat-bubble chat-bubble-ai px-4 py-3 flex gap-1">
+            <div class="typing-dot w-2 h-2 bg-gray-400 rounded-full"></div>
+            <div class="typing-dot w-2 h-2 bg-gray-400 rounded-full"></div>
+            <div class="typing-dot w-2 h-2 bg-gray-400 rounded-full"></div>
+        </div>`;
+        container.appendChild(el);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function hideTyping() {
+        document.getElementById('typing-indicator')?.remove();
+    }
+
+    // --- Profile ---
+    async function loadProfile() {
+        try {
+            const data = await APP.api(`/user/profile/${state.userId}`);
+            if (data && !data.detail) {
+                state.stage = data.stage || 'onboarding';
+                state.industry = data.industry || 'technology';
+                updateHomeUI(data);
+            }
+        } catch (e) {}
+    }
+
+    function updateHomeUI(data) {
+        const stages = ['onboarding', 'calibration', 'certified', 'matchable'];
+        const idx = stages.indexOf(state.stage);
+        const pct = Math.round(((idx + 1) / stages.length) * 100);
+
+        document.getElementById('home-progress-bar').style.width = pct + '%';
+        document.getElementById('home-progress-text').textContent = pct + '%';
+        document.getElementById('profile-stage').textContent = state.stage.charAt(0).toUpperCase() + state.stage.slice(1);
+
+        const statusBadge = document.getElementById('agent-status');
+        if (state.stage === 'matchable') {
+            statusBadge.textContent = 'Active';
+            statusBadge.className = 'badge badge-success text-xs';
+            document.getElementById('home-greeting').textContent = 'Agent is matching';
+        } else if (state.stage === 'certified') {
+            statusBadge.textContent = 'Certified';
+            statusBadge.className = 'badge badge-success text-xs';
+            document.getElementById('home-greeting').textContent = 'Almost ready';
+        } else {
+            document.getElementById('home-greeting').textContent = 'Set up your agent';
+        }
+
+        if (data.activation_score) {
+            document.getElementById('profile-readiness').textContent = Math.round(data.activation_score * 100) + '%';
+        }
+
+        document.getElementById('industry-select').value = state.industry;
+    }
+
+    async function handleCVUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const text = e.target.result;
+            try {
+                await APP.api('/user/upload-document', {
+                    method: 'POST',
+                    body: {
+                        user_id: state.userId,
+                        filename: file.name,
+                        content_text: text.slice(0, 50000),
+                        doc_type: 'cv'
+                    }
+                });
+                const statusEl = document.getElementById('cv-status');
+                statusEl.classList.remove('hidden');
+                statusEl.querySelector('p').textContent = `${file.name} uploaded`;
+                document.getElementById('cv-upload-area').innerHTML = `
+                    <svg class="w-8 h-8 text-green-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/></svg>
+                    <p class="text-small text-green-700 font-medium">${file.name}</p>
+                    <p class="text-caption text-gray-400 mt-1">Tap to replace</p>
+                `;
+            } catch (e) {
+                alert('Upload failed. Try again.');
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    async function updateIndustry() {
+        state.industry = document.getElementById('industry-select').value;
+        await APP.api('/user/profile', {
+            method: 'POST',
+            body: { user_id: state.userId, industry: state.industry }
+        });
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+</script>
+</body>
+</html>
