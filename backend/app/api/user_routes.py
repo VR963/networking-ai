@@ -222,6 +222,22 @@ async def save_social_links(request: SocialLinksRequest):
     return {"status": "saved", "links": links, "analysis": social_analysis}
 
 
+@router.get("/documents/{user_id}")
+async def get_user_documents(user_id: str):
+    """Get all documents uploaded by a user."""
+    client = _get_supabase()
+
+    result = (
+        client.table("cv2_documents")
+        .select("id, filename, doc_type, created_at, analysis")
+        .eq("user_id", user_id)
+        .order("created_at", desc=True)
+        .execute()
+    )
+
+    return {"documents": result.data or []}
+
+
 @router.get("/profile-context/{user_id}")
 async def get_profile_context(user_id: str):
     """Get the pre-conversation context built from documents and social profiles.

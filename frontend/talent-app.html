@@ -127,7 +127,7 @@
                 </div>
             </div>
             <!-- Chat Input -->
-            <div class="flex-shrink-0 px-4 py-3 border-t border-gray-100 bg-white" style="padding-bottom: calc(12px + env(safe-area-inset-bottom))">
+            <div class="flex-shrink-0 px-4 py-3 border-t border-gray-100 bg-white mb-16">
                 <div class="flex items-end gap-2">
                     <textarea id="chat-input" rows="1" placeholder="Message your agent..."
                         class="flex-1 input !py-2.5 !px-4 !rounded-2xl resize-none text-small"
@@ -341,7 +341,32 @@
                 state.industry = data.industry || 'technology';
                 updateHomeUI(data);
             }
+            // Also load documents
+            await loadDocuments();
         } catch (e) {}
+    }
+
+    async function loadDocuments() {
+        try {
+            const data = await APP.api(`/user/documents/${state.userId}`);
+            if (data && data.documents && data.documents.length > 0) {
+                const cv = data.documents.find(d => d.doc_type === 'cv');
+                if (cv) {
+                    const uploadArea = document.getElementById('cv-upload-area');
+                    const statusEl = document.getElementById('cv-status');
+
+                    uploadArea.innerHTML = `
+                        <svg class="w-8 h-8 text-green-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/></svg>
+                        <p class="text-small text-green-700 font-medium">${cv.filename}</p>
+                        <p class="text-caption text-gray-400 mt-1">Tap to replace</p>
+                    `;
+                    statusEl.classList.remove('hidden');
+                    statusEl.querySelector('p').textContent = `${cv.filename} uploaded`;
+                }
+            }
+        } catch (e) {
+            console.log('No documents found');
+        }
     }
 
     function updateHomeUI(data) {
