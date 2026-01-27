@@ -295,13 +295,32 @@
             });
 
             hideTyping();
+
+            // Check for errors
+            if (data && data.error) {
+                addChatBubble(`Error: ${data.error}`, 'ai');
+                state.messages.pop(); // Remove failed user message
+                return;
+            }
+
+            if (data && data.detail) {
+                addChatBubble(`Error: ${data.detail}`, 'ai');
+                state.messages.pop();
+                return;
+            }
+
             if (data && data.response) {
                 state.messages.push({ role: 'assistant', content: data.response });
                 addChatBubble(data.response, 'ai');
+            } else {
+                addChatBubble('No response received. Check if ANTHROPIC_API_KEY is set in backend/.env', 'ai');
+                state.messages.pop();
             }
         } catch (e) {
             hideTyping();
-            addChatBubble('Connection issue. Please try again.', 'ai');
+            console.error('Chat error:', e);
+            addChatBubble('Connection error. Is the backend running?', 'ai');
+            state.messages.pop();
         }
     }
 

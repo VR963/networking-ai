@@ -107,8 +107,21 @@ const APP = {
     async signIn(email, password) {
         const sb = this.getSupabase();
         if (!sb) {
-            // Fallback: demo mode
-            const user = { id: email, email, role: 'user' };
+            // Fallback: demo mode - check for existing user or create new with UUID
+            const stored = localStorage.getItem('cv2_user');
+            let user;
+            if (stored) {
+                try {
+                    const parsed = JSON.parse(stored);
+                    if (parsed.email === email && parsed.id) {
+                        user = parsed;
+                    }
+                } catch (e) {}
+            }
+            if (!user) {
+                // Create new demo user with valid UUID
+                user = { id: crypto.randomUUID(), email, role: 'user' };
+            }
             this._user = user;
             localStorage.setItem('cv2_user', JSON.stringify(user));
             return { user, error: null };

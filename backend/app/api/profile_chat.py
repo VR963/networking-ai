@@ -217,6 +217,12 @@ async def _ensure_profile(user_id: str, industry: str = "general") -> None:
         if not client:
             return
 
+        # Ensure user exists FIRST (required for foreign key)
+        try:
+            client.table("cv2_users").upsert({"id": user_id}).execute()
+        except Exception:
+            pass
+
         existing = (
             client.table("cv2_profiles")
             .select("user_id")
@@ -236,8 +242,5 @@ async def _ensure_profile(user_id: str, industry: str = "general") -> None:
             "summary": "",
             "stage": "onboarding",
         }).execute()
-
-        # Ensure user exists in cv2_users
-        client.table("cv2_users").upsert({"id": user_id}).execute()
     except Exception:
         pass  # Profile creation failure should not block chat
