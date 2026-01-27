@@ -158,6 +158,48 @@ async def upload_document(request: DocumentUploadRequest):
     return {"status": "uploaded", "doc_id": doc_id, "analysis": analysis}
 
 
+@router.get("/documents/{user_id}")
+async def get_user_documents(user_id: str):
+    """Get all documents uploaded by a user."""
+    client = _get_supabase()
+    result = (
+        client.table("cv2_documents")
+        .select("id, filename, doc_type, analysis, created_at")
+        .eq("user_id", user_id)
+        .order("created_at", desc=True)
+        .execute()
+    )
+    return {"documents": result.data or []}
+
+
+@router.delete("/document/{doc_id}")
+async def delete_document(doc_id: str, user_id: str):
+    """Delete a document. Requires user_id for ownership verification."""
+    client = _get_supabase()
+
+    # Verify ownership
+    existing = (
+        client.table("cv2_documents")
+        .select("id")
+        .eq("id", doc_id)
+        .eq("user_id", user_id)
+        .execute()
+    )
+    if not existing.data:
+        raise HTTPException(status_code=404, detail="Document not found or not owned by user.")
+
+    # Delete from embeddings first
+    try:
+        client.table("cv2_embeddings").delete().eq("content_id", doc_id).execute()
+    except Exception:
+        pass  # Non-critical
+
+    # Delete document
+    client.table("cv2_documents").delete().eq("id", doc_id).execute()
+
+    return {"status": "deleted", "doc_id": doc_id}
+
+
 @router.post("/social-links")
 async def save_social_links(request: SocialLinksRequest):
     """Save social/professional profile links for the user.

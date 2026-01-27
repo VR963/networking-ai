@@ -22,6 +22,8 @@
         }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
     <script src="/js/config.js"></script>
     <script src="/js/env.js" onerror=""></script>
     <script src="/js/app.js"></script>
@@ -178,6 +180,13 @@
                 <div id="cv-status" class="hidden mt-3 p-3 bg-green-50 rounded-lg">
                     <p class="text-small text-green-700 font-medium">CV uploaded</p>
                 </div>
+                <!-- Documents List -->
+                <div class="mt-4">
+                    <h4 class="text-caption font-medium text-gray-500 uppercase tracking-wide mb-2">Your Documents</h4>
+                    <div id="documents-list" class="text-small">
+                        <p class="text-caption text-gray-400">Loading...</p>
+                    </div>
+                </div>
             </div>
 
             <!-- Industry -->
@@ -259,6 +268,9 @@
         if (view === 'chat') {
             const input = document.getElementById('chat-input');
             setTimeout(() => input.focus(), 300);
+        }
+        if (view === 'profile') {
+            loadUserDocuments();
         }
     }
 
@@ -371,32 +383,122 @@
         const file = event.target.files[0];
         if (!file) return;
 
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            const text = e.target.result;
-            try {
-                await APP.api('/user/upload-document', {
-                    method: 'POST',
-                    body: {
-                        user_id: state.userId,
-                        filename: file.name,
-                        content_text: text.slice(0, 50000),
-                        doc_type: 'cv'
-                    }
-                });
-                const statusEl = document.getElementById('cv-status');
-                statusEl.classList.remove('hidden');
-                statusEl.querySelector('p').textContent = `${file.name} uploaded`;
-                document.getElementById('cv-upload-area').innerHTML = `
-                    <svg class="w-8 h-8 text-green-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/></svg>
-                    <p class="text-small text-green-700 font-medium">${file.name}</p>
-                    <p class="text-caption text-gray-400 mt-1">Tap to replace</p>
-                `;
-            } catch (e) {
-                alert('Upload failed. Try again.');
+        const uploadArea = document.getElementById('cv-upload-area');
+        uploadArea.innerHTML = `
+            <div class="flex items-center justify-center gap-2">
+                <div class="w-4 h-4 border-2 border-brand border-t-transparent rounded-full animate-spin"></div>
+                <span class="text-small text-gray-500">Processing ${file.name}...</span>
+            </div>
+        `;
+
+        try {
+            let text = '';
+
+            // Check if it's a PDF
+            if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+                text = await extractTextFromPDF(file);
+            } else {
+                // For text files, read as text
+                text = await readFileAsText(file);
             }
-        };
-        reader.readAsText(file);
+
+            if (!text || text.trim().length < 50) {
+                throw new Error('Could not extract text from file. Try a different format.');
+            }
+
+            const result = await APP.api('/user/upload-document', {
+                method: 'POST',
+                body: {
+                    user_id: state.userId,
+                    filename: file.name,
+                    content_text: text.slice(0, 50000),
+                    doc_type: 'cv'
+                }
+            });
+
+            const statusEl = document.getElementById('cv-status');
+            statusEl.classList.remove('hidden');
+            statusEl.querySelector('p').textContent = `${file.name} uploaded`;
+            uploadArea.innerHTML = `
+                <svg class="w-8 h-8 text-green-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/></svg>
+                <p class="text-small text-green-700 font-medium">${file.name}</p>
+                <p class="text-caption text-gray-400 mt-1">Tap to replace</p>
+            `;
+
+            // Refresh documents list
+            await loadUserDocuments();
+        } catch (e) {
+            uploadArea.innerHTML = `
+                <svg class="w-8 h-8 text-red-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <p class="text-small text-red-600">${e.message || 'Upload failed'}</p>
+                <p class="text-caption text-gray-400 mt-1">Tap to try again</p>
+            `;
+        }
+    }
+
+    async function extractTextFromPDF(file) {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let fullText = '';
+
+        for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items.map(item => item.str).join(' ');
+            fullText += pageText + '\n';
+        }
+
+        return fullText.trim();
+    }
+
+    function readFileAsText(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = () => reject(new Error('Failed to read file'));
+            reader.readAsText(file);
+        });
+    }
+
+    async function loadUserDocuments() {
+        try {
+            const result = await APP.api(`/user/documents/${state.userId}`);
+            const docs = result.documents || [];
+            const container = document.getElementById('documents-list');
+            if (!container) return;
+
+            if (docs.length === 0) {
+                container.innerHTML = '<p class="text-caption text-gray-400">No documents uploaded yet</p>';
+                return;
+            }
+
+            container.innerHTML = docs.map(doc => `
+                <div class="flex items-center justify-between py-2 border-b border-gray-100 last:border-0" data-doc-id="${doc.id}">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        <div>
+                            <p class="text-small font-medium text-gray-700">${escapeHtml(doc.filename)}</p>
+                            <p class="text-caption text-gray-400">${doc.doc_type} ${doc.analysis ? '• Analyzed' : ''}</p>
+                        </div>
+                    </div>
+                    <button onclick="deleteDocument('${doc.id}')" class="p-1 text-gray-400 hover:text-red-500 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </button>
+                </div>
+            `).join('');
+        } catch (e) {
+            console.warn('Could not load documents:', e);
+        }
+    }
+
+    async function deleteDocument(docId) {
+        if (!confirm('Delete this document?')) return;
+        try {
+            await APP.api(`/user/document/${docId}?user_id=${state.userId}`, { method: 'DELETE' });
+            await loadUserDocuments();
+        } catch (e) {
+            alert('Could not delete document');
+        }
     }
 
     async function updateIndustry() {
