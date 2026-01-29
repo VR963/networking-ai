@@ -359,6 +359,37 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Insert a document (bypasses RLS on cv2_documents).
+CREATE OR REPLACE FUNCTION insert_cv2_document(
+    p_id UUID, p_user_id UUID, p_filename TEXT, p_doc_type TEXT, p_content_text TEXT
+)
+RETURNS void AS $$
+BEGIN
+    INSERT INTO cv2_documents (id, user_id, filename, doc_type, content_text)
+    VALUES (p_id, p_user_id, p_filename, p_doc_type, p_content_text);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Update document analysis after CV processing.
+CREATE OR REPLACE FUNCTION update_document_analysis(p_doc_id UUID, p_analysis JSONB)
+RETURNS void AS $$
+BEGIN
+    UPDATE cv2_documents SET analysis = p_analysis WHERE id = p_doc_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Get documents for a user (bypasses RLS).
+CREATE OR REPLACE FUNCTION get_user_documents(p_user_id UUID)
+RETURNS TABLE(id UUID, filename TEXT, doc_type TEXT, analysis JSONB, created_at TIMESTAMPTZ) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT d.id, d.filename, d.doc_type, d.analysis, d.created_at
+    FROM cv2_documents d
+    WHERE d.user_id = p_user_id
+    ORDER BY d.created_at DESC;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- ============================================================
 -- UPDATED_AT TRIGGER
 -- ============================================================

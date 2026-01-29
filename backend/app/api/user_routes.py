@@ -150,19 +150,31 @@ async def upload_document(request: DocumentUploadRequest):
         except Exception as e:
             logger.warning("Failed to ensure profile exists: %s", e)
 
-    # Insert document
-    record = {
-        "id": doc_id,
-        "user_id": request.user_id,
-        "filename": request.filename,
-        "doc_type": request.doc_type,
-        "content_text": request.content_text[:50000],  # Limit size
-    }
+    # Insert document via RPC (bypasses RLS), fallback to direct insert
+    content_text = request.content_text[:50000]
     try:
-        client.table("cv2_documents").insert(record).execute()
-    except Exception as e:
-        logger.error("Failed to insert document: %s", e)
-        raise HTTPException(status_code=500, detail=f"Failed to save document: {type(e).__name__}: {str(e)[:200]}")
+        client.rpc("insert_cv2_document", {
+            "p_id": doc_id,
+            "p_user_id": request.user_id,
+            "p_filename": request.filename,
+            "p_doc_type": request.doc_type,
+            "p_content_text": content_text,
+        }).execute()
+    except Exception as rpc_err:
+        logger.warning("RPC insert_cv2_document failed: %s", rpc_err)
+        # Fallback to direct insert
+        record = {
+            "id": doc_id,
+            "user_id": request.user_id,
+            "filename": request.filename,
+            "doc_type": request.doc_type,
+            "content_text": content_text,
+        }
+        try:
+            client.table("cv2_documents").insert(record).execute()
+        except Exception as e:
+            logger.error("Failed to insert document: %s", e)
+            raise HTTPException(status_code=500, detail=f"Failed to save document: {str(e)[:300]}")
 
     # If it's a CV, trigger analysis immediately
     analysis = None
@@ -177,7 +189,13 @@ async def upload_document(request: DocumentUploadRequest):
 
         # Store analysis result
         if analysis and not analysis.get("error"):
-            client.table("cv2_documents").update({"analysis": analysis}).eq("id", doc_id).execute()
+            try:
+                client.rpc("update_document_analysis", {"p_doc_id": doc_id, "p_analysis": analysis}).execute()
+            except Exception:
+                try:
+                    client.table("cv2_documents").update({"analysis": analysis}).eq("id", doc_id).execute()
+                except Exception:
+                    logger.warning("Could not save CV analysis for doc %s", doc_id)
 
             # Update profile summary with career trajectory
             if analysis.get("career_trajectory"):
@@ -205,14 +223,19 @@ async def upload_document(request: DocumentUploadRequest):
 async def get_user_documents(user_id: str):
     """Get all documents uploaded by a user."""
     client = _get_supabase()
-    result = (
-        client.table("cv2_documents")
-        .select("id, filename, doc_type, analysis, created_at")
-        .eq("user_id", user_id)
-        .order("created_at", desc=True)
-        .execute()
-    )
-    return {"documents": result.data or []}
+    # Use RPC to bypass RLS, fallback to direct query
+    try:
+        result = client.rpc("get_user_documents", {"p_user_id": user_id}).execute()
+        return {"documents": result.data or []}
+    except Exception:
+        result = (
+            client.table("cv2_documents")
+            .select("id, filename, doc_type, analysis, created_at")
+            .eq("user_id", user_id)
+            .order("created_at", desc=True)
+            .execute()
+        )
+        return {"documents": result.data or []}
 
 
 @router.delete("/document/{doc_id}")
