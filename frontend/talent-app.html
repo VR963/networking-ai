@@ -33,7 +33,12 @@
         .view.active { display: flex; flex-direction: column; }
         .chat-bubble { max-width: 85%; animation: fadeIn 0.2s ease-out; }
         .chat-bubble-user { background: var(--color-primary); color: white; border-radius: 18px 18px 4px 18px; }
-        .chat-bubble-ai { background: var(--color-gray-100); color: var(--color-black); border-radius: 18px 18px 18px 4px; }
+        .chat-bubble-ai {
+            background: var(--color-gray-100); color: var(--color-black); border-radius: 18px 18px 18px 4px;
+            line-height: 1.7; letter-spacing: -0.01em;
+        }
+        .chat-bubble-ai p { margin-bottom: 0.75rem; }
+        .chat-bubble-ai p:last-child { margin-bottom: 0; }
         .typing-dot { animation: typingBounce 1.2s infinite; }
         .typing-dot:nth-child(2) { animation-delay: 0.2s; }
         .typing-dot:nth-child(3) { animation-delay: 0.4s; }
@@ -354,9 +359,30 @@
         const container = document.getElementById('chat-messages');
         const wrapper = document.createElement('div');
         wrapper.className = `flex ${type === 'user' ? 'justify-end' : 'justify-start'}`;
-        wrapper.innerHTML = `<div class="chat-bubble chat-bubble-${type} px-4 py-3 text-small">${escapeHtml(text)}</div>`;
+
+        let html;
+        if (type === 'ai') {
+            // Render AI messages with paragraphs and formatting
+            html = formatAIMessage(text);
+        } else {
+            html = escapeHtml(text);
+        }
+        wrapper.innerHTML = `<div class="chat-bubble chat-bubble-${type} px-4 py-3 text-small">${html}</div>`;
         container.appendChild(wrapper);
         container.scrollTop = container.scrollHeight;
+    }
+
+    function formatAIMessage(text) {
+        // Split into paragraphs on double newlines
+        const escaped = escapeHtml(text);
+        const paragraphs = escaped.split(/\n\n+/).filter(p => p.trim());
+        if (paragraphs.length <= 1) {
+            // Single paragraph — just convert single newlines to <br>
+            return escaped.replace(/\n/g, '<br>');
+        }
+        return paragraphs
+            .map(p => `<p class="mb-3 last:mb-0">${p.replace(/\n/g, '<br>')}</p>`)
+            .join('');
     }
 
     function showTyping() {
