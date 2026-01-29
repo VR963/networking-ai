@@ -361,6 +361,14 @@ async def get_profile_context(user_id: str):
 async def get_profile(user_id: str):
     """Get a user's profile including their current stage."""
     client = _get_supabase()
+    # Use RPC to bypass RLS
+    try:
+        result = client.rpc("get_cv2_profile", {"p_user_id": user_id}).execute()
+        if result.data:
+            return result.data[0]
+    except Exception:
+        pass
+    # Fallback to direct query
     result = (
         client.table("cv2_profiles")
         .select("*")

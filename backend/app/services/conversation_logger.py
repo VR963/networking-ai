@@ -35,7 +35,15 @@ class ConversationLogger:
             "metadata": metadata or {},
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
-        self.client.table("cv2_conversations").insert(record).execute()
+        try:
+            self.client.rpc("log_cv2_conversation", {
+                "p_id": conversation_id,
+                "p_user_id": user_id,
+                "p_messages": messages,
+                "p_metadata": metadata or {},
+            }).execute()
+        except Exception:
+            self.client.table("cv2_conversations").insert(record).execute()
 
         # Index in RAG store for semantic retrieval in future conversations
         try:

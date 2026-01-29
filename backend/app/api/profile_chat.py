@@ -47,18 +47,25 @@ async def chat_message(request: ChatRequest):
         from app.services.profile_analyzer import profile_analyzer
         db_client = get_db()
 
-        profile_data = (
-            db_client.table("cv2_profiles")
-            .select("social_analysis")
-            .eq("user_id", request.user_id)
-            .execute()
-        )
-        docs_data = (
-            db_client.table("cv2_documents")
-            .select("filename, doc_type, analysis")
-            .eq("user_id", request.user_id)
-            .execute()
-        )
+        # Use RPCs to bypass RLS
+        try:
+            profile_data = db_client.rpc("get_cv2_profile", {"p_user_id": request.user_id}).execute()
+        except Exception:
+            profile_data = (
+                db_client.table("cv2_profiles")
+                .select("social_analysis")
+                .eq("user_id", request.user_id)
+                .execute()
+            )
+        try:
+            docs_data = db_client.rpc("get_user_documents", {"p_user_id": request.user_id}).execute()
+        except Exception:
+            docs_data = (
+                db_client.table("cv2_documents")
+                .select("filename, doc_type, analysis")
+                .eq("user_id", request.user_id)
+                .execute()
+            )
 
         cv_analysis = None
         documents = []
@@ -217,6 +224,16 @@ async def _ensure_profile(user_id: str, industry: str = "general") -> None:
         if not client:
             return
 
+        # Use RPC to bypass RLS (single call creates both user + profile)
+        try:
+            client.rpc("ensure_cv2_profile", {
+                "uid": user_id,
+                "p_industry": industry or "general",
+            }).execute()
+            return
+        except Exception:
+            pass  # RPC not available, try direct approach
+
         existing = (
             client.table("cv2_profiles")
             .select("user_id")
@@ -224,28 +241,18 @@ async def _ensure_profile(user_id: str, industry: str = "general") -> None:
             .execute()
         )
         if existing.data:
-            # Update industry if provided and different
             if industry and industry != "general":
                 client.table("cv2_profiles").update({"industry": industry}).eq("user_id", user_id).execute()
             return
 
-        # Ensure user exists in cv2_users BEFORE creating profile (FK constraint)
         try:
-            existing_user = (
-                client.table("cv2_users")
-                .select("id")
-                .eq("id", user_id)
-                .execute()
-            )
-            if not existing_user.data:
-                try:
-                    client.rpc("ensure_cv2_user", {"uid": user_id}).execute()
-                except Exception:
-                    client.table("cv2_users").insert({"id": user_id}).execute()
+            client.rpc("ensure_cv2_user", {"uid": user_id}).execute()
         except Exception:
-            pass
+            try:
+                client.table("cv2_users").insert({"id": user_id}).execute()
+            except Exception:
+                pass
 
-        # Create new profile
         client.table("cv2_profiles").insert({
             "user_id": user_id,
             "industry": industry or "general",

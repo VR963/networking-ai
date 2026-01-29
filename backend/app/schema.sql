@@ -390,6 +390,50 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Log a conversation (bypasses RLS on cv2_conversations).
+CREATE OR REPLACE FUNCTION log_cv2_conversation(
+    p_id UUID, p_user_id UUID, p_messages JSONB, p_metadata JSONB DEFAULT '{}'
+)
+RETURNS void AS $$
+BEGIN
+    INSERT INTO cv2_conversations (id, user_id, messages, metadata)
+    VALUES (p_id, p_user_id, p_messages, p_metadata);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Update conversation quality score.
+CREATE OR REPLACE FUNCTION update_conversation_quality(p_id UUID, p_score REAL)
+RETURNS void AS $$
+BEGIN
+    UPDATE cv2_conversations SET quality_score = p_score WHERE id = p_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Get profile data for chat context (bypasses RLS on cv2_profiles).
+CREATE OR REPLACE FUNCTION get_cv2_profile(p_user_id UUID)
+RETURNS TABLE(user_id UUID, industry TEXT, summary TEXT, stage TEXT, social_analysis JSONB) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT p.user_id, p.industry, p.summary, p.stage, p.social_analysis
+    FROM cv2_profiles p
+    WHERE p.user_id = p_user_id
+    LIMIT 1;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Update profile fields (bypasses RLS).
+CREATE OR REPLACE FUNCTION update_cv2_profile(p_user_id UUID, p_industry TEXT DEFAULT NULL, p_summary TEXT DEFAULT NULL, p_stage TEXT DEFAULT NULL)
+RETURNS void AS $$
+BEGIN
+    UPDATE cv2_profiles SET
+        industry = COALESCE(p_industry, industry),
+        summary = COALESCE(p_summary, summary),
+        stage = COALESCE(p_stage, stage),
+        updated_at = now()
+    WHERE user_id = p_user_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- ============================================================
 -- UPDATED_AT TRIGGER
 -- ============================================================
