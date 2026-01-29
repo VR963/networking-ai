@@ -434,7 +434,7 @@
                 }
             });
 
-            if (!result || result.detail || result.error) {
+            if (!result || result._httpError || result.detail || result.error) {
                 throw new Error(result?.detail || result?.error || 'Upload failed on server');
             }
 

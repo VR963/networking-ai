@@ -229,6 +229,19 @@ async def _ensure_profile(user_id: str, industry: str = "general") -> None:
                 client.table("cv2_profiles").update({"industry": industry}).eq("user_id", user_id).execute()
             return
 
+        # Ensure user exists in cv2_users BEFORE creating profile (FK constraint)
+        try:
+            existing_user = (
+                client.table("cv2_users")
+                .select("id")
+                .eq("id", user_id)
+                .execute()
+            )
+            if not existing_user.data:
+                client.table("cv2_users").insert({"id": user_id}).execute()
+        except Exception:
+            pass
+
         # Create new profile
         client.table("cv2_profiles").insert({
             "user_id": user_id,
@@ -236,8 +249,5 @@ async def _ensure_profile(user_id: str, industry: str = "general") -> None:
             "summary": "",
             "stage": "onboarding",
         }).execute()
-
-        # Ensure user exists in cv2_users
-        client.table("cv2_users").upsert({"id": user_id}).execute()
     except Exception:
         pass  # Profile creation failure should not block chat

@@ -82,6 +82,19 @@ async def create_or_update_profile(request: ProfileCreateRequest):
             client.table("cv2_profiles").update(update_data).eq("user_id", request.user_id).execute()
         return {"status": "updated", "user_id": request.user_id}
 
+    # Ensure user exists in cv2_users BEFORE creating profile (FK constraint)
+    try:
+        existing_user = (
+            client.table("cv2_users")
+            .select("id")
+            .eq("id", request.user_id)
+            .execute()
+        )
+        if not existing_user.data:
+            client.table("cv2_users").insert({"id": request.user_id}).execute()
+    except Exception:
+        pass  # User may already exist from auth
+
     # Create new profile with onboarding stage
     record = {
         "user_id": request.user_id,
@@ -90,12 +103,6 @@ async def create_or_update_profile(request: ProfileCreateRequest):
         "stage": "onboarding",
     }
     client.table("cv2_profiles").insert(record).execute()
-
-    # Also create user entry in cv2_users
-    try:
-        client.table("cv2_users").upsert({"id": request.user_id}).execute()
-    except Exception:
-        pass  # User may already exist
 
     return {"status": "created", "user_id": request.user_id, "stage": "onboarding"}
 
@@ -107,6 +114,9 @@ async def upload_document(request: DocumentUploadRequest):
     The content_text field should contain the extracted text from the document.
     Frontend handles file reading; backend stores and analyzes the text content.
     """
+    import logging
+    logger = logging.getLogger("cv2.upload")
+
     client = _get_supabase()
 
     import uuid
@@ -114,25 +124,42 @@ async def upload_document(request: DocumentUploadRequest):
 
     # Ensure user exists in cv2_users (required by foreign key constraint)
     try:
-        client.table("cv2_users").upsert({"id": request.user_id}).execute()
-    except Exception:
-        pass  # User may already exist
+        existing_user = (
+            client.table("cv2_users")
+            .select("id")
+            .eq("id", request.user_id)
+            .execute()
+        )
+        if not existing_user.data:
+            client.table("cv2_users").insert({"id": request.user_id}).execute()
+    except Exception as e:
+        logger.warning("Failed to ensure user %s exists: %s", request.user_id, e)
+        # Try upsert as fallback
+        try:
+            client.table("cv2_users").upsert({"id": request.user_id}).execute()
+        except Exception as e2:
+            logger.error("Cannot create user record: %s", e2)
+            raise HTTPException(status_code=500, detail=f"Cannot create user record: {type(e2).__name__}")
 
     # Ensure profile exists
-    existing_profile = (
-        client.table("cv2_profiles")
-        .select("user_id")
-        .eq("user_id", request.user_id)
-        .execute()
-    )
-    if not existing_profile.data:
-        client.table("cv2_profiles").insert({
-            "user_id": request.user_id,
-            "industry": "general",
-            "summary": "",
-            "stage": "onboarding",
-        }).execute()
+    try:
+        existing_profile = (
+            client.table("cv2_profiles")
+            .select("user_id")
+            .eq("user_id", request.user_id)
+            .execute()
+        )
+        if not existing_profile.data:
+            client.table("cv2_profiles").insert({
+                "user_id": request.user_id,
+                "industry": "general",
+                "summary": "",
+                "stage": "onboarding",
+            }).execute()
+    except Exception as e:
+        logger.warning("Failed to ensure profile exists: %s", e)
 
+    # Insert document
     record = {
         "id": doc_id,
         "user_id": request.user_id,
@@ -140,7 +167,11 @@ async def upload_document(request: DocumentUploadRequest):
         "doc_type": request.doc_type,
         "content_text": request.content_text[:50000],  # Limit size
     }
-    client.table("cv2_documents").insert(record).execute()
+    try:
+        client.table("cv2_documents").insert(record).execute()
+    except Exception as e:
+        logger.error("Failed to insert document: %s", e)
+        raise HTTPException(status_code=500, detail=f"Failed to save document: {type(e).__name__}: {str(e)[:200]}")
 
     # If it's a CV, trigger analysis immediately
     analysis = None

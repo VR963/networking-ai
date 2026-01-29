@@ -194,7 +194,15 @@ const APP = {
             }
         }
 
-        return response.json();
+        const data = await response.json();
+
+        // Attach HTTP status so callers can check for errors
+        if (!response.ok) {
+            data._httpStatus = response.status;
+            data._httpError = true;
+        }
+
+        return data;
     },
 
     /**
