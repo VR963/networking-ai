@@ -82,20 +82,19 @@ async def create_or_update_profile(request: ProfileCreateRequest):
             client.table("cv2_profiles").update(update_data).eq("user_id", request.user_id).execute()
         return {"status": "updated", "user_id": request.user_id}
 
-    # Ensure user exists in cv2_users BEFORE creating profile (FK constraint)
+    # Ensure user + profile exist via RPC (bypasses RLS)
     try:
-        existing_user = (
-            client.table("cv2_users")
-            .select("id")
-            .eq("id", request.user_id)
-            .execute()
-        )
-        if not existing_user.data:
-            client.table("cv2_users").insert({"id": request.user_id}).execute()
+        client.rpc("ensure_cv2_profile", {"uid": request.user_id, "p_industry": request.industry or "general"}).execute()
+        return {"status": "created", "user_id": request.user_id, "stage": "onboarding"}
     except Exception:
-        pass  # User may already exist from auth
+        pass  # RPC not available, try direct inserts
 
-    # Create new profile with onboarding stage
+    # Fallback: direct inserts
+    try:
+        client.table("cv2_users").upsert({"id": request.user_id}).execute()
+    except Exception:
+        pass
+
     record = {
         "user_id": request.user_id,
         "industry": request.industry,
@@ -122,42 +121,34 @@ async def upload_document(request: DocumentUploadRequest):
     import uuid
     doc_id = str(uuid.uuid4())
 
-    # Ensure user exists in cv2_users (required by foreign key constraint)
+    # Ensure user + profile exist (required by foreign key constraint)
+    # Try RPC first (SECURITY DEFINER bypasses RLS), then fallback to direct inserts
     try:
-        existing_user = (
-            client.table("cv2_users")
-            .select("id")
-            .eq("id", request.user_id)
-            .execute()
-        )
-        if not existing_user.data:
-            client.table("cv2_users").insert({"id": request.user_id}).execute()
-    except Exception as e:
-        logger.warning("Failed to ensure user %s exists: %s", request.user_id, e)
-        # Try upsert as fallback
+        client.rpc("ensure_cv2_profile", {"uid": request.user_id}).execute()
+    except Exception as rpc_err:
+        logger.warning("RPC ensure_cv2_profile failed (run schema.sql to create it): %s", rpc_err)
+        # Fallback: direct inserts
         try:
             client.table("cv2_users").upsert({"id": request.user_id}).execute()
-        except Exception as e2:
-            logger.error("Cannot create user record: %s", e2)
-            raise HTTPException(status_code=500, detail=f"Cannot create user record: {type(e2).__name__}")
-
-    # Ensure profile exists
-    try:
-        existing_profile = (
-            client.table("cv2_profiles")
-            .select("user_id")
-            .eq("user_id", request.user_id)
-            .execute()
-        )
-        if not existing_profile.data:
-            client.table("cv2_profiles").insert({
-                "user_id": request.user_id,
-                "industry": "general",
-                "summary": "",
-                "stage": "onboarding",
-            }).execute()
-    except Exception as e:
-        logger.warning("Failed to ensure profile exists: %s", e)
+        except Exception as e:
+            logger.error("Cannot create user record: %s — %s", type(e).__name__, str(e)[:500])
+            raise HTTPException(status_code=500, detail=f"Cannot create user record: {str(e)[:300]}")
+        try:
+            existing_profile = (
+                client.table("cv2_profiles")
+                .select("user_id")
+                .eq("user_id", request.user_id)
+                .execute()
+            )
+            if not existing_profile.data:
+                client.table("cv2_profiles").insert({
+                    "user_id": request.user_id,
+                    "industry": "general",
+                    "summary": "",
+                    "stage": "onboarding",
+                }).execute()
+        except Exception as e:
+            logger.warning("Failed to ensure profile exists: %s", e)
 
     # Insert document
     record = {

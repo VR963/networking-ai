@@ -238,7 +238,10 @@ async def _ensure_profile(user_id: str, industry: str = "general") -> None:
                 .execute()
             )
             if not existing_user.data:
-                client.table("cv2_users").insert({"id": user_id}).execute()
+                try:
+                    client.rpc("ensure_cv2_user", {"uid": user_id}).execute()
+                except Exception:
+                    client.table("cv2_users").insert({"id": user_id}).execute()
         except Exception:
             pass
 

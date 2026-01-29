@@ -333,6 +333,33 @@ CREATE POLICY "notifications_own_data" ON cv2_notifications
 -- Supabase service_role key automatically bypasses RLS
 
 -- ============================================================
+-- HELPER FUNCTIONS (bypass RLS for backend operations)
+-- ============================================================
+
+-- Ensures a cv2_users record exists for the given auth user ID.
+-- Called from backend when creating profiles or uploading documents.
+-- SECURITY DEFINER runs with the function owner's privileges (bypasses RLS).
+CREATE OR REPLACE FUNCTION ensure_cv2_user(uid UUID)
+RETURNS void AS $$
+BEGIN
+    INSERT INTO cv2_users (id)
+    VALUES (uid)
+    ON CONFLICT (id) DO NOTHING;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Ensures both a cv2_users and cv2_profiles record exist.
+CREATE OR REPLACE FUNCTION ensure_cv2_profile(uid UUID, p_industry TEXT DEFAULT 'general')
+RETURNS void AS $$
+BEGIN
+    INSERT INTO cv2_users (id) VALUES (uid) ON CONFLICT (id) DO NOTHING;
+    INSERT INTO cv2_profiles (user_id, industry, summary, stage)
+    VALUES (uid, p_industry, '', 'onboarding')
+    ON CONFLICT (user_id) DO NOTHING;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ============================================================
 -- UPDATED_AT TRIGGER
 -- ============================================================
 
