@@ -112,6 +112,27 @@ async def upload_document(request: DocumentUploadRequest):
     import uuid
     doc_id = str(uuid.uuid4())
 
+    # Ensure user exists in cv2_users (required by foreign key constraint)
+    try:
+        client.table("cv2_users").upsert({"id": request.user_id}).execute()
+    except Exception:
+        pass  # User may already exist
+
+    # Ensure profile exists
+    existing_profile = (
+        client.table("cv2_profiles")
+        .select("user_id")
+        .eq("user_id", request.user_id)
+        .execute()
+    )
+    if not existing_profile.data:
+        client.table("cv2_profiles").insert({
+            "user_id": request.user_id,
+            "industry": "general",
+            "summary": "",
+            "stage": "onboarding",
+        }).execute()
+
     record = {
         "id": doc_id,
         "user_id": request.user_id,
