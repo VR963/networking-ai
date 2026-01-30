@@ -24,12 +24,15 @@ class DSPyLearning:
         return get_db()
 
     async def learn_from_conversation(self, conversation_id: str) -> Optional[dict]:
-        result = (
-            self.supabase_client.table("cv2_conversations")
-            .select("*")
-            .eq("id", conversation_id)
-            .execute()
-        )
+        try:
+            result = self.supabase_client.rpc("get_conversation", {"p_id": conversation_id}).execute()
+        except Exception:
+            result = (
+                self.supabase_client.table("cv2_conversations")
+                .select("*")
+                .eq("id", conversation_id)
+                .execute()
+            )
         if not result.data:
             return None
 
@@ -101,22 +104,33 @@ class DSPyLearning:
     async def _store_patterns(
         self, user_id: str, conversation_id: str, patterns: dict
     ) -> None:
-        record = {
-            "user_id": user_id,
-            "conversation_id": conversation_id,
-            "patterns": patterns,
-            "pattern_type": "conversation_learning",
-        }
-        self.supabase_client.table("cv2_collective_patterns").insert(record).execute()
+        try:
+            self.supabase_client.rpc("insert_cv2_pattern", {
+                "p_user_id": user_id,
+                "p_conversation_id": conversation_id,
+                "p_patterns": patterns,
+                "p_pattern_type": "conversation_learning",
+            }).execute()
+        except Exception:
+            record = {
+                "user_id": user_id,
+                "conversation_id": conversation_id,
+                "patterns": patterns,
+                "pattern_type": "conversation_learning",
+            }
+            self.supabase_client.table("cv2_collective_patterns").insert(record).execute()
 
     async def get_user_patterns(self, user_id: str) -> list[dict]:
-        result = (
-            self.supabase_client.table("cv2_collective_patterns")
-            .select("patterns")
-            .eq("user_id", user_id)
-            .order("created_at", desc=True)
-            .execute()
-        )
+        try:
+            result = self.supabase_client.rpc("get_user_patterns", {"p_user_id": user_id}).execute()
+        except Exception:
+            result = (
+                self.supabase_client.table("cv2_collective_patterns")
+                .select("patterns")
+                .eq("user_id", user_id)
+                .order("created_at", desc=True)
+                .execute()
+            )
         return [r["patterns"] for r in result.data] if result.data else []
 
 

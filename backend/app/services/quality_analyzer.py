@@ -21,12 +21,15 @@ class QualityAnalyzer:
         return get_db()
 
     async def analyze(self, conversation_id: str) -> float:
-        result = (
-            self.supabase_client.table("cv2_conversations")
-            .select("messages")
-            .eq("id", conversation_id)
-            .execute()
-        )
+        try:
+            result = self.supabase_client.rpc("get_conversation", {"p_id": conversation_id}).execute()
+        except Exception:
+            result = (
+                self.supabase_client.table("cv2_conversations")
+                .select("messages")
+                .eq("id", conversation_id)
+                .execute()
+            )
         if not result.data:
             return 0.0
 

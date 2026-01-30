@@ -434,6 +434,59 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Get conversation count for a user.
+CREATE OR REPLACE FUNCTION get_user_conversation_count(p_user_id UUID)
+RETURNS TABLE(count BIGINT) AS $$
+BEGIN
+    RETURN QUERY SELECT COUNT(*)::BIGINT FROM cv2_conversations WHERE user_id = p_user_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Get conversation history for a user.
+CREATE OR REPLACE FUNCTION get_user_conversations(p_user_id UUID)
+RETURNS TABLE(id UUID, messages JSONB, quality_score REAL, created_at TIMESTAMPTZ) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT c.id, c.messages, c.quality_score, c.created_at
+    FROM cv2_conversations c
+    WHERE c.user_id = p_user_id
+    ORDER BY c.created_at DESC
+    LIMIT 20;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Get a single conversation by ID (for DSPy learning).
+CREATE OR REPLACE FUNCTION get_conversation(p_id UUID)
+RETURNS TABLE(id UUID, user_id UUID, messages JSONB, metadata JSONB, quality_score REAL, created_at TIMESTAMPTZ) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT c.id, c.user_id, c.messages, c.metadata, c.quality_score, c.created_at
+    FROM cv2_conversations c
+    WHERE c.id = p_id
+    LIMIT 1;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Insert collective patterns (for DSPy learning).
+CREATE OR REPLACE FUNCTION insert_cv2_pattern(p_user_id UUID, p_conversation_id UUID, p_patterns JSONB, p_pattern_type TEXT)
+RETURNS void AS $$
+BEGIN
+    INSERT INTO cv2_collective_patterns (user_id, source_conversation_id, patterns, pattern_type)
+    VALUES (p_user_id, p_conversation_id, p_patterns, p_pattern_type);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Get user patterns (for DSPy learning context).
+CREATE OR REPLACE FUNCTION get_user_patterns(p_user_id UUID)
+RETURNS TABLE(patterns JSONB) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT cp.patterns FROM cv2_collective_patterns cp
+    WHERE cp.user_id = p_user_id
+    ORDER BY cp.created_at DESC LIMIT 10;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- ============================================================
 -- UPDATED_AT TRIGGER
 -- ============================================================

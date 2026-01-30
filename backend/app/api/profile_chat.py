@@ -22,6 +22,9 @@ class ChatResponse(BaseModel):
     response: str
     conversation_id: str | None = None
     learning_triggered: bool = False
+    quality_score: float = 0.0
+    conversation_count: int = 0
+    profile_readiness: int = 0
 
 
 @router.post("/message", response_model=ChatResponse)
@@ -130,6 +133,8 @@ async def chat_message(request: ChatRequest):
     # --- DSPy Learning Pipeline (Connected) ---
     full_messages = request.messages + [{"role": "assistant", "content": ai_response}]
 
+    quality_score = 0.0
+    conversation_count = 0
     try:
         conversation_id = await conversation_logger.log_conversation(
             request.user_id, full_messages, metadata=request.context
@@ -147,10 +152,39 @@ async def chat_message(request: ChatRequest):
         learning_triggered = False
     # --- End Learning Pipeline ---
 
+    # Calculate profile readiness and conversation count
+    try:
+        db = get_db()
+        conv_result = db.rpc("get_user_conversation_count", {"p_user_id": request.user_id}).execute()
+        conversation_count = conv_result.data[0]["count"] if conv_result.data else 0
+    except Exception:
+        try:
+            db = get_db()
+            conv_result = (
+                db.table("cv2_conversations")
+                .select("id", count="exact")
+                .eq("user_id", request.user_id)
+                .execute()
+            )
+            conversation_count = conv_result.count or 0
+        except Exception:
+            pass
+
+    profile_readiness = _calculate_readiness(
+        has_cv=bool(pre_conversation_context),
+        has_patterns=bool(user_patterns),
+        conversation_count=conversation_count,
+        quality_score=quality_score,
+        learning_triggered=learning_triggered,
+    )
+
     return ChatResponse(
         response=ai_response,
         conversation_id=conversation_id,
         learning_triggered=learning_triggered,
+        quality_score=round(quality_score, 1),
+        conversation_count=conversation_count,
+        profile_readiness=profile_readiness,
     )
 
 
@@ -269,3 +303,45 @@ async def _ensure_profile(user_id: str, industry: str = "general") -> None:
         }).execute()
     except Exception:
         pass  # Profile creation failure should not block chat
+
+
+def _calculate_readiness(
+    has_cv: bool, has_patterns: bool, conversation_count: int,
+    quality_score: float, learning_triggered: bool,
+) -> int:
+    """Calculate profile readiness percentage (0-100)."""
+    score = 0
+    if has_cv:
+        score += 30  # CV uploaded and analyzed
+    score += min(conversation_count * 10, 30)  # Up to 30 for conversations
+    if has_patterns:
+        score += 15  # Patterns learned
+    if quality_score >= 7.0:
+        score += 15  # High quality conversation
+    if learning_triggered:
+        score += 10  # Learning pipeline fired
+    return min(score, 100)
+
+
+@router.get("/history/{user_id}")
+async def get_conversation_history(user_id: str):
+    """Get past conversation summaries for a user."""
+    db = get_db()
+    if not db:
+        return {"conversations": []}
+    try:
+        result = db.rpc("get_user_conversations", {"p_user_id": user_id}).execute()
+        return {"conversations": result.data or []}
+    except Exception:
+        try:
+            result = (
+                db.table("cv2_conversations")
+                .select("id, messages, quality_score, created_at")
+                .eq("user_id", user_id)
+                .order("created_at", desc=True)
+                .limit(20)
+                .execute()
+            )
+            return {"conversations": result.data or []}
+        except Exception:
+            return {"conversations": []}
