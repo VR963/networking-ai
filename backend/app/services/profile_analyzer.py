@@ -86,6 +86,66 @@ Return ONLY valid JSON, no markdown formatting."""
         except Exception as e:
             return {"error": f"CV analysis failed: {type(e).__name__}"}
 
+    async def analyze_job_description(self, jd_text: str, industry: str = "general") -> dict:
+        """Extract structured data from a job description.
+
+        Returns:
+            {
+                "title": str,
+                "company": str,
+                "description": str (summary),
+                "requirements": [str],
+                "skills": [str],
+                "experience_level": str,
+                "salary_range": str or null,
+                "location": str,
+                "remote_policy": str,
+                "team_size": str or null,
+                "reporting_to": str or null,
+                "suggested_deep_questions": [str]
+            }
+        """
+        if not ANTHROPIC_API_KEY:
+            return {"error": "ANTHROPIC_API_KEY required for JD analysis"}
+
+        prompt = f"""Analyze this job description and extract structured data.
+
+JOB DESCRIPTION TEXT:
+{jd_text[:8000]}
+
+CONTEXT: Industry: {industry}
+
+Return a JSON object with these fields:
+- title: job title (string)
+- company: company name if mentioned (string or null)
+- description: 2-3 sentence summary of the role (string)
+- requirements: list of key requirements (array of strings, max 10)
+- skills: list of required/desired skills (array of strings, max 15)
+- experience_level: junior/mid/senior/lead/executive (string)
+- salary_range: if mentioned (string or null)
+- location: location/remote info (string)
+- remote_policy: remote/hybrid/onsite/not specified (string)
+- team_size: if mentioned (string or null)
+- reporting_to: who this role reports to if mentioned (string or null)
+- suggested_deep_questions: 5 questions a recruitment consultant should ask the hiring manager to understand what's NOT in this JD — the hidden criteria, real team dynamics, and what success actually looks like
+
+Return ONLY valid JSON, no markdown formatting."""
+
+        try:
+            response = self.anthropic_client.messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=2000,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            text = response.content[0].text.strip()
+            if text.startswith("```"):
+                text = text.split("\n", 1)[1].rsplit("```", 1)[0]
+            return json.loads(text)
+        except (json.JSONDecodeError, IndexError):
+            return {"error": "Failed to parse JD analysis"}
+        except Exception as e:
+            return {"error": f"JD analysis failed: {type(e).__name__}"}
+
     async def analyze_social_profiles(self, links: dict) -> dict:
         """Analyze social/professional profile URLs to extract context.
 

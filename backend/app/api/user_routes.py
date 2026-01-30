@@ -176,9 +176,26 @@ async def upload_document(request: DocumentUploadRequest):
             logger.error("Failed to insert document: %s", e)
             raise HTTPException(status_code=500, detail=f"Failed to save document: {str(e)[:300]}")
 
-    # If it's a CV, trigger analysis immediately
+    # Trigger analysis based on document type
     analysis = None
-    if request.doc_type == "cv" and request.content_text.strip():
+    if request.doc_type == "job_description" and request.content_text.strip():
+        from app.services.profile_analyzer import profile_analyzer
+
+        profile = client.table("cv2_profiles").select("industry").eq("user_id", request.user_id).execute()
+        industry = (profile.data[0]["industry"] if profile.data else "general")
+
+        analysis = await profile_analyzer.analyze_job_description(request.content_text, industry)
+
+        if analysis and not analysis.get("error"):
+            try:
+                client.rpc("update_document_analysis", {"p_doc_id": doc_id, "p_analysis": analysis}).execute()
+            except Exception:
+                try:
+                    client.table("cv2_documents").update({"analysis": analysis}).eq("id", doc_id).execute()
+                except Exception:
+                    logger.warning("Could not save JD analysis for doc %s", doc_id)
+
+    elif request.doc_type == "cv" and request.content_text.strip():
         from app.services.profile_analyzer import profile_analyzer
 
         # Get user industry for context
