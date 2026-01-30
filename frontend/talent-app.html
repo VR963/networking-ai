@@ -136,15 +136,16 @@
             <!-- Onboarding Progress -->
             <div id="onboarding-bar" class="flex-shrink-0 px-5 py-2 border-b border-gray-50 bg-gray-50/50">
                 <div class="flex items-center justify-between mb-1.5">
-                    <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Onboarding</span>
-                    <span id="onboarding-count" class="text-[10px] text-brand font-medium">0 / 5</span>
+                    <span id="onboarding-label" class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Discovery Interview</span>
+                    <span id="onboarding-count" class="text-[10px] text-brand font-medium">0 / 6</span>
                 </div>
-                <div class="flex gap-1.5" id="onboarding-topics">
-                    <div data-topic="career_goals" class="onb-topic flex-1 text-center py-1 rounded text-[9px] font-medium bg-gray-100 text-gray-400">Goals</div>
-                    <div data-topic="values" class="onb-topic flex-1 text-center py-1 rounded text-[9px] font-medium bg-gray-100 text-gray-400">Values</div>
-                    <div data-topic="dealbreakers" class="onb-topic flex-1 text-center py-1 rounded text-[9px] font-medium bg-gray-100 text-gray-400">Dealbreakers</div>
-                    <div data-topic="work_style" class="onb-topic flex-1 text-center py-1 rounded text-[9px] font-medium bg-gray-100 text-gray-400">Style</div>
-                    <div data-topic="culture" class="onb-topic flex-1 text-center py-1 rounded text-[9px] font-medium bg-gray-100 text-gray-400">Culture</div>
+                <div class="flex gap-1" id="onboarding-topics">
+                    <div data-topic="career_motivations" class="onb-topic flex-1 text-center py-1 rounded text-[8px] font-medium bg-gray-100 text-gray-400">Motives</div>
+                    <div data-topic="achievements" class="onb-topic flex-1 text-center py-1 rounded text-[8px] font-medium bg-gray-100 text-gray-400">Achieve</div>
+                    <div data-topic="work_style" class="onb-topic flex-1 text-center py-1 rounded text-[8px] font-medium bg-gray-100 text-gray-400">Style</div>
+                    <div data-topic="leadership" class="onb-topic flex-1 text-center py-1 rounded text-[8px] font-medium bg-gray-100 text-gray-400">Lead</div>
+                    <div data-topic="next_role" class="onb-topic flex-1 text-center py-1 rounded text-[8px] font-medium bg-gray-100 text-gray-400">Next Role</div>
+                    <div data-topic="values_culture" class="onb-topic flex-1 text-center py-1 rounded text-[8px] font-medium bg-gray-100 text-gray-400">Values</div>
                 </div>
             </div>
             <!-- History Panel (overlay) -->
@@ -668,25 +669,26 @@
     // --- Onboarding Topics ---
     function updateOnboardingTopics(topics) {
         let doneCount = 0;
-        const total = 5;
+        const total = 6;
         for (const [topic, covered] of Object.entries(topics)) {
             const el = document.querySelector(`[data-topic="${topic}"]`);
             if (!el) continue;
             if (covered) {
-                el.className = 'onb-topic flex-1 text-center py-1 rounded text-[9px] font-medium bg-brand text-white';
+                el.className = 'onb-topic flex-1 text-center py-1 rounded text-[8px] font-medium bg-brand text-white';
                 doneCount++;
             } else {
-                el.className = 'onb-topic flex-1 text-center py-1 rounded text-[9px] font-medium bg-gray-100 text-gray-400';
+                el.className = 'onb-topic flex-1 text-center py-1 rounded text-[8px] font-medium bg-gray-100 text-gray-400';
             }
         }
         const countEl = document.getElementById('onboarding-count');
         if (countEl) countEl.textContent = `${doneCount} / ${total}`;
 
-        // If all done, show completion state
-        const bar = document.getElementById('onboarding-bar');
-        if (bar && doneCount === total) {
-            bar.querySelector('span').textContent = 'ONBOARDING COMPLETE';
-            bar.querySelector('span').classList.add('text-green-600');
+        const label = document.getElementById('onboarding-label');
+        if (doneCount === total) {
+            if (label) { label.textContent = 'PROFILE COMPLETE'; label.classList.add('text-green-600'); label.classList.remove('text-gray-400'); }
+            if (countEl) { countEl.textContent = 'Ready to match'; countEl.classList.add('text-green-600'); }
+        } else if (doneCount > 0) {
+            if (label) label.textContent = 'DISCOVERY INTERVIEW';
         }
     }
 
