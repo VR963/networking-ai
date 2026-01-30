@@ -25,6 +25,37 @@ class ChatResponse(BaseModel):
     quality_score: float = 0.0
     conversation_count: int = 0
     profile_readiness: int = 0
+    onboarding_topics: dict = {}  # {topic: bool} - which topics have been covered
+
+
+# Onboarding topic definitions
+ONBOARDING_TOPICS = {
+    "career_goals": {
+        "label": "Career Goals",
+        "keywords": ["goal", "aspir", "want to", "dream", "aim", "next step", "future", "ambition", "target", "plan", "move to", "transition", "grow", "advance"],
+        "prompt": "What are their career goals and aspirations? Where do they see themselves heading?",
+    },
+    "values": {
+        "label": "Work Values",
+        "keywords": ["value", "important to me", "matter", "care about", "believe", "principle", "meaning", "purpose", "passion", "mission", "impact"],
+        "prompt": "What values drive their professional life? What matters most to them at work?",
+    },
+    "dealbreakers": {
+        "label": "Dealbreakers",
+        "keywords": ["never", "won't", "hate", "can't stand", "refuse", "dealbreak", "deal break", "red flag", "avoid", "toxic", "worst", "terrible", "leave", "quit", "left because"],
+        "prompt": "What are their dealbreakers? What would make them walk away from an opportunity?",
+    },
+    "work_style": {
+        "label": "Work Style",
+        "keywords": ["remote", "office", "hybrid", "team", "solo", "collaborate", "independent", "flexible", "structure", "pace", "hours", "schedule", "manage", "leadership style", "autonomy"],
+        "prompt": "How do they prefer to work? Remote/office/hybrid? Team dynamics? Management style preferences?",
+    },
+    "culture": {
+        "label": "Culture Fit",
+        "keywords": ["culture", "environment", "team vibe", "company size", "startup", "corporate", "vibe", "atmosphere", "people", "colleagues", "diverse", "inclusive", "flat", "hierarch"],
+        "prompt": "What kind of company culture and environment do they thrive in?",
+    },
+}
 
 
 @router.post("/message", response_model=ChatResponse)
@@ -107,9 +138,12 @@ async def chat_message(request: ChatRequest):
     try:
         client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
+        # Detect topics already covered so far (before AI responds)
+        covered_topics = _detect_onboarding_topics(request.messages)
+
         system_prompt = _build_system_prompt(
             request.context, agent_context, user_patterns,
-            pre_conversation_context, rag_context,
+            pre_conversation_context, rag_context, covered_topics,
         )
 
         api_messages = [
@@ -178,6 +212,9 @@ async def chat_message(request: ChatRequest):
         learning_triggered=learning_triggered,
     )
 
+    # Detect which onboarding topics have been covered
+    onboarding_topics = _detect_onboarding_topics(full_messages)
+
     return ChatResponse(
         response=ai_response,
         conversation_id=conversation_id,
@@ -185,6 +222,7 @@ async def chat_message(request: ChatRequest):
         quality_score=round(quality_score, 1),
         conversation_count=conversation_count,
         profile_readiness=profile_readiness,
+        onboarding_topics=onboarding_topics,
     )
 
 
@@ -194,12 +232,13 @@ def _build_system_prompt(
     user_patterns: list = None,
     pre_conversation_context: str = "",
     rag_context: str = "",
+    covered_topics: dict = None,
 ) -> str:
     base = (
-        "You are an AI career agent conducting a deep onboarding conversation. "
-        "Your goal is to understand this person deeply - their values, goals, "
-        "fears, hidden criteria, and what truly matters to them professionally. "
-        "Ask thoughtful follow-up questions. Listen for what they don't say explicitly.\n\n"
+        "You are an AI career agent conducting a structured onboarding conversation. "
+        "Your goal is to understand this person deeply across 5 key areas: "
+        "Career Goals, Work Values, Dealbreakers, Work Style, and Culture Fit. "
+        "Once you understand all five, their agent will be ready to find matches.\n\n"
         "COMMUNICATION STYLE:\n"
         "- Write in clear, well-spaced paragraphs. Use double line breaks between paragraphs.\n"
         "- Keep each paragraph focused on one idea — short and easy to read.\n"
@@ -209,6 +248,32 @@ def _build_system_prompt(
         "- When reflecting back what the user said, keep it brief — one sentence, then go deeper.\n"
         "- Never use bullet points or numbered lists. Write in natural flowing prose."
     )
+
+    # Onboarding topic guidance
+    if covered_topics is not None:
+        covered = [t for t, v in covered_topics.items() if v]
+        uncovered = [t for t, v in covered_topics.items() if not v]
+        total = len(ONBOARDING_TOPICS)
+        done = len(covered)
+
+        if uncovered:
+            next_topic = ONBOARDING_TOPICS[uncovered[0]]
+            base += (
+                f"\n\nONBOARDING PROGRESS: {done}/{total} topics covered."
+                f"\nTopics completed: {', '.join(ONBOARDING_TOPICS[t]['label'] for t in covered) or 'None yet'}."
+                f"\nNEXT TOPIC TO EXPLORE: {next_topic['label']} — {next_topic['prompt']}"
+                f"\nRemaining: {', '.join(ONBOARDING_TOPICS[t]['label'] for t in uncovered[1:])}."
+                "\n\nNaturally guide the conversation toward the next uncovered topic. "
+                "Don't announce 'now let's talk about X' mechanically — weave it in naturally. "
+                "Acknowledge what the user shared, then transition smoothly."
+            )
+        else:
+            base += (
+                f"\n\nONBOARDING COMPLETE: All {total} topics covered! "
+                "The user's profile is well-rounded. You can now have a free-flowing conversation. "
+                "If they want to go deeper on any topic, help them. "
+                "Let them know their agent now has a strong understanding of who they are and is ready to start matching."
+            )
 
     # Inject pre-conversation context from uploaded documents/social profiles
     if pre_conversation_context:
@@ -303,6 +368,20 @@ async def _ensure_profile(user_id: str, industry: str = "general") -> None:
         }).execute()
     except Exception:
         pass  # Profile creation failure should not block chat
+
+
+def _detect_onboarding_topics(messages: list[dict]) -> dict:
+    """Scan conversation messages for covered onboarding topics."""
+    # Combine all user messages into one text for keyword matching
+    user_text = " ".join(
+        m.get("content", "").lower()
+        for m in messages
+        if m.get("role") == "user"
+    )
+    result = {}
+    for topic_id, topic in ONBOARDING_TOPICS.items():
+        result[topic_id] = any(kw in user_text for kw in topic["keywords"])
+    return result
 
 
 def _calculate_readiness(

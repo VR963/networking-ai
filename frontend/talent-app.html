@@ -133,6 +133,20 @@
                     <svg class="w-5 h-5 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </button>
             </div>
+            <!-- Onboarding Progress -->
+            <div id="onboarding-bar" class="flex-shrink-0 px-5 py-2 border-b border-gray-50 bg-gray-50/50">
+                <div class="flex items-center justify-between mb-1.5">
+                    <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Onboarding</span>
+                    <span id="onboarding-count" class="text-[10px] text-brand font-medium">0 / 5</span>
+                </div>
+                <div class="flex gap-1.5" id="onboarding-topics">
+                    <div data-topic="career_goals" class="onb-topic flex-1 text-center py-1 rounded text-[9px] font-medium bg-gray-100 text-gray-400">Goals</div>
+                    <div data-topic="values" class="onb-topic flex-1 text-center py-1 rounded text-[9px] font-medium bg-gray-100 text-gray-400">Values</div>
+                    <div data-topic="dealbreakers" class="onb-topic flex-1 text-center py-1 rounded text-[9px] font-medium bg-gray-100 text-gray-400">Dealbreakers</div>
+                    <div data-topic="work_style" class="onb-topic flex-1 text-center py-1 rounded text-[9px] font-medium bg-gray-100 text-gray-400">Style</div>
+                    <div data-topic="culture" class="onb-topic flex-1 text-center py-1 rounded text-[9px] font-medium bg-gray-100 text-gray-400">Culture</div>
+                </div>
+            </div>
             <!-- History Panel (overlay) -->
             <div id="history-panel" class="absolute inset-0 bg-white z-10 flex-col overflow-hidden" style="display:none; top:56px;">
                 <div class="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
@@ -377,6 +391,11 @@
     }
 
     function showChatStatus(data) {
+        // Update onboarding topics
+        if (data.onboarding_topics) {
+            updateOnboardingTopics(data.onboarding_topics);
+        }
+
         // Update readiness bar in header
         const readiness = data.profile_readiness || 0;
         const readinessEl = document.getElementById('chat-readiness');
@@ -644,6 +663,31 @@
             method: 'POST',
             body: { user_id: state.userId, industry: state.industry }
         });
+    }
+
+    // --- Onboarding Topics ---
+    function updateOnboardingTopics(topics) {
+        let doneCount = 0;
+        const total = 5;
+        for (const [topic, covered] of Object.entries(topics)) {
+            const el = document.querySelector(`[data-topic="${topic}"]`);
+            if (!el) continue;
+            if (covered) {
+                el.className = 'onb-topic flex-1 text-center py-1 rounded text-[9px] font-medium bg-brand text-white';
+                doneCount++;
+            } else {
+                el.className = 'onb-topic flex-1 text-center py-1 rounded text-[9px] font-medium bg-gray-100 text-gray-400';
+            }
+        }
+        const countEl = document.getElementById('onboarding-count');
+        if (countEl) countEl.textContent = `${doneCount} / ${total}`;
+
+        // If all done, show completion state
+        const bar = document.getElementById('onboarding-bar');
+        if (bar && doneCount === total) {
+            bar.querySelector('span').textContent = 'ONBOARDING COMPLETE';
+            bar.querySelector('span').classList.add('text-green-600');
+        }
     }
 
     // --- Conversation History ---
