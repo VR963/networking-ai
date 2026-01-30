@@ -23,13 +23,22 @@ class CollectiveIntelligence:
         return get_db()
 
     async def share_pattern(self, user_id: str, industry: str, pattern: dict) -> None:
-        record = {
-            "user_id": user_id,
-            "industry": industry,
-            "patterns": pattern,
-            "pattern_type": "collective_shared",
-        }
-        self.supabase_client.table("cv2_collective_patterns").insert(record).execute()
+        try:
+            record = {
+                "user_id": user_id,
+                "industry": industry,
+                "patterns": pattern,
+                "pattern_type": "collective_shared",
+            }
+            self.supabase_client.table("cv2_collective_patterns").insert(record).execute()
+        except Exception:
+            # Fallback without industry column if it doesn't exist yet
+            record = {
+                "user_id": user_id,
+                "patterns": pattern,
+                "pattern_type": "collective_shared",
+            }
+            self.supabase_client.table("cv2_collective_patterns").insert(record).execute()
 
     async def get_industry_patterns(self, industry: str) -> list[dict]:
         result = (

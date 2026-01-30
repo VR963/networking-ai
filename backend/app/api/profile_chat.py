@@ -459,12 +459,14 @@ def _build_system_prompt(
         all_criteria = []
         all_goals = []
         for p in collective_patterns[:10]:
-            pattern_data = p.get("pattern_data", {})
+            pattern_data = p.get("patterns", p.get("pattern_data", {}))
             if isinstance(pattern_data, str):
                 try:
                     pattern_data = json.loads(pattern_data)
                 except Exception:
                     continue
+            if not isinstance(pattern_data, dict):
+                continue
             all_values.extend(pattern_data.get("values", [])[:2])
             all_criteria.extend(pattern_data.get("hidden_criteria", [])[:2])
             all_goals.extend(pattern_data.get("goals", [])[:2])
@@ -551,7 +553,7 @@ async def _get_collective_intelligence(user_id: str, industry: str) -> list:
         # Get patterns from other users (not this user) for collective intelligence
         result = (
             db.table("cv2_collective_patterns")
-            .select("pattern_data, industry, created_at")
+            .select("patterns, industry, created_at")
             .eq("industry", industry)
             .neq("user_id", user_id)
             .order("created_at", desc=True)

@@ -75,18 +75,36 @@ class DSPyLearning:
 
         response = self.anthropic_client.messages.create(
             model="claude-sonnet-4-20250514",
-            max_tokens=1000,
+            max_tokens=1500,
             messages=[
                 {
                     "role": "user",
                     "content": (
-                        "Analyze this conversation and extract key patterns about the user. "
-                        "Return a JSON object with these fields:\n"
-                        "- values: list of core professional values revealed\n"
-                        "- goals: list of career goals mentioned\n"
-                        "- hidden_criteria: list of unspoken preferences inferred\n"
-                        "- communication_style: brief description of how they communicate\n"
-                        "- key_insights: list of important observations\n\n"
+                        "Analyze this conversation and extract a structured professional profile. "
+                        "Return a JSON object with these fields mapped to the 6 onboarding categories:\n\n"
+                        "- career_motivations: { drivers: [list of what drives them], "
+                        "reasons_for_moves: [why they changed jobs], success_definition: string }\n"
+                        "- achievements: { verified: [specific achievements with evidence], "
+                        "claimed: [achievements mentioned without detail], failures_discussed: [honest failures] }\n"
+                        "- work_style: { environment: string (remote/hybrid/office preference), "
+                        "collaboration: string (team vs solo), communication: string, rhythm: string }\n"
+                        "- leadership: { style: string, conflict_approach: string, "
+                        "decision_making: string, delegation: string }\n"
+                        "- next_role: { ideal_role: string, dealbreakers: [list], "
+                        "ideal_boss: string, growth_vs_stability: string }\n"
+                        "- values_culture: { core_values: [list], culture_preferences: [list], "
+                        "ethical_boundaries: [list], work_life: string }\n\n"
+                        "Also include these summary fields:\n"
+                        "- values: [top 5 core professional values — for backward compatibility]\n"
+                        "- goals: [top 3 career goals]\n"
+                        "- hidden_criteria: [top 3 unspoken preferences inferred from tone and context]\n"
+                        "- communication_style: brief description\n"
+                        "- psychometric_signals: { motivation_type: intrinsic/extrinsic, "
+                        "risk_tolerance: high/medium/low, leadership_style: directive/coaching/collaborative, "
+                        "conflict_approach: confrontational/avoidant/diplomatic }\n"
+                        "- key_insights: [3-5 important observations about this person]\n\n"
+                        "Only include fields where the conversation provided meaningful information. "
+                        "Leave empty/null for categories not discussed.\n\n"
                         f"Conversation:\n{conversation_text}"
                     ),
                 }

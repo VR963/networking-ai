@@ -84,9 +84,12 @@ CREATE TABLE IF NOT EXISTS cv2_collective_patterns (
     user_id UUID,
     pattern_type TEXT NOT NULL,
     patterns JSONB DEFAULT '{}',
+    industry TEXT DEFAULT 'general',
     source_conversation_id UUID,
     created_at TIMESTAMPTZ DEFAULT now()
 );
+
+CREATE INDEX IF NOT EXISTS idx_collective_patterns_industry ON cv2_collective_patterns(industry);
 
 CREATE TABLE IF NOT EXISTS cv2_agent_learnings (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -470,9 +473,13 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- Insert collective patterns (for DSPy learning).
 CREATE OR REPLACE FUNCTION insert_cv2_pattern(p_user_id UUID, p_conversation_id UUID, p_patterns JSONB, p_pattern_type TEXT)
 RETURNS void AS $$
+DECLARE
+    v_industry TEXT;
 BEGIN
-    INSERT INTO cv2_collective_patterns (user_id, source_conversation_id, patterns, pattern_type)
-    VALUES (p_user_id, p_conversation_id, p_patterns, p_pattern_type);
+    -- Look up user's industry for collective intelligence tagging
+    SELECT industry INTO v_industry FROM cv2_profiles WHERE user_id = p_user_id LIMIT 1;
+    INSERT INTO cv2_collective_patterns (user_id, source_conversation_id, patterns, pattern_type, industry)
+    VALUES (p_user_id, p_conversation_id, p_patterns, p_pattern_type, COALESCE(v_industry, 'general'));
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 

@@ -43,15 +43,32 @@ class QualityAnalyzer:
 
         response = self.anthropic_client.messages.create(
             model="claude-sonnet-4-20250514",
-            max_tokens=200,
+            max_tokens=300,
             messages=[
                 {
                     "role": "user",
                     "content": (
-                        "Rate this conversation on a scale of 1-10 for quality of "
-                        "information revealed about the user's professional profile, "
-                        "values, goals, and hidden preferences. "
-                        "Respond with ONLY a number.\n\n"
+                        "Rate this conversation on a scale of 1-10 based on the DEPTH "
+                        "and SUBSTANCE of information the USER revealed. Score each "
+                        "of these 6 categories (0-10) then average them:\n\n"
+                        "1. Career Motivations — Did the user reveal WHY they work, "
+                        "real reasons for career moves, what drives them?\n"
+                        "2. Achievements — Did the user share specific, verifiable "
+                        "accomplishments with details about their actual contribution?\n"
+                        "3. Work Style — Did the user describe HOW they prefer to work "
+                        "(environment, collaboration, rhythm, communication)?\n"
+                        "4. Leadership — Did the user reveal management approach, "
+                        "decision-making style, conflict handling?\n"
+                        "5. Next Role — Did the user share what they want next, "
+                        "dealbreakers, ideal boss/company profile?\n"
+                        "6. Values & Culture — Did the user reveal personal values, "
+                        "cultural preferences, ethical boundaries, work-life needs?\n\n"
+                        "SCORING GUIDE:\n"
+                        "- 1-3: Superficial, generic responses with no personal detail\n"
+                        "- 4-6: Some substance but still surface-level, missing specifics\n"
+                        "- 7-8: Rich detail with specific examples and personal insights\n"
+                        "- 9-10: Deep, revealing conversation with behavioral evidence\n\n"
+                        "Respond with ONLY a single number (the average score).\n\n"
                         f"Conversation:\n{conversation_text}"
                     ),
                 }
@@ -59,7 +76,11 @@ class QualityAnalyzer:
         )
 
         try:
-            score = float(response.content[0].text.strip())
+            raw = response.content[0].text.strip()
+            # Extract first number from response
+            import re
+            match = re.search(r"(\d+\.?\d*)", raw)
+            score = float(match.group(1)) if match else 5.0
             return min(max(score, 0.0), 10.0)
         except (ValueError, IndexError):
             return 5.0
