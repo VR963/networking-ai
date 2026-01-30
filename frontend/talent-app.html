@@ -129,6 +129,19 @@
                     </div>
                     <span id="chat-readiness-text" class="text-caption text-brand font-medium">0%</span>
                 </div>
+                <button onclick="toggleHistoryPanel()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center" title="Chat history">
+                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </button>
+            </div>
+            <!-- History Panel (overlay) -->
+            <div id="history-panel" class="absolute inset-0 bg-white z-10 flex-col overflow-hidden" style="display:none; top:56px;">
+                <div class="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+                    <h3 class="text-small font-semibold">Past Conversations</h3>
+                    <button onclick="toggleHistoryPanel()" class="text-gray-400 text-caption font-medium">Close</button>
+                </div>
+                <div id="history-list" class="flex-1 overflow-y-auto px-5 py-3 space-y-2">
+                    <p class="text-caption text-gray-400">Loading...</p>
+                </div>
             </div>
             <!-- Chat Messages -->
             <div id="chat-messages" class="flex-1 overflow-y-auto px-5 py-4 space-y-3">
@@ -631,6 +644,80 @@
             method: 'POST',
             body: { user_id: state.userId, industry: state.industry }
         });
+    }
+
+    // --- Conversation History ---
+    async function toggleHistoryPanel() {
+        const panel = document.getElementById('history-panel');
+        if (panel.style.display === 'none') {
+            panel.style.display = 'flex';
+            await loadConversationHistory();
+        } else {
+            panel.style.display = 'none';
+        }
+    }
+
+    async function loadConversationHistory() {
+        const container = document.getElementById('history-list');
+        container.innerHTML = '<p class="text-caption text-gray-400">Loading...</p>';
+        try {
+            const data = await APP.api(`/chat/history/${state.userId}`);
+            const convos = (data && data.conversations) || [];
+            if (convos.length === 0) {
+                container.innerHTML = '<p class="text-caption text-gray-400">No past conversations yet. Start chatting to build your history.</p>';
+                return;
+            }
+            container.innerHTML = convos.map(c => {
+                const date = new Date(c.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                const msgs = c.messages || [];
+                const msgCount = msgs.length;
+                const preview = msgs.find(m => m.role === 'user');
+                const previewText = preview ? preview.content.slice(0, 80) + (preview.content.length > 80 ? '...' : '') : 'No messages';
+                const score = c.quality_score ? `${c.quality_score}/10` : '';
+                return `<button onclick='loadPastConversation(${JSON.stringify(JSON.stringify(c))})' class="w-full text-left card card-interactive p-3 block">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-caption text-gray-400">${date}</span>
+                        <div class="flex items-center gap-2">
+                            ${score ? `<span class="text-caption text-brand font-medium">${score}</span>` : ''}
+                            <span class="text-caption text-gray-300">${msgCount} msgs</span>
+                        </div>
+                    </div>
+                    <p class="text-small text-gray-600 truncate">${escapeHtml(previewText)}</p>
+                </button>`;
+            }).join('');
+        } catch (e) {
+            container.innerHTML = '<p class="text-caption text-red-400">Could not load history</p>';
+        }
+    }
+
+    function loadPastConversation(jsonStr) {
+        const convo = JSON.parse(jsonStr);
+        const msgs = convo.messages || [];
+        // Close history panel
+        document.getElementById('history-panel').style.display = 'none';
+        // Clear current chat
+        const container = document.getElementById('chat-messages');
+        container.innerHTML = '';
+        state.messages = [];
+        // Render all past messages
+        msgs.forEach(m => {
+            if (m.role === 'user') {
+                addChatBubble(m.content, 'user');
+                state.messages.push({ role: 'user', content: m.content });
+            } else if (m.role === 'assistant') {
+                addChatBubble(m.content, 'ai');
+                state.messages.push({ role: 'assistant', content: m.content });
+            }
+        });
+        // Add a divider indicating this is loaded history
+        const divider = document.createElement('div');
+        divider.className = 'flex items-center gap-3 my-4';
+        divider.innerHTML = `<div class="flex-1 border-t border-gray-200"></div>
+            <span class="text-caption text-gray-400">Continue this conversation</span>
+            <div class="flex-1 border-t border-gray-200"></div>`;
+        container.appendChild(divider);
+        container.scrollTop = container.scrollHeight;
+        greetingLoaded = true; // Prevent greeting from overwriting
     }
 
     function escapeHtml(text) {
