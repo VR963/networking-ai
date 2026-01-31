@@ -46,6 +46,12 @@ class SocialLinksRequest(BaseModel):
     other: list[str] = []
 
 
+class AnalyzeUrlRequest(BaseModel):
+    user_id: str
+    url: str
+    doc_type: str = "job_description"  # job_description, company_page, job_posting
+
+
 class AnalyzeProfileRequest(BaseModel):
     user_id: str
 
@@ -234,6 +240,94 @@ async def upload_document(request: DocumentUploadRequest):
         pass  # RAG indexing is non-critical
 
     return {"status": "uploaded", "doc_id": doc_id, "analysis": analysis}
+
+
+@router.post("/analyze-url")
+async def analyze_url(request: AnalyzeUrlRequest):
+    """Fetch a URL (job posting, company page) and analyze the content.
+
+    Scrapes text from the URL, stores it as a document, and runs AI analysis.
+    """
+    import logging
+    import uuid
+    logger = logging.getLogger("cv2.url")
+
+    client = _get_supabase()
+
+    # Fetch URL content
+    try:
+        import httpx
+        async with httpx.AsyncClient(follow_redirects=True, timeout=15.0) as http:
+            resp = await http.get(request.url, headers={
+                "User-Agent": "Mozilla/5.0 (compatible; CV2Bot/1.0)"
+            })
+            resp.raise_for_status()
+            html_content = resp.text
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Could not fetch URL: {str(e)[:200]}")
+
+    # Extract text from HTML
+    try:
+        import re
+        # Remove script/style tags
+        text = re.sub(r'<script[^>]*>.*?</script>', '', html_content, flags=re.DOTALL | re.IGNORECASE)
+        text = re.sub(r'<style[^>]*>.*?</style>', '', text, flags=re.DOTALL | re.IGNORECASE)
+        # Remove HTML tags
+        text = re.sub(r'<[^>]+>', ' ', text)
+        # Clean whitespace
+        text = re.sub(r'\s+', ' ', text).strip()
+    except Exception:
+        text = html_content[:10000]
+
+    if len(text) < 30:
+        raise HTTPException(status_code=400, detail="Could not extract meaningful text from this URL.")
+
+    # Ensure user exists
+    try:
+        client.rpc("ensure_cv2_profile", {"uid": request.user_id}).execute()
+    except Exception:
+        pass
+
+    # Store as document
+    doc_id = str(uuid.uuid4())
+    content_text = text[:50000]
+    try:
+        client.rpc("insert_cv2_document", {
+            "p_id": doc_id,
+            "p_user_id": request.user_id,
+            "p_filename": request.url[:200],
+            "p_doc_type": request.doc_type,
+            "p_content_text": content_text,
+        }).execute()
+    except Exception:
+        try:
+            client.table("cv2_documents").insert({
+                "id": doc_id,
+                "user_id": request.user_id,
+                "filename": request.url[:200],
+                "doc_type": request.doc_type,
+                "content_text": content_text,
+            }).execute()
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to save: {str(e)[:200]}")
+
+    # Analyze
+    analysis = None
+    if request.doc_type in ("job_description", "job_posting"):
+        from app.services.profile_analyzer import profile_analyzer
+        profile = client.table("cv2_profiles").select("industry").eq("user_id", request.user_id).execute()
+        industry = profile.data[0]["industry"] if profile.data else "general"
+        analysis = await profile_analyzer.analyze_job_description(content_text, industry)
+        if analysis and not analysis.get("error"):
+            try:
+                client.rpc("update_document_analysis", {"p_doc_id": doc_id, "p_analysis": analysis}).execute()
+            except Exception:
+                try:
+                    client.table("cv2_documents").update({"analysis": analysis}).eq("id", doc_id).execute()
+                except Exception:
+                    pass
+
+    return {"status": "analyzed", "doc_id": doc_id, "url": request.url, "analysis": analysis}
 
 
 @router.get("/documents/{user_id}")
