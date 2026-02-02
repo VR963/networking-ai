@@ -67,9 +67,11 @@
     <div class="flex-1 overflow-hidden relative">
         <!-- HOME VIEW -->
         <div id="view-home" class="view active h-full overflow-y-auto px-5 py-6 pb-28">
+            <!-- Status Card -->
             <div class="card mb-5 p-5" style="border-left: 4px solid #059669;">
                 <p class="text-caption text-gray-400 mb-1">Hiring Manager Portal</p>
                 <h2 class="text-h2" id="home-greeting">Set up your role</h2>
+                <p id="home-subtitle" class="text-small text-gray-500 mt-1">Your AI Job Agent learns what you really need — beyond the job description — then finds candidates that actually fit.</p>
                 <div class="mt-4 flex items-center gap-3">
                     <div class="flex-1 bg-gray-100 rounded-full h-2">
                         <div id="home-progress-bar" class="bg-emerald-600 rounded-full h-2 transition-all" style="width:0%"></div>
@@ -78,28 +80,71 @@
                 </div>
             </div>
 
+            <!-- How It Works (shown when new) -->
+            <div id="how-it-works" class="card mb-5 p-5 bg-emerald-50/50">
+                <h3 class="text-small font-semibold text-emerald-800 mb-3">How your hiring agent works</h3>
+                <div class="space-y-3">
+                    <div class="flex gap-3">
+                        <div class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5">1</div>
+                        <div>
+                            <p class="text-small font-medium text-gray-700">Upload your job description</p>
+                            <p class="text-caption text-gray-500">Upload docs, paste links, or describe the role manually. AI extracts key requirements.</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <div class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5">2</div>
+                        <div>
+                            <p class="text-small font-medium text-gray-700">Deep discovery interview</p>
+                            <p class="text-caption text-gray-500">Your AI consultant interviews you across 6 categories to understand what you REALLY need — not just what's on paper.</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <div class="w-6 h-6 rounded-full bg-gray-300 text-white flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5">3</div>
+                        <div>
+                            <p class="text-small font-medium text-gray-700">Agent matches candidates 24/7</p>
+                            <p class="text-caption text-gray-500">Your Job Agent negotiates with Candidate Agents to find people who fit your real criteria — culture, style, and hidden preferences.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Discovery Status (shown after conversations) -->
+            <div id="discovery-status" class="card mb-5 p-5 hidden">
+                <h3 class="text-small font-semibold text-gray-700 mb-3">Discovery Progress</h3>
+                <div class="flex gap-1 mb-3" id="home-topics">
+                    <div data-htopic="role_motivations" class="flex-1 text-center py-1.5 rounded text-[9px] font-medium bg-gray-100 text-gray-400">Role Why</div>
+                    <div data-htopic="success_expectations" class="flex-1 text-center py-1.5 rounded text-[9px] font-medium bg-gray-100 text-gray-400">Success</div>
+                    <div data-htopic="team_style" class="flex-1 text-center py-1.5 rounded text-[9px] font-medium bg-gray-100 text-gray-400">Team</div>
+                    <div data-htopic="management_approach" class="flex-1 text-center py-1.5 rounded text-[9px] font-medium bg-gray-100 text-gray-400">Manage</div>
+                    <div data-htopic="ideal_candidate" class="flex-1 text-center py-1.5 rounded text-[9px] font-medium bg-gray-100 text-gray-400">Ideal Hire</div>
+                    <div data-htopic="culture_criteria" class="flex-1 text-center py-1.5 rounded text-[9px] font-medium bg-gray-100 text-gray-400">Culture</div>
+                </div>
+                <p id="discovery-explanation" class="text-caption text-gray-500"></p>
+            </div>
+
+            <!-- Action Buttons -->
             <div class="grid grid-cols-2 gap-3 mb-5">
                 <button onclick="switchView('chat')" class="card card-interactive p-4 text-left">
                     <svg class="w-6 h-6 text-emerald-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-                    <p class="text-small font-medium">Discovery Chat</p>
-                    <p class="text-caption text-gray-400">Define your ideal hire</p>
+                    <p class="text-small font-medium" id="chat-action-label">Discovery Chat</p>
+                    <p class="text-caption text-gray-400" id="chat-action-desc">Define your ideal hire</p>
                 </button>
                 <button onclick="switchView('profile')" class="card card-interactive p-4 text-left">
                     <svg class="w-6 h-6 text-emerald-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                    <p class="text-small font-medium">Role Profile</p>
-                    <p class="text-caption text-gray-400">Upload job description</p>
+                    <p class="text-small font-medium">Documents</p>
+                    <p class="text-caption text-gray-400" id="docs-action-desc">Upload job description</p>
                 </button>
             </div>
 
+            <!-- Candidates Section -->
             <div class="mb-4">
                 <div class="flex justify-between items-center mb-3">
-                    <h3 class="text-h3">Candidates</h3>
+                    <h3 class="text-h3">Matched Candidates</h3>
                     <button onclick="switchView('matches')" class="text-caption text-emerald-600 font-medium">See all</button>
                 </div>
                 <div id="home-matches" class="space-y-2">
-                    <div class="card p-4 flex items-center justify-between">
-                        <p class="text-small text-gray-400">No candidates matched yet</p>
-                        <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">Pending</span>
+                    <div class="card p-4">
+                        <p class="text-small text-gray-500" id="matches-explanation">Complete the discovery interview so your Job Agent understands your real requirements. Then it will automatically evaluate and match candidates from the talent pool.</p>
                     </div>
                 </div>
             </div>
@@ -300,6 +345,7 @@
         }
         state.userId = APP.getUserId();
         await loadProfile();
+        await refreshHomeState();
     });
 
     function switchView(view) {
@@ -384,7 +430,18 @@
     }
 
     function showChatStatus(data) {
-        if (data.onboarding_topics) updateOnboardingTopics(data.onboarding_topics);
+        if (data.onboarding_topics) {
+            updateOnboardingTopics(data.onboarding_topics);
+            // Also update home page topic pills
+            for (const [topic, covered] of Object.entries(data.onboarding_topics)) {
+                const hel = document.querySelector(`[data-htopic="${topic}"]`);
+                if (hel) {
+                    hel.className = covered
+                        ? 'flex-1 text-center py-1.5 rounded text-[9px] font-medium bg-emerald-600 text-white'
+                        : 'flex-1 text-center py-1.5 rounded text-[9px] font-medium bg-gray-100 text-gray-400';
+                }
+            }
+        }
 
         const readiness = data.profile_readiness || 0;
         const readinessEl = document.getElementById('chat-readiness');
@@ -467,16 +524,96 @@
     function updateHomeUI(data) {
         document.getElementById('profile-stage').textContent = state.stage.charAt(0).toUpperCase() + state.stage.slice(1);
         const statusBadge = document.getElementById('agent-status');
-        if (state.stage === 'matchable') {
-            statusBadge.textContent = 'Active';
-            document.getElementById('home-greeting').textContent = 'Job Agent is matching';
-        } else {
-            document.getElementById('home-greeting').textContent = 'Set up your role';
-        }
         if (data.activation_score) {
             document.getElementById('profile-readiness').textContent = Math.round(data.activation_score * 100) + '%';
         }
         document.getElementById('industry-select').value = state.industry;
+        // Refresh the home dashboard with real data
+        refreshHomeState();
+    }
+
+    async function refreshHomeState() {
+        // Check documents
+        let hasJD = false;
+        let jdTitle = '';
+        try {
+            const docs = await APP.api(`/user/documents/${state.userId}`);
+            const jdDoc = ((docs && docs.documents) || []).find(d => d.doc_type === 'job_description' && d.analysis);
+            if (jdDoc) {
+                hasJD = true;
+                jdTitle = jdDoc.analysis.title || jdDoc.filename || 'Job Description';
+                const docsDesc = document.getElementById('docs-action-desc');
+                if (docsDesc) docsDesc.textContent = 'Manage documents';
+            }
+        } catch(e) {}
+
+        // Check conversation history
+        let convCount = 0;
+        let lastTopics = null;
+        try {
+            const hist = await APP.api(`/hm-chat/history/${state.userId}`);
+            const convos = (hist && hist.conversations) || [];
+            convCount = convos.length;
+        } catch(e) {}
+
+        // Update home UI based on state
+        const greeting = document.getElementById('home-greeting');
+        const subtitle = document.getElementById('home-subtitle');
+        const statusBadge = document.getElementById('agent-status');
+        const howItWorks = document.getElementById('how-it-works');
+        const discoveryStatus = document.getElementById('discovery-status');
+        const chatLabel = document.getElementById('chat-action-label');
+        const chatDesc = document.getElementById('chat-action-desc');
+        const matchesExplanation = document.getElementById('matches-explanation');
+        const progressBar = document.getElementById('home-progress-bar');
+        const progressText = document.getElementById('home-progress-text');
+
+        if (convCount > 0 && hasJD) {
+            // Has had conversations and has JD — likely completed or in progress
+            howItWorks.classList.add('hidden');
+            discoveryStatus.classList.remove('hidden');
+
+            const pct = progressBar.style.width;
+            const pctNum = parseInt(pct) || 0;
+
+            if (pctNum >= 50) {
+                // Substantial progress
+                greeting.textContent = jdTitle;
+                subtitle.textContent = 'Your Job Agent has completed the discovery interview and understands your real hiring requirements. It will use this deep profile to evaluate candidates beyond keyword matching.';
+                statusBadge.textContent = 'Discovery Complete';
+                statusBadge.className = 'text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium';
+                chatLabel.textContent = 'Refine Requirements';
+                chatDesc.textContent = 'Continue the conversation';
+                const expl = document.getElementById('discovery-explanation');
+                if (expl) expl.textContent = 'All 6 discovery categories have been explored. Your Job Agent now understands the role motivations, success expectations, team dynamics, your management style, ideal candidate profile, and hidden culture criteria.';
+                matchesExplanation.textContent = 'Your Job Agent is now ready to evaluate candidates from the talent pool. Matches will appear here as Candidate Agents are found that fit your real criteria.';
+            } else {
+                // Some progress
+                greeting.textContent = jdTitle;
+                subtitle.textContent = 'Your AI consultant is learning what you really need. Continue the discovery chat to cover all 6 categories.';
+                statusBadge.textContent = 'In Discovery';
+                chatLabel.textContent = 'Continue Discovery';
+                chatDesc.textContent = 'Cover remaining categories';
+                const expl = document.getElementById('discovery-explanation');
+                if (expl) expl.textContent = 'Your AI consultant needs to explore all 6 categories to build a complete hiring profile. The more you share, the better your matches will be.';
+                matchesExplanation.textContent = 'Complete the discovery interview to unlock candidate matching. Your Job Agent needs to understand your full requirements first.';
+            }
+        } else if (hasJD && convCount === 0) {
+            // Has JD but no conversations yet
+            greeting.textContent = jdTitle;
+            subtitle.textContent = 'Job description analyzed. Start the discovery chat so your AI consultant can understand what\'s NOT in the JD — the hidden criteria that will make or break a hire.';
+            chatLabel.textContent = 'Start Discovery';
+            chatDesc.textContent = 'AI will interview you';
+            statusBadge.textContent = 'JD Uploaded';
+        } else if (convCount > 0 && !hasJD) {
+            // Has conversations but no JD
+            greeting.textContent = 'Discovery in progress';
+            subtitle.textContent = 'You\'re chatting with your AI consultant. Upload a job description in the Role tab for even deeper analysis.';
+            chatLabel.textContent = 'Continue Chat';
+            chatDesc.textContent = 'Keep defining requirements';
+            statusBadge.textContent = 'In Discovery';
+        }
+        // else: default state (no JD, no conversations) — keep "Set up your role" with how-it-works visible
     }
 
     // --- JD Upload ---
