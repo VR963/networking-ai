@@ -30,6 +30,7 @@ from app.services.ai_council import ai_council
 from app.services.master_ai_governance import master_ai_governance
 from app.services.hallucination_guard import hallucination_guard
 from app.services.network_learning import network_learning
+from app.services import demo_data
 
 
 def _get_supabase():
@@ -44,40 +45,51 @@ class MasterAIControlCenter:
 
         This is the main view - everything the Master AI needs to see
         at a glance to understand platform health and make decisions.
+        Falls back to demo data when the database is unreachable.
         """
-        # Gather data from all departments
-        health = await master_ai_governance.get_network_health()
-        rankings = await ai_analytics.get_agent_rankings()
-        costs = await cost_tracker.get_cost_summary("today")
-        budget = await cost_tracker.get_budget_status()
-        training_queue = await agent_training_center.get_training_queue()
-        data_report = await ai_analytics.get_data_collection_report()
+        if not _get_supabase():
+            return demo_data.get_demo_dashboard()
 
-        return {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "network_health": health,
-            "agent_overview": {
-                "total": rankings.get("total_agents", 0),
-                "active": rankings.get("active_agents", 0),
-                "top_performer": rankings.get("top_performer"),
-                "avg_performance": rankings.get("avg_performance", 0),
-                "needing_training": training_queue.get("total_needing_training", 0),
-                "critical_agents": training_queue.get("critical_count", 0),
-            },
-            "costs": {
-                "today_usd": costs.get("total_cost_usd", 0),
-                "api_calls_today": costs.get("api_calls", 0),
-                "budget_status": budget.get("status", "unknown"),
-                "budget_usage_percent": budget.get("usage_percent", 0),
-                "monthly_projection": budget.get("projection_usd"),
-            },
-            "data_health": {
-                "total_users": data_report.get("total_users", 0),
-                "completion_rate": data_report.get("data_quality", {}).get("completion_rate", 0),
-                "recommendations": data_report.get("recommendations", []),
-            },
-            "alerts": self._generate_alerts(health, budget, training_queue, rankings),
-        }
+        try:
+            # Gather data from all departments
+            health = await master_ai_governance.get_network_health()
+            rankings = await ai_analytics.get_agent_rankings()
+            costs = await cost_tracker.get_cost_summary("today")
+            budget = await cost_tracker.get_budget_status()
+            training_queue = await agent_training_center.get_training_queue()
+            data_report = await ai_analytics.get_data_collection_report()
+
+            # If services returned "unavailable" stubs, fall back to demo data
+            if health.get("status") == "unavailable" or rankings.get("status") == "unavailable":
+                return demo_data.get_demo_dashboard()
+
+            return {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "network_health": health,
+                "agent_overview": {
+                    "total": rankings.get("total_agents", 0),
+                    "active": rankings.get("active_agents", 0),
+                    "top_performer": rankings.get("top_performer"),
+                    "avg_performance": rankings.get("avg_performance", 0),
+                    "needing_training": training_queue.get("total_needing_training", 0),
+                    "critical_agents": training_queue.get("critical_count", 0),
+                },
+                "costs": {
+                    "today_usd": costs.get("total_cost_usd", 0),
+                    "api_calls_today": costs.get("api_calls", 0),
+                    "budget_status": budget.get("status", "unknown"),
+                    "budget_usage_percent": budget.get("usage_percent", 0),
+                    "monthly_projection": budget.get("projection_usd"),
+                },
+                "data_health": {
+                    "total_users": data_report.get("total_users", 0),
+                    "completion_rate": data_report.get("data_quality", {}).get("completion_rate", 0),
+                    "recommendations": data_report.get("recommendations", []),
+                },
+                "alerts": self._generate_alerts(health, budget, training_queue, rankings),
+            }
+        except Exception:
+            return demo_data.get_demo_dashboard()
 
     async def run_full_cycle(self) -> dict:
         """Run a complete Master AI operational cycle.
