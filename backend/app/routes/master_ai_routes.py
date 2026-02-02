@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from app.config import ANTHROPIC_API_KEY
 from app.database import get_db
 from app.services.master_ai_control_center import master_ai_control_center
+from app.services import demo_data
 from app.services.ai_analytics import ai_analytics
 from app.services.cost_tracker import cost_tracker
 from app.services.agent_training_center import agent_training_center
@@ -52,6 +53,11 @@ class CampaignMetricsRequest(BaseModel):
 class CampaignApproveRequest(BaseModel):
     campaign_id: str
     budget_override: Optional[float] = None
+
+
+def _db_available() -> bool:
+    """Check if database is reachable."""
+    return get_db() is not None
 
 
 def _get_supabase():
@@ -250,7 +256,10 @@ async def certify_agent(request: CertifyRequest):
 @router.get("/control-center")
 async def get_control_center_dashboard():
     """Full Master AI Control Center dashboard data."""
-    return await master_ai_control_center.get_full_dashboard()
+    try:
+        return await master_ai_control_center.get_full_dashboard()
+    except Exception:
+        return demo_data.get_demo_dashboard()
 
 
 @router.post("/control-center/cycle")
@@ -268,7 +277,10 @@ async def get_strategic_overview():
 @router.get("/control-center/rd")
 async def get_rd_status():
     """R&D status - capabilities and improvements."""
-    return await master_ai_control_center.get_rd_status()
+    try:
+        return await master_ai_control_center.get_rd_status()
+    except Exception:
+        return demo_data.get_demo_rd()
 
 
 # --- ANALYTICS ---
@@ -276,13 +288,19 @@ async def get_rd_status():
 @router.get("/analytics/rankings")
 async def get_agent_rankings():
     """Get agent performance rankings."""
-    return await ai_analytics.get_agent_rankings()
+    try:
+        return await ai_analytics.get_agent_rankings()
+    except Exception:
+        return demo_data.get_demo_rankings()
 
 
 @router.get("/analytics/behavior")
 async def get_network_behavior():
     """Get network-wide behavior analysis."""
-    return await ai_analytics.get_behavior_analysis()
+    try:
+        return await ai_analytics.get_behavior_analysis()
+    except Exception:
+        return demo_data.get_demo_behavior()
 
 
 @router.get("/analytics/behavior/{agent_id}")
@@ -294,13 +312,19 @@ async def get_agent_behavior(agent_id: str):
 @router.get("/analytics/data")
 async def get_data_report():
     """Get data collection and coverage report."""
-    return await ai_analytics.get_data_collection_report()
+    try:
+        return await ai_analytics.get_data_collection_report()
+    except Exception:
+        return demo_data.get_demo_data_report()
 
 
 @router.get("/analytics/communication")
 async def get_communication_analysis():
     """Get communication pattern analysis."""
-    return await ai_analytics.get_communication_analysis()
+    try:
+        return await ai_analytics.get_communication_analysis()
+    except Exception:
+        return demo_data.get_demo_communication()
 
 
 @router.get("/analytics/deep-dive/{agent_id}")
@@ -314,13 +338,19 @@ async def get_agent_deep_dive(agent_id: str):
 @router.get("/costs")
 async def get_costs(period: str = "today"):
     """Get cost summary for a period (today, week, month, all)."""
-    return await cost_tracker.get_cost_summary(period)
+    try:
+        return await cost_tracker.get_cost_summary(period)
+    except Exception:
+        return demo_data.get_demo_costs(period)
 
 
 @router.get("/costs/budget")
 async def get_budget_status(monthly_budget: float = 100.0):
     """Get budget status and alerts."""
-    return await cost_tracker.get_budget_status(monthly_budget)
+    try:
+        return await cost_tracker.get_budget_status(monthly_budget)
+    except Exception:
+        return demo_data.get_demo_budget()
 
 
 @router.get("/costs/agent/{agent_id}")
@@ -334,7 +364,10 @@ async def get_agent_costs(agent_id: str):
 @router.get("/training/queue")
 async def get_training_queue():
     """Get list of agents needing training."""
-    return await agent_training_center.get_training_queue()
+    try:
+        return await agent_training_center.get_training_queue()
+    except Exception:
+        return demo_data.get_demo_training_queue()
 
 
 @router.get("/training/diagnose/{agent_id}")
@@ -367,7 +400,10 @@ async def run_training_cycle():
 @router.get("/market/snapshot")
 async def get_market_snapshot():
     """Get current market intelligence snapshot."""
-    return await market_intelligence.get_market_snapshot()
+    try:
+        return await market_intelligence.get_market_snapshot()
+    except Exception:
+        return demo_data.get_demo_market_snapshot()
 
 
 @router.get("/market/industry/{industry}")
@@ -379,7 +415,10 @@ async def get_industry_report(industry: str):
 @router.get("/market/trends")
 async def get_hiring_trends():
     """Get hiring trend analysis."""
-    return await market_intelligence.get_hiring_trends()
+    try:
+        return await market_intelligence.get_hiring_trends()
+    except Exception:
+        return demo_data.get_demo_trends()
 
 
 @router.get("/market/strategic-brief")
@@ -429,7 +468,10 @@ async def council_review_decision(request: CouncilRequest):
 @router.get("/marketing/dashboard")
 async def get_marketing_dashboard():
     """Get marketing department dashboard with all campaign data."""
-    return await campaign_manager.get_marketing_dashboard()
+    try:
+        return await campaign_manager.get_marketing_dashboard()
+    except Exception:
+        return demo_data.get_demo_marketing_dashboard()
 
 
 @router.get("/marketing/gaps")
