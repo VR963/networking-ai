@@ -296,6 +296,8 @@
         }
         state.userId = APP.getUserId();
         await loadProfile();
+        // Refresh onboarding status from stored conversations
+        refreshOnboardingStatus();
     });
 
     // --- View Switching ---
@@ -307,7 +309,10 @@
         if (view === 'chat') {
             const input = document.getElementById('chat-input');
             setTimeout(() => input.focus(), 300);
-            loadChatGreeting();
+            // Try to restore previous conversation first, fall back to greeting
+            restoreLatestConversation().then(restored => {
+                if (!restored) loadChatGreeting();
+            });
         }
         if (view === 'profile') {
             loadUserDocuments();
@@ -316,6 +321,49 @@
 
     // --- Chat ---
     let greetingLoaded = false;
+    let historyRestored = false;
+
+    async function restoreLatestConversation() {
+        if (historyRestored) return;
+        historyRestored = true;
+        try {
+            const data = await APP.api(`/chat/history/${state.userId}`);
+            const convos = (data && data.conversations) || [];
+            if (convos.length === 0) return false;
+            // Load the most recent conversation
+            const latest = convos[0];
+            const msgs = latest.messages || [];
+            if (msgs.length === 0) return false;
+            const container = document.getElementById('chat-messages');
+            container.innerHTML = '';
+            state.messages = [];
+            msgs.forEach(m => {
+                if (m.role === 'user') {
+                    addChatBubble(m.content, 'user');
+                    state.messages.push({ role: 'user', content: m.content });
+                } else if (m.role === 'assistant') {
+                    addChatBubble(m.content, 'ai');
+                    state.messages.push({ role: 'assistant', content: m.content });
+                }
+            });
+            // Add divider
+            const divider = document.createElement('div');
+            divider.className = 'flex items-center gap-3 my-4';
+            divider.innerHTML = `<div class="flex-1 border-t border-gray-200"></div>
+                <span class="text-caption text-gray-400">Continue this conversation</span>
+                <div class="flex-1 border-t border-gray-200"></div>`;
+            container.appendChild(divider);
+            container.scrollTop = container.scrollHeight;
+            greetingLoaded = true;
+            // Re-analyze topics from stored conversations
+            await refreshOnboardingStatus();
+            return true;
+        } catch (e) {
+            console.warn('Could not restore conversation:', e);
+            return false;
+        }
+    }
+
     async function loadChatGreeting() {
         if (greetingLoaded) return;
         greetingLoaded = true;
@@ -343,6 +391,23 @@
             }
         } catch (e) {
             el.textContent = 'Hi! I\'m your AI career agent. Tell me about yourself — what do you do, and what matters most to you in your next role?';
+        }
+    }
+
+    async function refreshOnboardingStatus() {
+        try {
+            const statusData = await APP.api(`/chat/onboarding-status/${state.userId}`);
+            if (statusData && statusData.onboarding_topics) {
+                updateOnboardingTopics(statusData.onboarding_topics);
+            }
+            if (statusData && statusData.profile_readiness !== undefined) {
+                const homeBar = document.getElementById('home-progress-bar');
+                const homeText = document.getElementById('home-progress-text');
+                if (homeBar) homeBar.style.width = statusData.profile_readiness + '%';
+                if (homeText) homeText.textContent = statusData.profile_readiness + '%';
+            }
+        } catch (e) {
+            console.warn('Could not refresh onboarding status:', e);
         }
     }
 

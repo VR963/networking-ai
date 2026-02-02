@@ -706,6 +706,72 @@ def _calculate_readiness(
     return min(score, 100)
 
 
+@router.get("/onboarding-status/{user_id}")
+async def get_onboarding_status(user_id: str):
+    """Get onboarding topic coverage and readiness from stored conversations."""
+    db = get_db()
+    all_messages = []
+    conversation_count = 0
+    has_cv = False
+    has_patterns = False
+    quality_score = 0.0
+    learning_triggered = False
+
+    # Gather all conversation messages
+    if db:
+        try:
+            result = db.rpc("get_user_conversations", {"p_user_id": user_id}).execute()
+            convos = result.data or []
+        except Exception:
+            try:
+                result = (
+                    db.table("cv2_conversations")
+                    .select("messages, quality_score")
+                    .eq("user_id", user_id)
+                    .order("created_at", desc=True)
+                    .limit(20)
+                    .execute()
+                )
+                convos = result.data or []
+            except Exception:
+                convos = []
+
+        conversation_count = len(convos)
+        for c in convos:
+            msgs = c.get("messages", [])
+            all_messages.extend(msgs)
+            qs = c.get("quality_score")
+            if qs and qs > quality_score:
+                quality_score = qs
+
+    # Check for CV / documents
+    if db:
+        try:
+            docs = db.rpc("get_user_documents", {"p_user_id": user_id}).execute()
+            doc_list = docs.data or []
+            has_cv = any(d.get("doc_type") == "cv" for d in doc_list)
+        except Exception:
+            pass
+
+    # Check for learned patterns
+    try:
+        from app.services.dspy_learning import dspy_learning
+        patterns = await dspy_learning.get_user_patterns(user_id)
+        has_patterns = bool(patterns)
+        learning_triggered = bool(patterns)
+    except Exception:
+        pass
+
+    topics = _detect_onboarding_topics(all_messages) if all_messages else {t: False for t in ONBOARDING_TOPICS}
+    readiness = _calculate_readiness(has_cv, has_patterns, conversation_count, quality_score, learning_triggered)
+
+    return {
+        "onboarding_topics": topics,
+        "profile_readiness": readiness,
+        "conversation_count": conversation_count,
+    }
+
+
 @router.get("/history/{user_id}")
 async def get_conversation_history(user_id: str):
     """Get past conversation summaries for a user."""
