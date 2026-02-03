@@ -608,7 +608,8 @@
         }
 
         function renderOverview(data) {
-            document.getElementById('timestamp').textContent = new Date(data.timestamp).toLocaleString();
+            const ts = data.timestamp ? new Date(data.timestamp) : null;
+            document.getElementById('timestamp').textContent = ts && !isNaN(ts) ? ts.toLocaleString() : 'Just now';
 
             // Health status
             const health = data.network_health || {};
