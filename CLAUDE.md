@@ -4,33 +4,95 @@ This file provides context and instructions for Claude Code when working on this
 
 ## Project Overview
 
-networking-ai - A networking AI project.
+**CV 2.0** is an AI-native professional networking platform that uses intelligent agents to represent candidates and hiring managers. The system enables:
+- AI agents that understand users deeply through structured interviews
+- Agent-to-agent (A2A) negotiation for quality job matching
+- Multi-round AI negotiations with human-in-the-loop validation
+- Collective intelligence learning across the network
+- Master AI governance to ensure match quality and network health
+
+## Work Status
+
+### Saved Work Location
+All CV 2.0 backend work is saved on branch: `origin/claude/setup-cv2-backend-LTv40`
+
+**Stats:** 78 files, 22,303+ lines of code
+
+To checkout and continue work:
+```bash
+git fetch origin
+git checkout -b cv2-backend origin/claude/setup-cv2-backend-LTv40
+```
+
+## Architecture Overview
+
+### Directory Structure
+```
+networking-ai/
+├── backend/                    # FastAPI Python backend
+│   ├── app/
+│   │   ├── api/               # API route handlers (8 modules)
+│   │   ├── routes/            # Master AI routes
+│   │   ├── services/          # Core business logic (30+ services)
+│   │   ├── main.py            # FastAPI application entry point
+│   │   ├── config.py          # Configuration & environment variables
+│   │   ├── database.py        # Supabase connection pool + LRU cache
+│   │   ├── auth.py            # JWT authentication via Supabase
+│   │   ├── middleware.py      # Rate limiting, security, logging
+│   │   └── schema.sql         # PostgreSQL schema (Supabase)
+│   └── tests/                 # Pytest test suite
+│
+├── frontend/                  # Vanilla HTML/CSS/JS frontend
+│   ├── index.html            # Landing page
+│   ├── talent-*.html         # Talent agent interfaces
+│   ├── hm-*.html             # Hiring manager interfaces
+│   ├── master-*.html         # Master AI admin dashboards
+│   └── js/app.js             # Shared app module
+```
+
+### Tech Stack
+- **Backend:** FastAPI, Python 3.11+, Supabase (PostgreSQL + pgvector)
+- **AI:** Anthropic Claude API, DSPy for prompt optimization
+- **Frontend:** Vanilla HTML/CSS/JS, Tailwind CSS, PWA-ready
+- **Auth:** Supabase JWT tokens
+
+### Key Services
+| Service | Purpose |
+|---------|---------|
+| `master_ai_governance.py` | Quality gates, network health, agent suspension |
+| `a2a_engine.py` | Agent-to-agent negotiation and matching |
+| `dspy_learning.py` | ML-based prompt optimization |
+| `collective_intelligence.py` | Network-wide pattern learning |
+| `interview_service.py` | 6-category structured interviews |
+
+### API Routes
+- `/user/*` - Profile management
+- `/onboarding/*` - Talent/HM structured interviews
+- `/chat/*` - Profile refinement chat
+- `/a2a/*` - Agent-to-agent matching
+- `/master-ai/*` - Governance and admin
 
 ## Picking Up Work from Claude Code
 
 ### How to Resume Previous Work
 
-1. **Use the `/resume` command** - In Claude Code CLI, type `/resume` to see a list of recent sessions and select one to continue where you left off.
+1. **Use the `/resume` command** - In Claude Code CLI, type `/resume` to see recent sessions
 
-2. **Reference previous conversations** - You can describe what you were working on, and Claude will help you continue from that context.
-
-3. **Check git history** - Review recent commits to understand what changes were made:
+2. **Check git branches** - Previous work is on feature branches:
    ```bash
-   git log --oneline -10
-   git diff HEAD~1
+   git fetch --all
+   git branch -r  # List all remote branches
    ```
 
-4. **Use branch context** - If work was done on a feature branch, checkout that branch to continue:
-   ```bash
-   git branch -a
-   git checkout <branch-name>
-   ```
+3. **Key branches:**
+   - `origin/claude/setup-cv2-backend-LTv40` - Main CV 2.0 backend work
+   - `origin/main` - Initial commit only (clean slate)
 
 ### Session Continuity Tips
 
-- **Commit frequently** - Make small, descriptive commits so work can be easily resumed
-- **Use TODO comments** - Mark incomplete work with `// TODO:` comments
-- **Document in-progress work** - Update this file or create notes about ongoing tasks
+- Commit frequently with descriptive messages
+- Use TODO comments: `// TODO:` or `# TODO:`
+- Update this file with in-progress work notes
 
 ### Useful Claude Code Commands
 
@@ -42,19 +104,40 @@ networking-ai - A networking AI project.
 | `/help` | Show all available commands |
 | `/compact` | Summarize conversation to reduce context |
 
-### Best Practices for This Project
-
-- Follow existing code patterns and conventions
-- Write tests for new functionality
-- Keep commits atomic and well-documented
-- Update documentation when making significant changes
-
 ## Development Guidelines
 
-- Use clear, descriptive commit messages
-- Create feature branches for new work
-- Review changes before pushing
+### Running the Backend
+```bash
+cd backend
+pip install -r requirements.txt
+python -m app.main  # Runs on http://0.0.0.0:8000
+```
 
-## Notes
+### Environment Variables
+```
+SUPABASE_URL               # PostgreSQL database
+SUPABASE_SERVICE_KEY       # Backend-only API key
+ANTHROPIC_API_KEY          # Claude AI access
+APP_ENV                    # development/staging/production
+```
 
-Add project-specific notes, conventions, or context here that will help Claude understand and work with this codebase effectively.
+### Running Tests
+```bash
+cd backend
+pytest
+```
+
+### Code Patterns
+- Async/await throughout the backend
+- Singleton database connection pool
+- LRU caching for frequently accessed data
+- Background task queue for AI operations
+- Row-level security (RLS) in Supabase
+
+## In-Progress Work / TODOs
+
+Add notes about current work here:
+- [ ] Merge CV2 backend to main branch
+- [ ] Set up production environment
+- [ ] Complete calibration test flow
+- [ ] Add more industry knowledge modules

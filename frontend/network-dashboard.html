@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CV 2.0 - Master AI Network Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 min-h-screen text-gray-100">
+    <header class="bg-gray-800 border-b border-gray-700">
+        <nav class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <a href="/" class="text-xl font-bold text-indigo-400">CV 2.0</a>
+                <span class="text-gray-500">|</span>
+                <span class="text-sm text-gray-400">Master AI Network Control</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span id="network-status" class="text-xs px-2 py-1 rounded-full bg-green-900 text-green-300">ONLINE</span>
+                <button onclick="runCycle()" class="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded hover:bg-indigo-700">Run Cycle</button>
+                <button onclick="runGovernance()" class="text-xs bg-purple-600 text-white px-3 py-1.5 rounded hover:bg-purple-700">Governance</button>
+            </div>
+        </nav>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        <!-- Health Metrics -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                <p class="text-xs text-gray-500 uppercase">Talent Agents</p>
+                <p class="text-2xl font-bold text-blue-400" id="talent-count">-</p>
+                <p class="text-xs text-gray-500" id="talent-label">active</p>
+            </div>
+            <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                <p class="text-xs text-gray-500 uppercase">HM Agents</p>
+                <p class="text-2xl font-bold text-purple-400" id="hm-count">-</p>
+                <p class="text-xs text-gray-500" id="hm-label">active</p>
+            </div>
+            <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                <p class="text-xs text-gray-500 uppercase">Matches</p>
+                <p class="text-2xl font-bold text-green-400" id="match-count">-</p>
+                <p class="text-xs text-gray-500" id="match-label">total</p>
+            </div>
+            <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                <p class="text-xs text-gray-500 uppercase">Avg Score</p>
+                <p class="text-2xl font-bold text-amber-400" id="avg-score">-</p>
+                <p class="text-xs text-gray-500" id="score-label">match quality</p>
+            </div>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-6">
+            <!-- Network Activity -->
+            <div class="md:col-span-2 bg-gray-800 rounded-lg border border-gray-700 p-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-sm font-semibold text-gray-300 uppercase">Network Activity</h2>
+                    <button onclick="loadActivity()" class="text-xs text-gray-500 hover:text-gray-300">Refresh</button>
+                </div>
+                <div id="activity-log" class="space-y-2 max-h-80 overflow-y-auto">
+                    <p class="text-gray-500 text-sm">Loading...</p>
+                </div>
+            </div>
+
+            <!-- Governance Panel -->
+            <div class="bg-gray-800 rounded-lg border border-gray-700 p-4">
+                <h2 class="text-sm font-semibold text-gray-300 uppercase mb-4">Governance</h2>
+
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-xs text-gray-500">Min Reputation</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="number" id="policy-rep" class="w-16 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm" value="20">
+                            <button onclick="updatePolicy('min_reputation')" class="text-xs text-indigo-400 hover:text-indigo-300">Set</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500">Match Quality Floor</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="number" id="policy-floor" class="w-16 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm" value="60">
+                            <button onclick="updatePolicy('match_quality_floor')" class="text-xs text-indigo-400 hover:text-indigo-300">Set</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500">Max Negotiations/Cycle</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="number" id="policy-max" class="w-16 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm" value="10">
+                            <button onclick="updatePolicy('max_negotiations_per_cycle')" class="text-xs text-indigo-400 hover:text-indigo-300">Set</button>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="border-gray-700 my-4">
+
+                <h3 class="text-xs text-gray-500 uppercase mb-2">Quick Actions</h3>
+                <div class="space-y-2">
+                    <div class="flex space-x-2">
+                        <input type="text" id="intervene-id" class="flex-1 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-xs" placeholder="Agent/Match ID">
+                        <select id="intervene-action" class="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-xs">
+                            <option value="suspend_agent">Suspend</option>
+                            <option value="reactivate_agent">Reactivate</option>
+                            <option value="boost_priority">Boost</option>
+                            <option value="void_match">Void Match</option>
+                        </select>
+                    </div>
+                    <button onclick="intervene()" class="w-full text-xs bg-red-600/20 text-red-400 px-3 py-1.5 rounded hover:bg-red-600/30 border border-red-600/30">
+                        Execute
+                    </button>
+                </div>
+
+                <hr class="border-gray-700 my-4">
+
+                <!-- Supply/Demand -->
+                <div id="balance-indicator" class="text-center">
+                    <p class="text-xs text-gray-500 mb-1">Supply/Demand</p>
+                    <div class="flex items-center justify-center space-x-2">
+                        <span class="text-xs text-blue-400" id="balance-talent">0</span>
+                        <div class="w-20 h-2 bg-gray-700 rounded-full overflow-hidden flex">
+                            <div id="balance-bar-talent" class="bg-blue-500 h-full" style="width:50%"></div>
+                            <div id="balance-bar-hm" class="bg-purple-500 h-full" style="width:50%"></div>
+                        </div>
+                        <span class="text-xs text-purple-400" id="balance-hm">0</span>
+                    </div>
+                    <p class="text-xs mt-1" id="balance-status">Balanced</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Industry Breakdown + Intelligence -->
+        <div class="grid md:grid-cols-2 gap-6 mt-6">
+            <div class="bg-gray-800 rounded-lg border border-gray-700 p-4">
+                <h2 class="text-sm font-semibold text-gray-300 uppercase mb-4">Industry Coverage</h2>
+                <div id="industry-grid" class="space-y-2">
+                    <p class="text-gray-500 text-sm">Loading...</p>
+                </div>
+            </div>
+
+            <div class="bg-gray-800 rounded-lg border border-gray-700 p-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-sm font-semibold text-gray-300 uppercase">Network Intelligence</h2>
+                    <button onclick="loadIntelligence()" class="text-xs text-gray-500 hover:text-gray-300">Synthesize</button>
+                </div>
+                <div id="intelligence-panel" class="text-sm text-gray-400 space-y-2">
+                    <p>Click "Synthesize" to generate network-wide insights.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cycle Results -->
+        <div id="cycle-results" class="hidden mt-6 bg-gray-800 rounded-lg border border-gray-700 p-4">
+            <h2 class="text-sm font-semibold text-gray-300 uppercase mb-3">Last Cycle Results</h2>
+            <div id="cycle-content" class="text-sm text-gray-400"></div>
+        </div>
+    </main>
+
+    <script>
+        // Load dashboard data on page load
+        async function loadDashboard() {
+            await Promise.all([loadHealth(), loadActivity()]);
+        }
+
+        async function loadHealth() {
+            try {
+                const response = await fetch('/network/health');
+                const data = await response.json();
+
+                document.getElementById('talent-count').textContent = data.agents?.talent_active || 0;
+                document.getElementById('hm-count').textContent = data.agents?.hm_active || 0;
+                document.getElementById('match-count').textContent = data.matches?.total || 0;
+                document.getElementById('avg-score').textContent = data.matches?.avg_score || '-';
+
+                document.getElementById('score-label').textContent =
+                    data.matches?.avg_score >= 70 ? 'good quality' :
+                    data.matches?.avg_score >= 50 ? 'moderate' : 'needs work';
+
+                // Balance
+                const talent = data.agents?.talent_active || 0;
+                const hm = data.agents?.hm_active || 0;
+                const total = talent + hm || 1;
+                document.getElementById('balance-talent').textContent = talent;
+                document.getElementById('balance-hm').textContent = hm;
+                document.getElementById('balance-bar-talent').style.width = `${(talent/total)*100}%`;
+                document.getElementById('balance-bar-hm').style.width = `${(hm/total)*100}%`;
+
+                const balanceEl = document.getElementById('balance-status');
+                balanceEl.textContent = data.agents?.balance || 'balanced';
+                balanceEl.className = `text-xs mt-1 ${
+                    data.agents?.balance === 'balanced' ? 'text-green-400' :
+                    'text-amber-400'
+                }`;
+
+                // Network status
+                const statusEl = document.getElementById('network-status');
+                statusEl.textContent = data.status === 'healthy' ? 'HEALTHY' : 'ATTENTION';
+                statusEl.className = `text-xs px-2 py-1 rounded-full ${
+                    data.status === 'healthy' ? 'bg-green-900 text-green-300' : 'bg-amber-900 text-amber-300'
+                }`;
+
+                // Industries
+                if (data.industries) {
+                    const grid = document.getElementById('industry-grid');
+                    grid.innerHTML = Object.entries(data.industries).map(([ind, counts]) => `
+                        <div class="flex justify-between items-center bg-gray-700/50 rounded px-3 py-2">
+                            <span class="text-sm text-gray-300">${ind}</span>
+                            <div class="flex space-x-3 text-xs">
+                                <span class="text-blue-400">${counts.talent} talent</span>
+                                <span class="text-purple-400">${counts.hm} HM</span>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+
+                // Governance values
+                if (data.governance) {
+                    document.getElementById('policy-rep').value = data.governance.min_reputation;
+                    document.getElementById('policy-floor').value = data.governance.match_quality_floor;
+                    document.getElementById('policy-max').value = data.governance.max_negotiations_per_cycle;
+                }
+            } catch (e) {
+                document.getElementById('network-status').textContent = 'OFFLINE';
+                document.getElementById('network-status').className = 'text-xs px-2 py-1 rounded-full bg-red-900 text-red-300';
+            }
+        }
+
+        async function loadActivity() {
+            try {
+                const response = await fetch('/network/activity');
+                const data = await response.json();
+                const log = document.getElementById('activity-log');
+
+                if (!data.events || data.events.length === 0) {
+                    log.innerHTML = '<p class="text-gray-500 text-sm">No activity yet. Run a matching cycle to start.</p>';
+                    return;
+                }
+
+                log.innerHTML = data.events.map(event => {
+                    const typeColors = {
+                        'agent_activated': 'text-blue-400',
+                        'network_cycle': 'text-green-400',
+                        'human_feedback': 'text-amber-400',
+                        'agent_suspended': 'text-red-400',
+                    };
+                    const color = typeColors[event.event_type] || 'text-gray-400';
+                    const time = event.created_at ? new Date(event.created_at).toLocaleTimeString() : '';
+
+                    return `
+                        <div class="flex items-start space-x-2 text-xs">
+                            <span class="text-gray-600 w-16 shrink-0">${time}</span>
+                            <span class="${color} font-mono w-28 shrink-0">${event.event_type}</span>
+                            <span class="text-gray-500 truncate">${JSON.stringify(event.data || {}).slice(0, 80)}</span>
+                        </div>
+                    `;
+                }).join('');
+            } catch (e) {
+                document.getElementById('activity-log').innerHTML = '<p class="text-red-400 text-sm">Failed to load activity.</p>';
+            }
+        }
+
+        async function runCycle() {
+            const btn = event.target;
+            btn.textContent = 'Running...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/network/cycle', { method: 'POST' });
+                const data = await response.json();
+
+                const resultsEl = document.getElementById('cycle-results');
+                resultsEl.classList.remove('hidden');
+                document.getElementById('cycle-content').innerHTML = `
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <div>
+                            <p class="text-2xl font-bold text-blue-400">${data.pairs_discovered || 0}</p>
+                            <p class="text-xs text-gray-500">Pairs Found</p>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold text-amber-400">${data.negotiations_run || 0}</p>
+                            <p class="text-xs text-gray-500">Negotiations</p>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold text-green-400">${data.matches_found || 0}</p>
+                            <p class="text-xs text-gray-500">Matches</p>
+                        </div>
+                    </div>
+                    ${data.results ? `<div class="mt-3 text-xs text-gray-500">${data.results.map(r => `${r.talent_id?.slice(0,8)} + ${r.hm_id?.slice(0,8)} = ${r.status} (${r.score})`).join('<br>')}</div>` : ''}
+                `;
+
+                await loadHealth();
+                await loadActivity();
+            } catch (e) {
+                alert('Cycle failed: ' + e.message);
+            } finally {
+                btn.textContent = 'Run Cycle';
+                btn.disabled = false;
+            }
+        }
+
+        async function runGovernance() {
+            const btn = event.target;
+            btn.textContent = 'Running...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/network/governance', { method: 'POST' });
+                const data = await response.json();
+
+                if (data.actions_taken && data.actions_taken.length > 0) {
+                    alert(`Governance actions: ${data.actions_taken.map(a => a.action || a.reason).join(', ')}`);
+                } else {
+                    alert('Governance cycle complete. No actions needed.');
+                }
+
+                await loadHealth();
+            } catch (e) {
+                alert('Governance failed');
+            } finally {
+                btn.textContent = 'Governance';
+                btn.disabled = false;
+            }
+        }
+
+        async function updatePolicy(field) {
+            const value = parseInt(document.getElementById(
+                field === 'min_reputation' ? 'policy-rep' :
+                field === 'match_quality_floor' ? 'policy-floor' : 'policy-max'
+            ).value);
+
+            const body = {};
+            body[field] = value;
+
+            await fetch('/network/policy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+        }
+
+        async function intervene() {
+            const targetId = document.getElementById('intervene-id').value.trim();
+            const action = document.getElementById('intervene-action').value;
+            if (!targetId) { alert('Enter agent/match ID'); return; }
+
+            const response = await fetch('/network/intervene', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action, target_id: targetId, reason: 'Manual intervention' }),
+            });
+            const data = await response.json();
+            alert(`${data.status}: ${JSON.stringify(data)}`);
+            await loadHealth();
+        }
+
+        async function loadIntelligence() {
+            const panel = document.getElementById('intelligence-panel');
+            panel.innerHTML = '<p class="text-indigo-400 animate-pulse">Synthesizing network intelligence...</p>';
+
+            try {
+                const response = await fetch('/network/intelligence');
+                const data = await response.json();
+
+                if (data.status === 'no_data') {
+                    panel.innerHTML = '<p class="text-gray-500">No data yet. Run matching cycles first.</p>';
+                    return;
+                }
+
+                let html = '';
+                if (data.network_health) html += `<p><span class="text-gray-500">Health:</span> <span class="text-green-400">${data.network_health}</span></p>`;
+                if (data.match_quality_trend) html += `<p><span class="text-gray-500">Quality:</span> ${data.match_quality_trend}</p>`;
+                if (data.emerging_trends) {
+                    html += `<p class="text-gray-500 mt-2">Trends:</p>`;
+                    html += data.emerging_trends.map(t => `<p class="text-xs text-gray-400 ml-2">- ${t}</p>`).join('');
+                }
+                if (data.recommendations) {
+                    html += `<p class="text-gray-500 mt-2">Recommendations:</p>`;
+                    html += data.recommendations.map(r => `<p class="text-xs text-amber-400 ml-2">- ${r}</p>`).join('');
+                }
+                if (data.network_gaps) {
+                    html += `<p class="text-gray-500 mt-2">Gaps:</p>`;
+                    html += data.network_gaps.map(g => `<p class="text-xs text-red-400 ml-2">- ${g}</p>`).join('');
+                }
+
+                panel.innerHTML = html || '<p class="text-gray-500">No insights generated.</p>';
+            } catch (e) {
+                panel.innerHTML = '<p class="text-red-400">Failed to load intelligence.</p>';
+            }
+        }
+
+        // Init
+        loadDashboard();
+        // Auto-refresh every 30s
+        setInterval(loadHealth, 30000);
+    </script>
+</body>
+</html>

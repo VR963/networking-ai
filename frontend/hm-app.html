@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#059669">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="/icons/icon-192.svg" type="image/svg+xml">
+    <title>CV 2.0 — Hiring Manager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/design.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: {
+                fontFamily: { sans: ['Inter', 'sans-serif'] },
+                colors: { brand: { DEFAULT: '#059669', light: '#34D399', dark: '#047857' } }
+            }}
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+    <script src="/js/config.js"></script>
+    <script src="/js/env.js" onerror=""></script>
+    <script src="/js/app.js"></script>
+    <style>
+        body { overscroll-behavior: none; }
+        .view { display: none; }
+        .view.active { display: flex; flex-direction: column; }
+        .chat-bubble { max-width: 85%; animation: fadeIn 0.2s ease-out; }
+        .chat-bubble-user { background: #059669; color: white; border-radius: 18px 18px 4px 18px; }
+        .chat-bubble-ai {
+            background: var(--color-gray-100, #f3f4f6); color: var(--color-black, #111); border-radius: 18px 18px 18px 4px;
+            line-height: 1.7; letter-spacing: -0.01em;
+        }
+        .chat-bubble-ai p { margin-bottom: 0.75rem; }
+        .chat-bubble-ai p:last-child { margin-bottom: 0; }
+        .typing-dot { animation: typingBounce 1.2s infinite; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typingBounce {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-4px); }
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-white min-h-screen font-sans antialiased overflow-hidden h-screen flex flex-col">
+    <!-- Top Bar -->
+    <header class="flex-shrink-0 px-5 pt-[env(safe-area-inset-top)] bg-white border-b border-gray-100">
+        <div class="h-14 flex items-center justify-between">
+            <h1 class="text-lg font-bold tracking-tight">CV<span class="text-emerald-600">2.0</span> <span class="text-xs font-normal text-gray-400">Hiring</span></h1>
+            <div class="flex items-center gap-3">
+                <span id="agent-status" class="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">Setting up</span>
+                <button onclick="APP.signOut()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Views Container -->
+    <div class="flex-1 overflow-hidden relative">
+        <!-- HOME VIEW -->
+        <div id="view-home" class="view active h-full overflow-y-auto px-5 py-6 pb-28">
+            <!-- Status Card -->
+            <div class="card mb-5 p-5" style="border-left: 4px solid #059669;">
+                <p class="text-caption text-gray-400 mb-1">Hiring Manager Portal</p>
+                <h2 class="text-h2" id="home-greeting">Set up your role</h2>
+                <p id="home-subtitle" class="text-small text-gray-500 mt-1">Your AI Job Agent learns what you really need — beyond the job description — then finds candidates that actually fit.</p>
+                <div class="mt-4 flex items-center gap-3">
+                    <div class="flex-1 bg-gray-100 rounded-full h-2">
+                        <div id="home-progress-bar" class="bg-emerald-600 rounded-full h-2 transition-all" style="width:0%"></div>
+                    </div>
+                    <span id="home-progress-text" class="text-caption text-gray-500">0%</span>
+                </div>
+            </div>
+
+            <!-- How It Works (shown when new) -->
+            <div id="how-it-works" class="card mb-5 p-5 bg-emerald-50/50">
+                <h3 class="text-small font-semibold text-emerald-800 mb-3">How your hiring agent works</h3>
+                <div class="space-y-3">
+                    <div class="flex gap-3">
+                        <div class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5">1</div>
+                        <div>
+                            <p class="text-small font-medium text-gray-700">Upload your job description</p>
+                            <p class="text-caption text-gray-500">Upload docs, paste links, or describe the role manually. AI extracts key requirements.</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <div class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5">2</div>
+                        <div>
+                            <p class="text-small font-medium text-gray-700">Deep discovery interview</p>
+                            <p class="text-caption text-gray-500">Your AI consultant interviews you across 6 categories to understand what you REALLY need — not just what's on paper.</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <div class="w-6 h-6 rounded-full bg-gray-300 text-white flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5">3</div>
+                        <div>
+                            <p class="text-small font-medium text-gray-700">Agent matches candidates 24/7</p>
+                            <p class="text-caption text-gray-500">Your Job Agent negotiates with Candidate Agents to find people who fit your real criteria — culture, style, and hidden preferences.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Discovery Status (shown after conversations) -->
+            <div id="discovery-status" class="card mb-5 p-5 hidden">
+                <h3 class="text-small font-semibold text-gray-700 mb-3">Discovery Progress</h3>
+                <div class="flex gap-1 mb-3" id="home-topics">
+                    <div data-htopic="role_motivations" class="flex-1 text-center py-1.5 rounded text-[9px] font-medium bg-gray-100 text-gray-400">Role Why</div>
+                    <div data-htopic="success_expectations" class="flex-1 text-center py-1.5 rounded text-[9px] font-medium bg-gray-100 text-gray-400">Success</div>
+                    <div data-htopic="team_style" class="flex-1 text-center py-1.5 rounded text-[9px] font-medium bg-gray-100 text-gray-400">Team</div>
+                    <div data-htopic="management_approach" class="flex-1 text-center py-1.5 rounded text-[9px] font-medium bg-gray-100 text-gray-400">Manage</div>
+                    <div data-htopic="ideal_candidate" class="flex-1 text-center py-1.5 rounded text-[9px] font-medium bg-gray-100 text-gray-400">Ideal Hire</div>
+                    <div data-htopic="culture_criteria" class="flex-1 text-center py-1.5 rounded text-[9px] font-medium bg-gray-100 text-gray-400">Culture</div>
+                </div>
+                <p id="discovery-explanation" class="text-caption text-gray-500"></p>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="grid grid-cols-2 gap-3 mb-5">
+                <button onclick="switchView('chat')" class="card card-interactive p-4 text-left">
+                    <svg class="w-6 h-6 text-emerald-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                    <p class="text-small font-medium" id="chat-action-label">Discovery Chat</p>
+                    <p class="text-caption text-gray-400" id="chat-action-desc">Define your ideal hire</p>
+                </button>
+                <button onclick="switchView('profile')" class="card card-interactive p-4 text-left">
+                    <svg class="w-6 h-6 text-emerald-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <p class="text-small font-medium">Documents</p>
+                    <p class="text-caption text-gray-400" id="docs-action-desc">Upload job description</p>
+                </button>
+            </div>
+
+            <!-- Candidates Section -->
+            <div class="mb-4">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-h3">Matched Candidates</h3>
+                    <button onclick="switchView('matches')" class="text-caption text-emerald-600 font-medium">See all</button>
+                </div>
+                <div id="home-matches" class="space-y-2">
+                    <div class="card p-4">
+                        <p class="text-small text-gray-500" id="matches-explanation">Complete the discovery interview so your Job Agent understands your real requirements. Then it will automatically evaluate and match candidates from the talent pool.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CHAT VIEW -->
+        <div id="view-chat" class="view h-full flex-col">
+            <div class="flex-shrink-0 px-5 py-3 border-b border-gray-100 flex items-center gap-3">
+                <button onclick="switchView('home')" class="text-gray-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                </button>
+                <div class="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-emerald-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-small font-medium truncate">Recruitment Consultant</p>
+                    <p id="chat-agent-status" class="text-caption text-gray-400">Online</p>
+                </div>
+                <div id="chat-readiness" class="flex-shrink-0 flex items-center gap-2" style="display:none">
+                    <div class="w-16 bg-gray-100 rounded-full h-1.5">
+                        <div id="chat-readiness-bar" class="bg-emerald-600 rounded-full h-1.5 transition-all" style="width:0%"></div>
+                    </div>
+                    <span id="chat-readiness-text" class="text-caption text-emerald-600 font-medium">0%</span>
+                </div>
+                <button onclick="toggleHistoryPanel()" class="flex-shrink-0 w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center" title="Chat history">
+                    <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </button>
+            </div>
+            <!-- Onboarding Progress -->
+            <div id="onboarding-bar" class="flex-shrink-0 px-5 py-2 border-b border-gray-50 bg-gray-50/50">
+                <div class="flex items-center justify-between mb-1.5">
+                    <span id="onboarding-label" class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Role Discovery</span>
+                    <span id="onboarding-count" class="text-[10px] text-emerald-600 font-medium">0 / 6</span>
+                </div>
+                <div class="flex gap-1" id="onboarding-topics">
+                    <div data-topic="role_motivations" class="onb-topic flex-1 text-center py-1 rounded text-[8px] font-medium bg-gray-100 text-gray-400">Role Why</div>
+                    <div data-topic="success_expectations" class="onb-topic flex-1 text-center py-1 rounded text-[8px] font-medium bg-gray-100 text-gray-400">Success</div>
+                    <div data-topic="team_style" class="onb-topic flex-1 text-center py-1 rounded text-[8px] font-medium bg-gray-100 text-gray-400">Team</div>
+                    <div data-topic="management_approach" class="onb-topic flex-1 text-center py-1 rounded text-[8px] font-medium bg-gray-100 text-gray-400">Manage</div>
+                    <div data-topic="ideal_candidate" class="onb-topic flex-1 text-center py-1 rounded text-[8px] font-medium bg-gray-100 text-gray-400">Ideal Hire</div>
+                    <div data-topic="culture_criteria" class="onb-topic flex-1 text-center py-1 rounded text-[8px] font-medium bg-gray-100 text-gray-400">Culture</div>
+                </div>
+            </div>
+            <!-- History Panel -->
+            <div id="history-panel" class="absolute inset-0 bg-white z-10 flex-col overflow-hidden" style="display:none; top:56px;">
+                <div class="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+                    <h3 class="text-small font-semibold">Past Conversations</h3>
+                    <button onclick="toggleHistoryPanel()" class="text-gray-400 text-caption font-medium">Close</button>
+                </div>
+                <div id="history-list" class="flex-1 overflow-y-auto px-5 py-3 space-y-2">
+                    <p class="text-caption text-gray-400">Loading...</p>
+                </div>
+            </div>
+            <!-- Chat Messages -->
+            <div id="chat-messages" class="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+                <div class="flex justify-start">
+                    <div id="agent-greeting" class="chat-bubble chat-bubble-ai px-4 py-3 text-small">
+                        Loading...
+                    </div>
+                </div>
+            </div>
+            <!-- Chat Input -->
+            <div class="flex-shrink-0 px-4 py-3 border-t border-gray-100 bg-white" style="padding-bottom: calc(70px + env(safe-area-inset-bottom))">
+                <div class="flex items-end gap-2">
+                    <textarea id="chat-input" rows="1" placeholder="Describe your role and team..."
+                        class="flex-1 input !py-2.5 !px-4 !rounded-2xl resize-none text-small"
+                        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"
+                        oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+                    <button onclick="sendMessage()" class="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19V5m0 0l-7 7m7-7l7 7"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MATCHES VIEW -->
+        <div id="view-matches" class="view h-full overflow-y-auto px-5 py-5 pb-28">
+            <div class="flex items-center gap-3 mb-5">
+                <button onclick="switchView('home')" class="text-gray-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                </button>
+                <h2 class="text-h2">Matched Candidates</h2>
+            </div>
+            <div id="matches-list" class="space-y-3">
+                <div class="card p-5 text-center">
+                    <svg class="w-12 h-12 text-gray-200 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    <p class="text-small text-gray-400">Your Job Agent is learning about your role.</p>
+                    <p class="text-caption text-gray-300 mt-1">Candidates will appear here once discovery is complete.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- PROFILE VIEW -->
+        <div id="view-profile" class="view h-full overflow-y-auto px-5 py-5 pb-28">
+            <div class="flex items-center gap-3 mb-5">
+                <button onclick="switchView('home')" class="text-gray-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                </button>
+                <h2 class="text-h2">Role Profile</h2>
+            </div>
+
+            <!-- JD Upload -->
+            <div class="card mb-4 p-5">
+                <h3 class="text-h3 mb-3">Job Description</h3>
+                <div id="jd-upload-area" class="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center cursor-pointer hover:border-emerald-400 transition"
+                     onclick="document.getElementById('jd-file').click()">
+                    <svg class="w-8 h-8 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                    <p class="text-small text-gray-500">Tap to upload job description</p>
+                    <p class="text-caption text-gray-300 mt-1">PDF or text file</p>
+                </div>
+                <input type="file" id="jd-file" class="hidden" accept=".pdf,.txt,.doc,.docx" onchange="handleJDUpload(event)">
+                <div id="jd-status" class="hidden mt-3 p-3 bg-emerald-50 rounded-lg">
+                    <p class="text-small text-emerald-700 font-medium">Job description uploaded</p>
+                </div>
+                <!-- Or paste JD text -->
+                <div class="mt-4">
+                    <p class="text-caption font-medium text-gray-500 uppercase tracking-wide mb-2">Or paste text</p>
+                    <textarea id="jd-paste" rows="4" placeholder="Paste job description text here..."
+                        class="w-full input text-small resize-none"></textarea>
+                    <button onclick="submitPastedJD()" class="mt-2 w-full py-2 px-4 bg-emerald-600 text-white text-small font-medium rounded-lg hover:bg-emerald-700 transition">
+                        Analyze Job Description
+                    </button>
+                </div>
+                <!-- Documents List -->
+                <div class="mt-4">
+                    <h4 class="text-caption font-medium text-gray-500 uppercase tracking-wide mb-2">Your Documents</h4>
+                    <div id="documents-list" class="text-small">
+                        <p class="text-caption text-gray-400">Loading...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Industry -->
+            <div class="card mb-4 p-5">
+                <label class="input-label">Industry</label>
+                <select id="industry-select" class="input" onchange="updateIndustry()">
+                    <option value="technology">Technology</option>
+                    <option value="finance">Finance</option>
+                    <option value="healthcare">Healthcare</option>
+                    <option value="marketing">Marketing</option>
+                    <option value="legal">Legal</option>
+                    <option value="engineering">Engineering</option>
+                    <option value="design">Design</option>
+                    <option value="general">Other</option>
+                </select>
+            </div>
+
+            <!-- Stage Info -->
+            <div class="card p-5">
+                <h3 class="text-h3 mb-3">Job Agent Status</h3>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-small text-gray-500">Stage</span>
+                        <span id="profile-stage" class="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">Onboarding</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-small text-gray-500">Readiness</span>
+                        <span id="profile-readiness" class="text-small font-medium">0%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <a href="#" onclick="switchView('home');return false" class="bottom-nav-item active" id="nav-home">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+            Home
+        </a>
+        <a href="#" onclick="switchView('chat');return false" class="bottom-nav-item" id="nav-chat">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+            Chat
+        </a>
+        <a href="#" onclick="switchView('matches');return false" class="bottom-nav-item" id="nav-matches">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            Candidates
+        </a>
+        <a href="#" onclick="switchView('profile');return false" class="bottom-nav-item" id="nav-profile">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            Role
+        </a>
+    </nav>
+
+<script>
+    let state = {
+        userId: null,
+        messages: [],
+        stage: 'onboarding',
+        industry: 'technology',
+    };
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        await new Promise(r => setTimeout(r, 150));
+        if (!APP.isAuthenticated()) {
+            window.location.href = '/auth.html?redirect=/hm-app.html';
+            return;
+        }
+        state.userId = APP.getUserId();
+        await loadProfile();
+        await refreshHomeState();
+    });
+
+    function switchView(view) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.getElementById(`view-${view}`).classList.add('active');
+        document.querySelectorAll('.bottom-nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById(`nav-${view}`)?.classList.add('active');
+        if (view === 'chat') {
+            setTimeout(() => document.getElementById('chat-input').focus(), 300);
+            loadChatGreeting();
+        }
+        if (view === 'profile') loadUserDocuments();
+    }
+
+    // --- Chat ---
+    let greetingLoaded = false;
+    async function loadChatGreeting() {
+        if (greetingLoaded) return;
+        greetingLoaded = true;
+        const el = document.getElementById('agent-greeting');
+        try {
+            const docs = await APP.api(`/user/documents/${state.userId}`);
+            const docList = (docs && docs.documents) || [];
+            const jdDoc = docList.find(d => d.doc_type === 'job_description' && d.analysis);
+
+            if (jdDoc && jdDoc.analysis) {
+                const a = jdDoc.analysis;
+                let greeting = `I've reviewed the job description`;
+                if (a.title) greeting += ` for the ${a.title} role`;
+                if (a.company) greeting += ` at ${a.company}`;
+                greeting += `. I can see the requirements on paper, but I need to understand what's NOT in the job description.`;
+                greeting += `\n\nLet's start with the real story — why is this role open? What's driving the urgency to fill it now?`;
+                el.innerHTML = formatAIMessage(greeting);
+            } else if (docList.length > 0) {
+                el.textContent = 'I can see you\'ve uploaded some documents. While I process those, let me ask — what role are you hiring for, and what\'s driving the urgency?';
+            } else {
+                el.innerHTML = formatAIMessage('Welcome! I\'m your AI recruitment consultant. I\'ll help define exactly what you need — beyond the job description.\n\nTo get the best results, upload a job description in the Role tab. Or we can start from scratch — tell me about the role you\'re looking to fill and why it\'s open.');
+            }
+        } catch (e) {
+            el.textContent = 'Welcome! Tell me about the role you\'re hiring for. What\'s the position and what\'s driving the need to fill it?';
+        }
+    }
+
+    async function sendMessage() {
+        const input = document.getElementById('chat-input');
+        const text = input.value.trim();
+        if (!text) return;
+        input.value = '';
+        input.style.height = 'auto';
+
+        addChatBubble(text, 'user');
+        state.messages.push({ role: 'user', content: text });
+        showTyping();
+
+        try {
+            const data = await APP.api('/hm-chat/message', {
+                method: 'POST',
+                body: {
+                    user_id: state.userId,
+                    messages: state.messages,
+                    context: { industry: state.industry, stage: state.stage }
+                }
+            });
+
+            hideTyping();
+            if (data && data.response) {
+                state.messages.push({ role: 'assistant', content: data.response });
+                addChatBubble(data.response, 'ai');
+                showChatStatus(data);
+            } else if (data && data.detail) {
+                addChatBubble('Service error: ' + data.detail, 'ai');
+                state.messages.pop();
+            } else {
+                addChatBubble('No response received. Please try again.', 'ai');
+                state.messages.pop();
+            }
+        } catch (e) {
+            hideTyping();
+            addChatBubble('Connection issue. Please try again.', 'ai');
+            state.messages.pop();
+        }
+    }
+
+    function showChatStatus(data) {
+        if (data.onboarding_topics) {
+            updateOnboardingTopics(data.onboarding_topics);
+            // Also update home page topic pills
+            for (const [topic, covered] of Object.entries(data.onboarding_topics)) {
+                const hel = document.querySelector(`[data-htopic="${topic}"]`);
+                if (hel) {
+                    hel.className = covered
+                        ? 'flex-1 text-center py-1.5 rounded text-[9px] font-medium bg-emerald-600 text-white'
+                        : 'flex-1 text-center py-1.5 rounded text-[9px] font-medium bg-gray-100 text-gray-400';
+                }
+            }
+        }
+
+        const readiness = data.profile_readiness || 0;
+        const readinessEl = document.getElementById('chat-readiness');
+        if (readinessEl) {
+            readinessEl.style.display = 'flex';
+            document.getElementById('chat-readiness-bar').style.width = readiness + '%';
+            document.getElementById('chat-readiness-text').textContent = readiness + '%';
+        }
+
+        const container = document.getElementById('chat-messages');
+        const statusEl = document.createElement('div');
+        statusEl.className = 'flex justify-start';
+        let parts = [];
+        if (data.conversation_count > 0) parts.push(`Session ${data.conversation_count}`);
+        if (data.quality_score > 0) parts.push(`Depth: ${data.quality_score}/10`);
+        if (data.learning_triggered) parts.push('Pattern learned');
+        if (parts.length === 0) parts.push('Listening...');
+        statusEl.innerHTML = `<div class="text-[10px] text-gray-300 px-1 py-1 flex items-center gap-2">
+            <span>${parts.join(' · ')}</span>
+            <span>Profile ${readiness}%</span>
+        </div>`;
+        container.appendChild(statusEl);
+        container.scrollTop = container.scrollHeight;
+
+        const homeBar = document.getElementById('home-progress-bar');
+        const homeText = document.getElementById('home-progress-text');
+        if (homeBar) homeBar.style.width = readiness + '%';
+        if (homeText) homeText.textContent = readiness + '%';
+    }
+
+    function addChatBubble(text, type) {
+        const container = document.getElementById('chat-messages');
+        const wrapper = document.createElement('div');
+        wrapper.className = `flex ${type === 'user' ? 'justify-end' : 'justify-start'}`;
+        const html = type === 'ai' ? formatAIMessage(text) : escapeHtml(text);
+        wrapper.innerHTML = `<div class="chat-bubble chat-bubble-${type} px-4 py-3 text-small">${html}</div>`;
+        container.appendChild(wrapper);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function formatAIMessage(text) {
+        const escaped = escapeHtml(text);
+        const paragraphs = escaped.split(/\n\n+/).filter(p => p.trim());
+        if (paragraphs.length <= 1) return escaped.replace(/\n/g, '<br>');
+        return paragraphs.map(p => `<p class="mb-3 last:mb-0">${p.replace(/\n/g, '<br>')}</p>`).join('');
+    }
+
+    function showTyping() {
+        const container = document.getElementById('chat-messages');
+        const el = document.createElement('div');
+        el.id = 'typing-indicator';
+        el.className = 'flex justify-start';
+        el.innerHTML = `<div class="chat-bubble chat-bubble-ai px-4 py-3 flex gap-1">
+            <div class="typing-dot w-2 h-2 bg-gray-400 rounded-full"></div>
+            <div class="typing-dot w-2 h-2 bg-gray-400 rounded-full"></div>
+            <div class="typing-dot w-2 h-2 bg-gray-400 rounded-full"></div>
+        </div>`;
+        container.appendChild(el);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function hideTyping() { document.getElementById('typing-indicator')?.remove(); }
+
+    // --- Profile ---
+    async function loadProfile() {
+        try {
+            const data = await APP.api(`/user/profile/${state.userId}`);
+            if (data && !data.detail) {
+                state.stage = data.stage || 'onboarding';
+                state.industry = data.industry || 'technology';
+                updateHomeUI(data);
+                return;
+            }
+        } catch (e) {}
+        try {
+            await APP.api('/user/profile', { method: 'POST', body: { user_id: state.userId, industry: 'technology' } });
+        } catch (e) {}
+    }
+
+    function updateHomeUI(data) {
+        document.getElementById('profile-stage').textContent = state.stage.charAt(0).toUpperCase() + state.stage.slice(1);
+        const statusBadge = document.getElementById('agent-status');
+        if (data.activation_score) {
+            document.getElementById('profile-readiness').textContent = Math.round(data.activation_score * 100) + '%';
+        }
+        document.getElementById('industry-select').value = state.industry;
+        // Refresh the home dashboard with real data
+        refreshHomeState();
+    }
+
+    async function refreshHomeState() {
+        // Check documents
+        let hasJD = false;
+        let jdTitle = '';
+        try {
+            const docs = await APP.api(`/user/documents/${state.userId}`);
+            const jdDoc = ((docs && docs.documents) || []).find(d => d.doc_type === 'job_description' && d.analysis);
+            if (jdDoc) {
+                hasJD = true;
+                jdTitle = jdDoc.analysis.title || jdDoc.filename || 'Job Description';
+                const docsDesc = document.getElementById('docs-action-desc');
+                if (docsDesc) docsDesc.textContent = 'Manage documents';
+            }
+        } catch(e) {}
+
+        // Check conversation history
+        let convCount = 0;
+        let lastTopics = null;
+        try {
+            const hist = await APP.api(`/hm-chat/history/${state.userId}`);
+            const convos = (hist && hist.conversations) || [];
+            convCount = convos.length;
+        } catch(e) {}
+
+        // Update home UI based on state
+        const greeting = document.getElementById('home-greeting');
+        const subtitle = document.getElementById('home-subtitle');
+        const statusBadge = document.getElementById('agent-status');
+        const howItWorks = document.getElementById('how-it-works');
+        const discoveryStatus = document.getElementById('discovery-status');
+        const chatLabel = document.getElementById('chat-action-label');
+        const chatDesc = document.getElementById('chat-action-desc');
+        const matchesExplanation = document.getElementById('matches-explanation');
+        const progressBar = document.getElementById('home-progress-bar');
+        const progressText = document.getElementById('home-progress-text');
+
+        if (convCount > 0 && hasJD) {
+            // Has had conversations and has JD — likely completed or in progress
+            howItWorks.classList.add('hidden');
+            discoveryStatus.classList.remove('hidden');
+
+            const pct = progressBar.style.width;
+            const pctNum = parseInt(pct) || 0;
+
+            if (pctNum >= 50) {
+                // Substantial progress
+                greeting.textContent = jdTitle;
+                subtitle.textContent = 'Your Job Agent has completed the discovery interview and understands your real hiring requirements. It will use this deep profile to evaluate candidates beyond keyword matching.';
+                statusBadge.textContent = 'Discovery Complete';
+                statusBadge.className = 'text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium';
+                chatLabel.textContent = 'Refine Requirements';
+                chatDesc.textContent = 'Continue the conversation';
+                const expl = document.getElementById('discovery-explanation');
+                if (expl) expl.textContent = 'All 6 discovery categories have been explored. Your Job Agent now understands the role motivations, success expectations, team dynamics, your management style, ideal candidate profile, and hidden culture criteria.';
+                matchesExplanation.textContent = 'Your Job Agent is now ready to evaluate candidates from the talent pool. Matches will appear here as Candidate Agents are found that fit your real criteria.';
+            } else {
+                // Some progress
+                greeting.textContent = jdTitle;
+                subtitle.textContent = 'Your AI consultant is learning what you really need. Continue the discovery chat to cover all 6 categories.';
+                statusBadge.textContent = 'In Discovery';
+                chatLabel.textContent = 'Continue Discovery';
+                chatDesc.textContent = 'Cover remaining categories';
+                const expl = document.getElementById('discovery-explanation');
+                if (expl) expl.textContent = 'Your AI consultant needs to explore all 6 categories to build a complete hiring profile. The more you share, the better your matches will be.';
+                matchesExplanation.textContent = 'Complete the discovery interview to unlock candidate matching. Your Job Agent needs to understand your full requirements first.';
+            }
+        } else if (hasJD && convCount === 0) {
+            // Has JD but no conversations yet
+            greeting.textContent = jdTitle;
+            subtitle.textContent = 'Job description analyzed. Start the discovery chat so your AI consultant can understand what\'s NOT in the JD — the hidden criteria that will make or break a hire.';
+            chatLabel.textContent = 'Start Discovery';
+            chatDesc.textContent = 'AI will interview you';
+            statusBadge.textContent = 'JD Uploaded';
+        } else if (convCount > 0 && !hasJD) {
+            // Has conversations but no JD
+            greeting.textContent = 'Discovery in progress';
+            subtitle.textContent = 'You\'re chatting with your AI consultant. Upload a job description in the Role tab for even deeper analysis.';
+            chatLabel.textContent = 'Continue Chat';
+            chatDesc.textContent = 'Keep defining requirements';
+            statusBadge.textContent = 'In Discovery';
+        }
+        // else: default state (no JD, no conversations) — keep "Set up your role" with how-it-works visible
+    }
+
+    // --- JD Upload ---
+    async function handleJDUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const uploadArea = document.getElementById('jd-upload-area');
+        uploadArea.innerHTML = `<div class="flex items-center justify-center gap-2">
+            <div class="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+            <span class="text-small text-gray-500">Processing ${escapeHtml(file.name)}...</span>
+        </div>`;
+
+        try {
+            let text = '';
+            if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+                text = await extractTextFromPDF(file);
+            } else {
+                text = await readFileAsText(file);
+            }
+            if (!text || text.trim().length < 30) throw new Error('Could not extract text. Try a different format.');
+
+            const result = await APP.api('/user/upload-document', {
+                method: 'POST',
+                body: { user_id: state.userId, filename: file.name, content_text: text.slice(0, 50000), doc_type: 'job_description' }
+            });
+            if (!result || result.detail || result.error) throw new Error(result?.detail || 'Upload failed');
+
+            document.getElementById('jd-status').classList.remove('hidden');
+            document.getElementById('jd-status').querySelector('p').textContent = `${file.name} analyzed`;
+            uploadArea.innerHTML = `<svg class="w-8 h-8 text-emerald-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/></svg>
+                <p class="text-small text-emerald-700 font-medium">${escapeHtml(file.name)}</p>
+                <p class="text-caption text-gray-400 mt-1">Tap to replace</p>`;
+            await loadUserDocuments();
+            greetingLoaded = false; // Allow greeting to refresh with JD context
+        } catch (e) {
+            uploadArea.innerHTML = `<svg class="w-8 h-8 text-red-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <p class="text-small text-red-600">${e.message || 'Upload failed'}</p>
+                <p class="text-caption text-gray-400 mt-1">Tap to try again</p>`;
+        }
+    }
+
+    async function submitPastedJD() {
+        const text = document.getElementById('jd-paste').value.trim();
+        if (!text || text.length < 30) { alert('Please paste a longer job description.'); return; }
+        try {
+            const result = await APP.api('/user/upload-document', {
+                method: 'POST',
+                body: { user_id: state.userId, filename: 'Pasted Job Description', content_text: text.slice(0, 50000), doc_type: 'job_description' }
+            });
+            if (!result || result.detail || result.error) throw new Error(result?.detail || 'Upload failed');
+            document.getElementById('jd-status').classList.remove('hidden');
+            document.getElementById('jd-status').querySelector('p').textContent = 'Job description analyzed';
+            document.getElementById('jd-paste').value = '';
+            await loadUserDocuments();
+            greetingLoaded = false;
+        } catch (e) {
+            alert(e.message || 'Failed to analyze job description');
+        }
+    }
+
+    async function extractTextFromPDF(file) {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let fullText = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            fullText += textContent.items.map(item => item.str).join(' ') + '\n';
+        }
+        return fullText.trim();
+    }
+
+    function readFileAsText(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = () => reject(new Error('Failed to read file'));
+            reader.readAsText(file);
+        });
+    }
+
+    async function loadUserDocuments() {
+        try {
+            const result = await APP.api(`/user/documents/${state.userId}`);
+            const docs = result.documents || [];
+            const container = document.getElementById('documents-list');
+            if (!container) return;
+            if (docs.length === 0) { container.innerHTML = '<p class="text-caption text-gray-400">No documents uploaded yet</p>'; return; }
+            container.innerHTML = docs.map(doc => `
+                <div class="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        <div>
+                            <p class="text-small font-medium text-gray-700">${escapeHtml(doc.filename)}</p>
+                            <p class="text-caption text-gray-400">${doc.doc_type} ${doc.analysis ? '• Analyzed' : ''}</p>
+                        </div>
+                    </div>
+                    <button onclick="deleteDocument('${doc.id}')" class="p-1 text-gray-400 hover:text-red-500 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </button>
+                </div>
+            `).join('');
+        } catch (e) {}
+    }
+
+    async function deleteDocument(docId) {
+        if (!confirm('Delete this document?')) return;
+        try {
+            await APP.api(`/user/document/${docId}?user_id=${state.userId}`, { method: 'DELETE' });
+            await loadUserDocuments();
+        } catch (e) { alert('Could not delete document'); }
+    }
+
+    async function updateIndustry() {
+        state.industry = document.getElementById('industry-select').value;
+        await APP.api('/user/profile', { method: 'POST', body: { user_id: state.userId, industry: state.industry } });
+    }
+
+    // --- Onboarding Topics ---
+    function updateOnboardingTopics(topics) {
+        let doneCount = 0;
+        for (const [topic, covered] of Object.entries(topics)) {
+            const el = document.querySelector(`[data-topic="${topic}"]`);
+            if (!el) continue;
+            if (covered) {
+                el.className = 'onb-topic flex-1 text-center py-1 rounded text-[8px] font-medium bg-emerald-600 text-white';
+                doneCount++;
+            } else {
+                el.className = 'onb-topic flex-1 text-center py-1 rounded text-[8px] font-medium bg-gray-100 text-gray-400';
+            }
+        }
+        const countEl = document.getElementById('onboarding-count');
+        if (countEl) countEl.textContent = `${doneCount} / 6`;
+        const label = document.getElementById('onboarding-label');
+        if (doneCount === 6) {
+            if (label) { label.textContent = 'ROLE PROFILE COMPLETE'; label.classList.add('text-emerald-600'); label.classList.remove('text-gray-400'); }
+            if (countEl) { countEl.textContent = 'Ready to match'; countEl.classList.add('text-emerald-600'); }
+        } else if (doneCount > 0) {
+            if (label) label.textContent = 'ROLE DISCOVERY';
+        }
+    }
+
+    // --- Conversation History ---
+    async function toggleHistoryPanel() {
+        const panel = document.getElementById('history-panel');
+        if (panel.style.display === 'none') {
+            panel.style.display = 'flex';
+            await loadConversationHistory();
+        } else {
+            panel.style.display = 'none';
+        }
+    }
+
+    async function loadConversationHistory() {
+        const container = document.getElementById('history-list');
+        container.innerHTML = '<p class="text-caption text-gray-400">Loading...</p>';
+        try {
+            const data = await APP.api(`/hm-chat/history/${state.userId}`);
+            const convos = (data && data.conversations) || [];
+            if (convos.length === 0) {
+                container.innerHTML = '<p class="text-caption text-gray-400">No past conversations yet.</p>';
+                return;
+            }
+            container.innerHTML = convos.map(c => {
+                const date = new Date(c.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                const msgs = c.messages || [];
+                const preview = msgs.find(m => m.role === 'user');
+                const previewText = preview ? preview.content.slice(0, 80) + (preview.content.length > 80 ? '...' : '') : 'No messages';
+                const score = c.quality_score ? `${c.quality_score}/10` : '';
+                return `<button onclick='loadPastConversation(${JSON.stringify(JSON.stringify(c))})' class="w-full text-left card card-interactive p-3 block">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-caption text-gray-400">${date}</span>
+                        <div class="flex items-center gap-2">
+                            ${score ? `<span class="text-caption text-emerald-600 font-medium">${score}</span>` : ''}
+                            <span class="text-caption text-gray-300">${msgs.length} msgs</span>
+                        </div>
+                    </div>
+                    <p class="text-small text-gray-600 truncate">${escapeHtml(previewText)}</p>
+                </button>`;
+            }).join('');
+        } catch (e) {
+            container.innerHTML = '<p class="text-caption text-red-400">Could not load history</p>';
+        }
+    }
+
+    function loadPastConversation(jsonStr) {
+        const convo = JSON.parse(jsonStr);
+        const msgs = convo.messages || [];
+        document.getElementById('history-panel').style.display = 'none';
+        const container = document.getElementById('chat-messages');
+        container.innerHTML = '';
+        state.messages = [];
+        msgs.forEach(m => {
+            if (m.role === 'user') { addChatBubble(m.content, 'user'); state.messages.push({ role: 'user', content: m.content }); }
+            else if (m.role === 'assistant') { addChatBubble(m.content, 'ai'); state.messages.push({ role: 'assistant', content: m.content }); }
+        });
+        const divider = document.createElement('div');
+        divider.className = 'flex items-center gap-3 my-4';
+        divider.innerHTML = `<div class="flex-1 border-t border-gray-200"></div>
+            <span class="text-caption text-gray-400">Continue this conversation</span>
+            <div class="flex-1 border-t border-gray-200"></div>`;
+        container.appendChild(divider);
+        container.scrollTop = container.scrollHeight;
+        greetingLoaded = true;
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+</script>
+</body>
+</html>

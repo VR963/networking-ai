@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#4F46E5">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="/icons/icon-192.svg" type="image/svg+xml">
+    <title>CV 2.0</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/design.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: {
+                fontFamily: { sans: ['Inter', 'sans-serif'] },
+                colors: { brand: { DEFAULT: '#4F46E5', light: '#818CF8', dark: '#3730A3' } }
+            }}
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+    <script src="/js/config.js"></script>
+    <script src="/js/env.js" onerror=""></script>
+    <script src="/js/app.js"></script>
+    <style>
+        body { overscroll-behavior: none; }
+        .view { display: none; }
+        .view.active { display: flex; flex-direction: column; }
+        .chat-bubble { max-width: 85%; animation: fadeIn 0.2s ease-out; }
+        .chat-bubble-user { background: var(--color-primary); color: white; border-radius: 18px 18px 4px 18px; }
+        .chat-bubble-ai {
+            background: var(--color-gray-100); color: var(--color-black); border-radius: 18px 18px 18px 4px;
+            line-height: 1.7; letter-spacing: -0.01em;
+        }
+        .chat-bubble-ai p { margin-bottom: 0.75rem; }
+        .chat-bubble-ai p:last-child { margin-bottom: 0; }
+        .typing-dot { animation: typingBounce 1.2s infinite; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typingBounce {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-4px); }
+        }
+        .match-card { transition: transform 0.2s ease; }
+        .match-card:active { transform: scale(0.98); }
+    </style>
+</head>
+<body class="bg-white min-h-screen font-sans antialiased overflow-hidden h-screen flex flex-col">
+    <!-- Top Bar -->
+    <header class="flex-shrink-0 px-5 pt-[env(safe-area-inset-top)] bg-white border-b border-gray-100">
+        <div class="h-14 flex items-center justify-between">
+            <h1 class="text-lg font-bold tracking-tight">CV<span class="text-brand">2.0</span></h1>
+            <div class="flex items-center gap-3">
+                <span id="agent-status" class="badge badge-primary text-xs">Setting up</span>
+                <button onclick="APP.signOut()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Views Container -->
+    <div class="flex-1 overflow-hidden relative">
+        <!-- HOME VIEW -->
+        <div id="view-home" class="view active h-full overflow-y-auto px-5 py-6 pb-28">
+            <!-- Welcome Card -->
+            <div class="card mb-5 p-5">
+                <p class="text-caption text-gray-400 mb-1">Welcome back</p>
+                <h2 class="text-h2" id="home-greeting">Set up your agent</h2>
+                <div class="mt-4 flex items-center gap-3">
+                    <div class="flex-1 bg-gray-100 rounded-full h-2">
+                        <div id="home-progress-bar" class="bg-brand rounded-full h-2 transition-all" style="width:0%"></div>
+                    </div>
+                    <span id="home-progress-text" class="text-caption text-gray-500">0%</span>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="grid grid-cols-2 gap-3 mb-5">
+                <button onclick="switchView('chat')" class="card card-interactive p-4 text-left">
+                    <svg class="w-6 h-6 text-brand mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                    <p class="text-small font-medium">Chat</p>
+                    <p class="text-caption text-gray-400">Talk to your agent</p>
+                </button>
+                <button onclick="switchView('profile')" class="card card-interactive p-4 text-left">
+                    <svg class="w-6 h-6 text-brand mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <p class="text-small font-medium">Profile</p>
+                    <p class="text-caption text-gray-400">Upload CV</p>
+                </button>
+            </div>
+
+            <!-- Matches Section -->
+            <div class="mb-4">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-h3">Matches</h3>
+                    <button onclick="switchView('matches')" class="text-caption text-brand font-medium">See all</button>
+                </div>
+                <div id="home-matches" class="space-y-2">
+                    <div class="card p-4 flex items-center justify-between">
+                        <p class="text-small text-gray-400">No matches yet</p>
+                        <span class="badge badge-primary">Pending</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CHAT VIEW -->
+        <div id="view-chat" class="view h-full flex-col">
+            <!-- Chat Header -->
+            <div class="flex-shrink-0 px-5 py-3 border-b border-gray-100 flex items-center gap-3">
+                <button onclick="switchView('home')" class="text-gray-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                </button>
+                <div class="w-8 h-8 rounded-full bg-brand/10 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-brand" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-small font-medium truncate">Your AI Agent</p>
+                    <p id="chat-agent-status" class="text-caption text-gray-400">Online</p>
+                </div>
+                <div id="chat-readiness" class="flex-shrink-0 flex items-center gap-2" style="display:none">
+                    <div class="w-16 bg-gray-100 rounded-full h-1.5">
+                        <div id="chat-readiness-bar" class="bg-brand rounded-full h-1.5 transition-all" style="width:0%"></div>
+                    </div>
+                    <span id="chat-readiness-text" class="text-caption text-brand font-medium">0%</span>
+                </div>
+                <button onclick="toggleHistoryPanel()" class="flex-shrink-0 w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center" title="Chat history">
+                    <svg class="w-5 h-5 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </button>
+            </div>
+            <!-- Onboarding Progress -->
+            <div id="onboarding-bar" class="flex-shrink-0 px-5 py-2 border-b border-gray-50 bg-gray-50/50">
+                <div class="flex items-center justify-between mb-1.5">
+                    <span id="onboarding-label" class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Discovery Interview</span>
+                    <span id="onboarding-count" class="text-[10px] text-brand font-medium">0 / 6</span>
+                </div>
+                <div class="flex gap-1" id="onboarding-topics">
+                    <div data-topic="career_motivations" class="onb-topic flex-1 text-center py-1 rounded text-[8px] font-medium bg-gray-100 text-gray-400">Motives</div>
+                    <div data-topic="achievements" class="onb-topic flex-1 text-center py-1 rounded text-[8px] font-medium bg-gray-100 text-gray-400">Achieve</div>
+                    <div data-topic="work_style" class="onb-topic flex-1 text-center py-1 rounded text-[8px] font-medium bg-gray-100 text-gray-400">Style</div>
+                    <div data-topic="leadership" class="onb-topic flex-1 text-center py-1 rounded text-[8px] font-medium bg-gray-100 text-gray-400">Lead</div>
+                    <div data-topic="next_role" class="onb-topic flex-1 text-center py-1 rounded text-[8px] font-medium bg-gray-100 text-gray-400">Next Role</div>
+                    <div data-topic="values_culture" class="onb-topic flex-1 text-center py-1 rounded text-[8px] font-medium bg-gray-100 text-gray-400">Values</div>
+                </div>
+            </div>
+            <!-- History Panel (overlay) -->
+            <div id="history-panel" class="absolute inset-0 bg-white z-10 flex-col overflow-hidden" style="display:none; top:56px;">
+                <div class="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+                    <h3 class="text-small font-semibold">Past Conversations</h3>
+                    <button onclick="toggleHistoryPanel()" class="text-gray-400 text-caption font-medium">Close</button>
+                </div>
+                <div id="history-list" class="flex-1 overflow-y-auto px-5 py-3 space-y-2">
+                    <p class="text-caption text-gray-400">Loading...</p>
+                </div>
+            </div>
+            <!-- Chat Messages -->
+            <div id="chat-messages" class="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+                <div class="flex justify-start">
+                    <div id="agent-greeting" class="chat-bubble chat-bubble-ai px-4 py-3 text-small">
+                        Loading...
+                    </div>
+                </div>
+            </div>
+            <!-- Chat Input -->
+            <div class="flex-shrink-0 px-4 py-3 border-t border-gray-100 bg-white" style="padding-bottom: calc(70px + env(safe-area-inset-bottom))">
+                <div class="flex items-end gap-2">
+                    <textarea id="chat-input" rows="1" placeholder="Message your agent..."
+                        class="flex-1 input !py-2.5 !px-4 !rounded-2xl resize-none text-small"
+                        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"
+                        oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+                    <button onclick="sendMessage()" class="w-10 h-10 rounded-full bg-brand flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19V5m0 0l-7 7m7-7l7 7"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MATCHES VIEW -->
+        <div id="view-matches" class="view h-full overflow-y-auto px-5 py-5 pb-28">
+            <div class="flex items-center gap-3 mb-5">
+                <button onclick="switchView('home')" class="text-gray-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                </button>
+                <h2 class="text-h2">Your Matches</h2>
+            </div>
+            <div id="matches-list" class="space-y-3">
+                <div class="card p-5 text-center">
+                    <svg class="w-12 h-12 text-gray-200 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    <p class="text-small text-gray-400">Your agent is building your profile.</p>
+                    <p class="text-caption text-gray-300 mt-1">Matches will appear here once your agent is active.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- PROFILE VIEW -->
+        <div id="view-profile" class="view h-full overflow-y-auto px-5 py-5 pb-28">
+            <div class="flex items-center gap-3 mb-5">
+                <button onclick="switchView('home')" class="text-gray-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                </button>
+                <h2 class="text-h2">Your Profile</h2>
+            </div>
+
+            <!-- CV Upload -->
+            <div class="card mb-4 p-5">
+                <h3 class="text-h3 mb-3">CV / Resume</h3>
+                <div id="cv-upload-area" class="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center cursor-pointer hover:border-brand/40 transition"
+                     onclick="document.getElementById('cv-file').click()">
+                    <svg class="w-8 h-8 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                    <p class="text-small text-gray-500">Tap to upload your CV</p>
+                    <p class="text-caption text-gray-300 mt-1">PDF or text</p>
+                </div>
+                <input type="file" id="cv-file" class="hidden" accept=".pdf,.txt,.doc,.docx" onchange="handleCVUpload(event)">
+                <div id="cv-status" class="hidden mt-3 p-3 bg-green-50 rounded-lg">
+                    <p class="text-small text-green-700 font-medium">CV uploaded</p>
+                </div>
+                <!-- Documents List -->
+                <div class="mt-4">
+                    <h4 class="text-caption font-medium text-gray-500 uppercase tracking-wide mb-2">Your Documents</h4>
+                    <div id="documents-list" class="text-small">
+                        <p class="text-caption text-gray-400">Loading...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Industry -->
+            <div class="card mb-4 p-5">
+                <label class="input-label">Industry</label>
+                <select id="industry-select" class="input" onchange="updateIndustry()">
+                    <option value="technology">Technology</option>
+                    <option value="finance">Finance</option>
+                    <option value="healthcare">Healthcare</option>
+                    <option value="marketing">Marketing</option>
+                    <option value="legal">Legal</option>
+                    <option value="engineering">Engineering</option>
+                    <option value="design">Design</option>
+                    <option value="general">Other</option>
+                </select>
+            </div>
+
+            <!-- Stage Info -->
+            <div class="card p-5">
+                <h3 class="text-h3 mb-3">Agent Status</h3>
+                <div id="profile-stage-info" class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-small text-gray-500">Stage</span>
+                        <span id="profile-stage" class="badge badge-primary">Onboarding</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-small text-gray-500">Readiness</span>
+                        <span id="profile-readiness" class="text-small font-medium">0%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <a href="#" onclick="switchView('home');return false" class="bottom-nav-item active" id="nav-home">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+            Home
+        </a>
+        <a href="#" onclick="switchView('chat');return false" class="bottom-nav-item" id="nav-chat">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+            Chat
+        </a>
+        <a href="#" onclick="switchView('matches');return false" class="bottom-nav-item" id="nav-matches">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            Matches
+        </a>
+        <a href="#" onclick="switchView('profile');return false" class="bottom-nav-item" id="nav-profile">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+            Profile
+        </a>
+    </nav>
+
+<script>
+    let state = {
+        userId: null,
+        messages: [],
+        stage: 'onboarding',
+        industry: 'technology',
+    };
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        await new Promise(r => setTimeout(r, 150));
+        if (!APP.isAuthenticated()) {
+            window.location.href = '/auth.html?redirect=/talent-app.html';
+            return;
+        }
+        state.userId = APP.getUserId();
+        await loadProfile();
+        // Refresh onboarding status from stored conversations
+        refreshOnboardingStatus();
+    });
+
+    // --- View Switching ---
+    function switchView(view) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.getElementById(`view-${view}`).classList.add('active');
+        document.querySelectorAll('.bottom-nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById(`nav-${view}`)?.classList.add('active');
+        if (view === 'chat') {
+            const input = document.getElementById('chat-input');
+            setTimeout(() => input.focus(), 300);
+            // Try to restore previous conversation first, fall back to greeting
+            restoreLatestConversation().then(restored => {
+                if (!restored) loadChatGreeting();
+            });
+        }
+        if (view === 'profile') {
+            loadUserDocuments();
+        }
+    }
+
+    // --- Chat ---
+    let greetingLoaded = false;
+    let historyRestored = false;
+
+    async function restoreLatestConversation() {
+        if (historyRestored) return;
+        historyRestored = true;
+        try {
+            const data = await APP.api(`/chat/history/${state.userId}`);
+            const convos = (data && data.conversations) || [];
+            if (convos.length === 0) return false;
+            // Load the most recent conversation
+            const latest = convos[0];
+            const msgs = latest.messages || [];
+            if (msgs.length === 0) return false;
+            const container = document.getElementById('chat-messages');
+            container.innerHTML = '';
+            state.messages = [];
+            msgs.forEach(m => {
+                if (m.role === 'user') {
+                    addChatBubble(m.content, 'user');
+                    state.messages.push({ role: 'user', content: m.content });
+                } else if (m.role === 'assistant') {
+                    addChatBubble(m.content, 'ai');
+                    state.messages.push({ role: 'assistant', content: m.content });
+                }
+            });
+            // Add divider
+            const divider = document.createElement('div');
+            divider.className = 'flex items-center gap-3 my-4';
+            divider.innerHTML = `<div class="flex-1 border-t border-gray-200"></div>
+                <span class="text-caption text-gray-400">Continue this conversation</span>
+                <div class="flex-1 border-t border-gray-200"></div>`;
+            container.appendChild(divider);
+            container.scrollTop = container.scrollHeight;
+            greetingLoaded = true;
+            // Re-analyze topics from stored conversations
+            await refreshOnboardingStatus();
+            return true;
+        } catch (e) {
+            console.warn('Could not restore conversation:', e);
+            return false;
+        }
+    }
+
+    async function loadChatGreeting() {
+        if (greetingLoaded) return;
+        greetingLoaded = true;
+        const el = document.getElementById('agent-greeting');
+        try {
+            const docs = await APP.api(`/user/documents/${state.userId}`);
+            const docList = (docs && docs.documents) || [];
+            const hasCV = docList.some(d => d.doc_type === 'cv' && d.analysis);
+            const cvDoc = docList.find(d => d.doc_type === 'cv' && d.analysis);
+
+            if (hasCV && cvDoc && cvDoc.analysis) {
+                const a = cvDoc.analysis;
+                const name = a.name || '';
+                const role = a.current_role || '';
+                const skills = (a.skills || []).slice(0, 5).join(', ');
+                let greeting = `Hi${name ? ' ' + name.split(' ')[0] : ''}! I've reviewed your CV`;
+                if (role) greeting += ` — I can see you're working as ${role}`;
+                if (skills) greeting += `, with expertise in ${skills}`;
+                greeting += '. I already know your professional background, so let\'s go deeper. What truly matters to you in your next opportunity? What would make you say "this is exactly what I\'ve been looking for"?';
+                el.textContent = greeting;
+            } else if (docList.length > 0) {
+                el.textContent = 'Hi! I can see you\'ve uploaded some documents. I\'m analyzing them now. While I process that, tell me — what matters most to you in your career right now?';
+            } else {
+                el.textContent = 'Hi! I\'m your AI career agent. To get started, I\'d recommend uploading your CV in the Profile tab — that way I can understand your background and ask deeper questions. Or just tell me about yourself: what do you do, and what matters most to you?';
+            }
+        } catch (e) {
+            el.textContent = 'Hi! I\'m your AI career agent. Tell me about yourself — what do you do, and what matters most to you in your next role?';
+        }
+    }
+
+    async function refreshOnboardingStatus() {
+        try {
+            const statusData = await APP.api(`/chat/onboarding-status/${state.userId}`);
+            if (statusData && statusData.onboarding_topics) {
+                updateOnboardingTopics(statusData.onboarding_topics);
+            }
+            if (statusData && statusData.profile_readiness !== undefined) {
+                const homeBar = document.getElementById('home-progress-bar');
+                const homeText = document.getElementById('home-progress-text');
+                if (homeBar) homeBar.style.width = statusData.profile_readiness + '%';
+                if (homeText) homeText.textContent = statusData.profile_readiness + '%';
+            }
+        } catch (e) {
+            console.warn('Could not refresh onboarding status:', e);
+        }
+    }
+
+    async function sendMessage() {
+        const input = document.getElementById('chat-input');
+        const text = input.value.trim();
+        if (!text) return;
+
+        input.value = '';
+        input.style.height = 'auto';
+
+        // Add user bubble
+        addChatBubble(text, 'user');
+        state.messages.push({ role: 'user', content: text });
+
+        // Show typing
+        showTyping();
+
+        try {
+            const data = await APP.api('/chat/message', {
+                method: 'POST',
+                body: {
+                    user_id: state.userId,
+                    messages: state.messages,
+                    context: { industry: state.industry, stage: state.stage }
+                }
+            });
+
+            hideTyping();
+            if (data && data.response) {
+                state.messages.push({ role: 'assistant', content: data.response });
+                addChatBubble(data.response, 'ai');
+                // Show status indicator after AI response
+                showChatStatus(data);
+            } else if (data && data.detail) {
+                addChatBubble('Service error: ' + data.detail, 'ai');
+                state.messages.pop(); // Remove failed user message from history
+            } else {
+                addChatBubble('No response received. Please try again.', 'ai');
+                state.messages.pop();
+            }
+        } catch (e) {
+            hideTyping();
+            addChatBubble('Connection issue. Please try again.', 'ai');
+            state.messages.pop();
+        }
+    }
+
+    function showChatStatus(data) {
+        // Update onboarding topics
+        if (data.onboarding_topics) {
+            updateOnboardingTopics(data.onboarding_topics);
+        }
+
+        // Update readiness bar in header
+        const readiness = data.profile_readiness || 0;
+        const readinessEl = document.getElementById('chat-readiness');
+        const readinessBar = document.getElementById('chat-readiness-bar');
+        const readinessText = document.getElementById('chat-readiness-text');
+        if (readinessEl) {
+            readinessEl.style.display = 'flex';
+            readinessBar.style.width = readiness + '%';
+            readinessText.textContent = readiness + '%';
+        }
+
+        // Show inline status after the AI message
+        const container = document.getElementById('chat-messages');
+        const statusEl = document.createElement('div');
+        statusEl.className = 'flex justify-start';
+        let statusParts = [];
+        if (data.conversation_count > 0) statusParts.push(`Session ${data.conversation_count}`);
+        if (data.quality_score > 0) statusParts.push(`Depth: ${data.quality_score}/10`);
+        if (data.learning_triggered) statusParts.push('Pattern learned');
+        if (statusParts.length === 0) statusParts.push('Listening...');
+
+        statusEl.innerHTML = `<div class="text-[10px] text-gray-300 px-1 py-1 flex items-center gap-2">
+            <span>${statusParts.join(' · ')}</span>
+            <span>Profile ${readiness}%</span>
+        </div>`;
+        container.appendChild(statusEl);
+        container.scrollTop = container.scrollHeight;
+
+        // Update home progress bar too
+        const homeBar = document.getElementById('home-progress-bar');
+        const homeText = document.getElementById('home-progress-text');
+        if (homeBar) homeBar.style.width = readiness + '%';
+        if (homeText) homeText.textContent = readiness + '%';
+    }
+
+    function addChatBubble(text, type) {
+        const container = document.getElementById('chat-messages');
+        const wrapper = document.createElement('div');
+        wrapper.className = `flex ${type === 'user' ? 'justify-end' : 'justify-start'}`;
+
+        let html;
+        if (type === 'ai') {
+            // Render AI messages with paragraphs and formatting
+            html = formatAIMessage(text);
+        } else {
+            html = escapeHtml(text);
+        }
+        wrapper.innerHTML = `<div class="chat-bubble chat-bubble-${type} px-4 py-3 text-small">${html}</div>`;
+        container.appendChild(wrapper);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function formatAIMessage(text) {
+        // Split into paragraphs on double newlines
+        const escaped = escapeHtml(text);
+        const paragraphs = escaped.split(/\n\n+/).filter(p => p.trim());
+        if (paragraphs.length <= 1) {
+            // Single paragraph — just convert single newlines to <br>
+            return escaped.replace(/\n/g, '<br>');
+        }
+        return paragraphs
+            .map(p => `<p class="mb-3 last:mb-0">${p.replace(/\n/g, '<br>')}</p>`)
+            .join('');
+    }
+
+    function showTyping() {
+        const container = document.getElementById('chat-messages');
+        const el = document.createElement('div');
+        el.id = 'typing-indicator';
+        el.className = 'flex justify-start';
+        el.innerHTML = `<div class="chat-bubble chat-bubble-ai px-4 py-3 flex gap-1">
+            <div class="typing-dot w-2 h-2 bg-gray-400 rounded-full"></div>
+            <div class="typing-dot w-2 h-2 bg-gray-400 rounded-full"></div>
+            <div class="typing-dot w-2 h-2 bg-gray-400 rounded-full"></div>
+        </div>`;
+        container.appendChild(el);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function hideTyping() {
+        document.getElementById('typing-indicator')?.remove();
+    }
+
+    // --- Profile ---
+    async function loadProfile() {
+        try {
+            const data = await APP.api(`/user/profile/${state.userId}`);
+            if (data && !data.detail) {
+                state.stage = data.stage || 'onboarding';
+                state.industry = data.industry || 'technology';
+                updateHomeUI(data);
+                return;
+            }
+        } catch (e) {}
+
+        // Profile doesn't exist yet — create one
+        try {
+            await APP.api('/user/profile', {
+                method: 'POST',
+                body: { user_id: state.userId, industry: 'technology' }
+            });
+        } catch (e) {
+            console.warn('Could not create profile:', e);
+        }
+    }
+
+    function updateHomeUI(data) {
+        const stages = ['onboarding', 'calibration', 'certified', 'matchable'];
+        const idx = stages.indexOf(state.stage);
+        const pct = Math.round(((idx + 1) / stages.length) * 100);
+
+        document.getElementById('home-progress-bar').style.width = pct + '%';
+        document.getElementById('home-progress-text').textContent = pct + '%';
+        document.getElementById('profile-stage').textContent = state.stage.charAt(0).toUpperCase() + state.stage.slice(1);
+
+        const statusBadge = document.getElementById('agent-status');
+        if (state.stage === 'matchable') {
+            statusBadge.textContent = 'Active';
+            statusBadge.className = 'badge badge-success text-xs';
+            document.getElementById('home-greeting').textContent = 'Agent is matching';
+        } else if (state.stage === 'certified') {
+            statusBadge.textContent = 'Certified';
+            statusBadge.className = 'badge badge-success text-xs';
+            document.getElementById('home-greeting').textContent = 'Almost ready';
+        } else {
+            document.getElementById('home-greeting').textContent = 'Set up your agent';
+        }
+
+        if (data.activation_score) {
+            document.getElementById('profile-readiness').textContent = Math.round(data.activation_score * 100) + '%';
+        }
+
+        document.getElementById('industry-select').value = state.industry;
+    }
+
+    async function handleCVUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const uploadArea = document.getElementById('cv-upload-area');
+        uploadArea.innerHTML = `
+            <div class="flex items-center justify-center gap-2">
+                <div class="w-4 h-4 border-2 border-brand border-t-transparent rounded-full animate-spin"></div>
+                <span class="text-small text-gray-500">Processing ${file.name}...</span>
+            </div>
+        `;
+
+        try {
+            let text = '';
+
+            // Check if it's a PDF
+            if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+                text = await extractTextFromPDF(file);
+            } else {
+                // For text files, read as text
+                text = await readFileAsText(file);
+            }
+
+            if (!text || text.trim().length < 50) {
+                throw new Error('Could not extract text from file. Try a different format.');
+            }
+
+            const result = await APP.api('/user/upload-document', {
+                method: 'POST',
+                body: {
+                    user_id: state.userId,
+                    filename: file.name,
+                    content_text: text.slice(0, 50000),
+                    doc_type: 'cv'
+                }
+            });
+
+            if (!result || result._httpError || result.detail || result.error) {
+                throw new Error(result?.detail || result?.error || 'Upload failed on server');
+            }
+
+            const statusEl = document.getElementById('cv-status');
+            statusEl.classList.remove('hidden');
+            statusEl.querySelector('p').textContent = `${file.name} uploaded`;
+            uploadArea.innerHTML = `
+                <svg class="w-8 h-8 text-green-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/></svg>
+                <p class="text-small text-green-700 font-medium">${file.name}</p>
+                <p class="text-caption text-gray-400 mt-1">Tap to replace</p>
+            `;
+
+            // Refresh documents list
+            await loadUserDocuments();
+        } catch (e) {
+            uploadArea.innerHTML = `
+                <svg class="w-8 h-8 text-red-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <p class="text-small text-red-600">${e.message || 'Upload failed'}</p>
+                <p class="text-caption text-gray-400 mt-1">Tap to try again</p>
+            `;
+        }
+    }
+
+    async function extractTextFromPDF(file) {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let fullText = '';
+
+        for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items.map(item => item.str).join(' ');
+            fullText += pageText + '\n';
+        }
+
+        return fullText.trim();
+    }
+
+    function readFileAsText(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = () => reject(new Error('Failed to read file'));
+            reader.readAsText(file);
+        });
+    }
+
+    async function loadUserDocuments() {
+        try {
+            const result = await APP.api(`/user/documents/${state.userId}`);
+            const docs = result.documents || [];
+            const container = document.getElementById('documents-list');
+            if (!container) return;
+
+            if (docs.length === 0) {
+                container.innerHTML = '<p class="text-caption text-gray-400">No documents uploaded yet</p>';
+                return;
+            }
+
+            container.innerHTML = docs.map(doc => `
+                <div class="flex items-center justify-between py-2 border-b border-gray-100 last:border-0" data-doc-id="${doc.id}">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        <div>
+                            <p class="text-small font-medium text-gray-700">${escapeHtml(doc.filename)}</p>
+                            <p class="text-caption text-gray-400">${doc.doc_type} ${doc.analysis ? '• Analyzed' : ''}</p>
+                        </div>
+                    </div>
+                    <button onclick="deleteDocument('${doc.id}')" class="p-1 text-gray-400 hover:text-red-500 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </button>
+                </div>
+            `).join('');
+        } catch (e) {
+            console.warn('Could not load documents:', e);
+        }
+    }
+
+    async function deleteDocument(docId) {
+        if (!confirm('Delete this document?')) return;
+        try {
+            await APP.api(`/user/document/${docId}?user_id=${state.userId}`, { method: 'DELETE' });
+            await loadUserDocuments();
+        } catch (e) {
+            alert('Could not delete document');
+        }
+    }
+
+    async function updateIndustry() {
+        state.industry = document.getElementById('industry-select').value;
+        await APP.api('/user/profile', {
+            method: 'POST',
+            body: { user_id: state.userId, industry: state.industry }
+        });
+    }
+
+    // --- Onboarding Topics ---
+    function updateOnboardingTopics(topics) {
+        let doneCount = 0;
+        const total = 6;
+        for (const [topic, covered] of Object.entries(topics)) {
+            const el = document.querySelector(`[data-topic="${topic}"]`);
+            if (!el) continue;
+            if (covered) {
+                el.className = 'onb-topic flex-1 text-center py-1 rounded text-[8px] font-medium bg-brand text-white';
+                doneCount++;
+            } else {
+                el.className = 'onb-topic flex-1 text-center py-1 rounded text-[8px] font-medium bg-gray-100 text-gray-400';
+            }
+        }
+        const countEl = document.getElementById('onboarding-count');
+        if (countEl) countEl.textContent = `${doneCount} / ${total}`;
+
+        const label = document.getElementById('onboarding-label');
+        if (doneCount === total) {
+            if (label) { label.textContent = 'PROFILE COMPLETE'; label.classList.add('text-green-600'); label.classList.remove('text-gray-400'); }
+            if (countEl) { countEl.textContent = 'Ready to match'; countEl.classList.add('text-green-600'); }
+        } else if (doneCount > 0) {
+            if (label) label.textContent = 'DISCOVERY INTERVIEW';
+        }
+    }
+
+    // --- Conversation History ---
+    async function toggleHistoryPanel() {
+        const panel = document.getElementById('history-panel');
+        if (panel.style.display === 'none') {
+            panel.style.display = 'flex';
+            await loadConversationHistory();
+        } else {
+            panel.style.display = 'none';
+        }
+    }
+
+    async function loadConversationHistory() {
+        const container = document.getElementById('history-list');
+        container.innerHTML = '<p class="text-caption text-gray-400">Loading...</p>';
+        try {
+            const data = await APP.api(`/chat/history/${state.userId}`);
+            const convos = (data && data.conversations) || [];
+            if (convos.length === 0) {
+                container.innerHTML = '<p class="text-caption text-gray-400">No past conversations yet. Start chatting to build your history.</p>';
+                return;
+            }
+            container.innerHTML = convos.map(c => {
+                const date = new Date(c.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                const msgs = c.messages || [];
+                const msgCount = msgs.length;
+                const preview = msgs.find(m => m.role === 'user');
+                const previewText = preview ? preview.content.slice(0, 80) + (preview.content.length > 80 ? '...' : '') : 'No messages';
+                const score = c.quality_score ? `${c.quality_score}/10` : '';
+                return `<button onclick='loadPastConversation(${JSON.stringify(JSON.stringify(c))})' class="w-full text-left card card-interactive p-3 block">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-caption text-gray-400">${date}</span>
+                        <div class="flex items-center gap-2">
+                            ${score ? `<span class="text-caption text-brand font-medium">${score}</span>` : ''}
+                            <span class="text-caption text-gray-300">${msgCount} msgs</span>
+                        </div>
+                    </div>
+                    <p class="text-small text-gray-600 truncate">${escapeHtml(previewText)}</p>
+                </button>`;
+            }).join('');
+        } catch (e) {
+            container.innerHTML = '<p class="text-caption text-red-400">Could not load history</p>';
+        }
+    }
+
+    function loadPastConversation(jsonStr) {
+        const convo = JSON.parse(jsonStr);
+        const msgs = convo.messages || [];
+        // Close history panel
+        document.getElementById('history-panel').style.display = 'none';
+        // Clear current chat
+        const container = document.getElementById('chat-messages');
+        container.innerHTML = '';
+        state.messages = [];
+        // Render all past messages
+        msgs.forEach(m => {
+            if (m.role === 'user') {
+                addChatBubble(m.content, 'user');
+                state.messages.push({ role: 'user', content: m.content });
+            } else if (m.role === 'assistant') {
+                addChatBubble(m.content, 'ai');
+                state.messages.push({ role: 'assistant', content: m.content });
+            }
+        });
+        // Add a divider indicating this is loaded history
+        const divider = document.createElement('div');
+        divider.className = 'flex items-center gap-3 my-4';
+        divider.innerHTML = `<div class="flex-1 border-t border-gray-200"></div>
+            <span class="text-caption text-gray-400">Continue this conversation</span>
+            <div class="flex-1 border-t border-gray-200"></div>`;
+        container.appendChild(divider);
+        container.scrollTop = container.scrollHeight;
+        greetingLoaded = true; // Prevent greeting from overwriting
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CV 2.0 - Agent Calibration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/js/config.js"></script>
+    <script src="/js/env.js" onerror=""></script>
+    <script src="/js/app.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div id="cv2-nav" class="bg-white shadow-sm"></div>
+
+    <main class="max-w-3xl mx-auto px-4 pt-24 pb-12">
+        <!-- Status -->
+        <div id="calibration-status" class="mb-8 bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-2">Calibration Progress</h2>
+            <p class="text-gray-600" id="status-text">Loading...</p>
+            <div class="mt-4 flex space-x-2" id="progress-dots"></div>
+        </div>
+
+        <!-- Generate Section -->
+        <div id="generate-section" class="mb-8 bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-2">Start Calibration</h2>
+            <p class="text-gray-600 mb-4">
+                Your agent will present 3 test opportunities. Your reactions
+                (especially rejections) help it understand what truly matters to you.
+            </p>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Your User ID</label>
+                <input type="text" id="user-id" class="w-full border rounded-lg px-4 py-2" placeholder="Enter your user ID">
+            </div>
+            <button onclick="generateOpportunities()" class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition">
+                Generate Test Opportunities
+            </button>
+        </div>
+
+        <!-- Opportunities -->
+        <div id="opportunities-section" class="hidden space-y-6">
+            <h2 class="text-xl font-semibold text-gray-900">Your Test Opportunities</h2>
+            <p class="text-gray-600 text-sm">
+                Review each opportunity. Accept ones that appeal to you, and for ones that
+                don't feel right - tell us why. Your agent learns from what you reject.
+            </p>
+            <div id="opportunities-list"></div>
+        </div>
+
+        <!-- Rejection Dialog -->
+        <div id="rejection-dialog" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">What doesn't feel right?</h3>
+                <p class="text-gray-600 text-sm mb-4">
+                    Your honest reaction helps your agent understand your hidden preferences.
+                    There's no wrong answer.
+                </p>
+                <textarea id="rejection-reason" rows="4" class="w-full border rounded-lg px-4 py-2 mb-4"
+                    placeholder="It's hard to pinpoint, but..."></textarea>
+                <div class="flex justify-end space-x-3">
+                    <button onclick="cancelRejection()" class="text-gray-600 hover:text-gray-800">Cancel</button>
+                    <button onclick="submitRejection()" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">
+                        Submit Feedback
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Learning Feedback -->
+        <div id="learning-feedback" class="hidden mt-8 bg-green-50 border border-green-200 rounded-lg p-6">
+            <h3 class="text-lg font-semibold text-green-800 mb-2">Your Agent Learned Something</h3>
+            <div id="learning-details" class="text-green-700 text-sm"></div>
+        </div>
+
+        <!-- Certification Step (shown after calibration complete) -->
+        <div id="certification-section" class="hidden mt-8 bg-purple-50 border border-purple-200 rounded-lg p-6">
+            <h3 class="text-lg font-semibold text-purple-800 mb-2">Ready for Certification</h3>
+            <p class="text-purple-700 text-sm mb-4">
+                Your agent has completed calibration. The Master AI will now verify
+                that your agent truly understands you before allowing it to negotiate on your behalf.
+            </p>
+            <button onclick="requestCertification()" id="certify-btn"
+                class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition">
+                Request Certification
+            </button>
+            <div id="certification-result" class="hidden mt-4"></div>
+        </div>
+    </main>
+
+    <script>
+        let currentOpportunities = [];
+        let currentRejectionIndex = null;
+
+        async function generateOpportunities() {
+            const userId = document.getElementById('user-id').value.trim();
+            if (!userId) {
+                alert('Please enter your user ID');
+                return;
+            }
+
+            const response = await fetch('/calibration/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userId }),
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                alert(error.detail || 'Failed to generate opportunities');
+                return;
+            }
+
+            const data = await response.json();
+            currentOpportunities = data.opportunities;
+            renderOpportunities();
+            document.getElementById('generate-section').classList.add('hidden');
+            document.getElementById('opportunities-section').classList.remove('hidden');
+        }
+
+        function renderOpportunities() {
+            const container = document.getElementById('opportunities-list');
+            container.innerHTML = currentOpportunities.map((opp, i) => `
+                <div class="bg-white rounded-lg shadow p-6" id="opp-${i}">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">${opp.title}</h3>
+                            <p class="text-indigo-600">${opp.company}</p>
+                        </div>
+                        <span class="text-sm text-gray-500">${opp.salary_range}</span>
+                    </div>
+                    <p class="text-gray-600 mb-4">${opp.description}</p>
+                    <div class="flex space-x-3">
+                        <button onclick="acceptOpportunity(${i})"
+                            class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">
+                            This appeals to me
+                        </button>
+                        <button onclick="rejectOpportunity(${i})"
+                            class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition">
+                            Not quite right
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function acceptOpportunity(index) {
+            const userId = document.getElementById('user-id').value.trim();
+            await fetch('/calibration/respond', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: userId,
+                    opportunity_index: index,
+                    accepted: true,
+                }),
+            });
+            document.getElementById(`opp-${index}`).classList.add('opacity-50');
+            document.getElementById(`opp-${index}`).innerHTML += '<p class="mt-3 text-green-600 font-medium">Accepted - noted!</p>';
+            checkCalibrationComplete();
+        }
+
+        function rejectOpportunity(index) {
+            currentRejectionIndex = index;
+            document.getElementById('rejection-dialog').classList.remove('hidden');
+            document.getElementById('rejection-reason').value = '';
+            document.getElementById('rejection-reason').focus();
+        }
+
+        function cancelRejection() {
+            document.getElementById('rejection-dialog').classList.add('hidden');
+            currentRejectionIndex = null;
+        }
+
+        async function submitRejection() {
+            const userId = document.getElementById('user-id').value.trim();
+            const reason = document.getElementById('rejection-reason').value.trim();
+
+            if (!reason) {
+                alert('Please share what doesn\'t feel right - even a vague feeling helps.');
+                return;
+            }
+
+            const response = await fetch('/calibration/respond', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: userId,
+                    opportunity_index: currentRejectionIndex,
+                    accepted: false,
+                    rejection_reason: reason,
+                }),
+            });
+
+            const data = await response.json();
+            document.getElementById('rejection-dialog').classList.add('hidden');
+
+            const oppEl = document.getElementById(`opp-${currentRejectionIndex}`);
+            oppEl.classList.add('opacity-50');
+            oppEl.innerHTML += '<p class="mt-3 text-amber-600 font-medium">Feedback recorded - your agent is learning.</p>';
+
+            if (data.learned) {
+                showLearning(data.learned);
+            }
+
+            checkCalibrationComplete();
+            currentRejectionIndex = null;
+        }
+
+        function showLearning(learned) {
+            const feedbackEl = document.getElementById('learning-feedback');
+            feedbackEl.classList.remove('hidden');
+            const detailsEl = document.getElementById('learning-details');
+
+            let html = '';
+            if (learned.explicit_criteria) {
+                html += `<p><strong>What you said:</strong> ${learned.explicit_criteria}</p>`;
+            }
+            if (learned.inferred_criteria) {
+                html += `<p class="mt-1"><strong>What your agent inferred:</strong> ${learned.inferred_criteria}</p>`;
+            }
+            if (learned.values_revealed) {
+                html += `<p class="mt-1"><strong>Values detected:</strong> ${learned.values_revealed}</p>`;
+            }
+            detailsEl.innerHTML = html;
+        }
+
+        let responsesGiven = 0;
+
+        function checkCalibrationComplete() {
+            responsesGiven++;
+            if (responsesGiven >= currentOpportunities.length && currentOpportunities.length > 0) {
+                document.getElementById('certification-section').classList.remove('hidden');
+            }
+        }
+
+        async function requestCertification() {
+            const userId = document.getElementById('user-id').value.trim();
+            const btn = document.getElementById('certify-btn');
+            const resultEl = document.getElementById('certification-result');
+
+            btn.disabled = true;
+            btn.textContent = 'Evaluating...';
+            resultEl.classList.remove('hidden');
+            resultEl.innerHTML = '<p class="text-purple-600 animate-pulse text-sm">Master AI is evaluating your agent...</p>';
+
+            try {
+                const response = await fetch('/master-ai/certify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId }),
+                });
+                const data = await response.json();
+
+                if (data.status === 'certified' || data.status === 'already_certified') {
+                    resultEl.innerHTML = `
+                        <div class="bg-green-50 border border-green-200 rounded p-3">
+                            <p class="text-green-800 font-medium">Certified! (${data.confidence}% confidence)</p>
+                            <p class="text-green-700 text-sm mt-1">${data.reasoning || ''}</p>
+                            <p class="text-green-600 text-xs mt-2">Your agent can now negotiate on your behalf.</p>
+                            <button onclick="registerAsCandidate()" id="register-btn"
+                                class="mt-3 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-sm">
+                                Activate Matching
+                            </button>
+                        </div>`;
+                } else {
+                    resultEl.innerHTML = `
+                        <div class="bg-amber-50 border border-amber-200 rounded p-3">
+                            <p class="text-amber-800 font-medium">Not yet certified (${data.confidence}% confidence)</p>
+                            <p class="text-amber-700 text-sm mt-1">${data.reasoning || ''}</p>
+                            ${data.gaps ? `<p class="text-amber-600 text-xs mt-1">Gaps: ${data.gaps.join(', ')}</p>` : ''}
+                            <p class="text-amber-600 text-xs mt-2">Have more conversations with your agent to improve understanding.</p>
+                        </div>`;
+                }
+            } catch (e) {
+                resultEl.innerHTML = '<p class="text-red-500 text-sm">Connection error. Try again.</p>';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Request Certification';
+            }
+        }
+
+        async function registerAsCandidate() {
+            const userId = document.getElementById('user-id').value.trim();
+            const btn = document.getElementById('register-btn');
+            btn.disabled = true;
+            btn.textContent = 'Registering...';
+
+            try {
+                // Advance to matchable stage
+                await fetch(`/user/profile/${userId}/advance-stage`, { method: 'POST' });
+
+                // Register as A2A candidate
+                const response = await fetch('/user/register-candidate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId }),
+                });
+                const data = await response.json();
+
+                if (data.status === 'registered') {
+                    btn.parentElement.innerHTML = `
+                        <p class="text-green-800 font-medium mt-3">You're in the network!</p>
+                        <p class="text-green-700 text-sm mt-1">Your agent is now actively matching you with opportunities 24/7.</p>
+                    `;
+                } else {
+                    btn.textContent = data.detail || 'Registration failed';
+                }
+            } catch (e) {
+                btn.textContent = 'Error - try again';
+                btn.disabled = false;
+            }
+        }
+
+        // Load calibration status on page load
+        async function loadStatus() {
+            const userId = document.getElementById('user-id').value.trim();
+            if (!userId) return;
+
+            const response = await fetch(`/calibration/status/${userId}`);
+            if (response.ok) {
+                const status = await response.json();
+                const statusText = document.getElementById('status-text');
+                if (status.calibration_complete) {
+                    statusText.textContent = 'Calibration complete! Your agent has learned your preferences.';
+                    document.getElementById('certification-section').classList.remove('hidden');
+                    document.getElementById('generate-section').classList.add('hidden');
+                } else if (status.total > 0) {
+                    statusText.textContent = `${status.rejected + status.accepted} of ${status.total} opportunities reviewed.`;
+                } else {
+                    statusText.textContent = 'No calibration started yet.';
+                }
+            }
+        }
+
+        // Auto-fill user_id from URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlUserId = urlParams.get('user_id');
+        if (urlUserId) {
+            document.getElementById('user-id').value = urlUserId;
+            loadStatus();
+        }
+    </script>
+</body>
+</html>

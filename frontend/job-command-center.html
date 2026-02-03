@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matches — CV 2.0</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/design.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        brand: { DEFAULT: '#4F46E5', light: '#818CF8', dark: '#3730A3' }
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/js/config.js"></script>
+    <script src="/js/env.js" onerror=""></script>
+    <script src="/js/app.js"></script>
+</head>
+<body class="bg-gray-50/50 min-h-screen font-sans antialiased">
+    <!-- Top Nav -->
+    <nav class="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-b border-gray-100 z-50">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <a href="/" class="text-xl font-bold tracking-tight text-gray-900">CV<span class="text-brand">2.0</span></a>
+            <div class="hidden md:flex items-center gap-6">
+                <a href="/dashboard.html" class="text-sm text-gray-500 hover:text-gray-900 transition">Dashboard</a>
+                <a href="/hm-onboarding.html" class="text-sm text-gray-500 hover:text-gray-900 transition">Post Job</a>
+                <span class="text-sm text-brand font-medium">Matches</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="runMatching()" id="match-btn" class="btn btn-primary text-sm !py-2 !px-4">
+                    Run Matching
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="pt-24 pb-16 px-6">
+        <div class="max-w-7xl mx-auto">
+            <!-- Header Row -->
+            <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+                <div>
+                    <p class="text-overline text-gray-400 mb-1">Command Center</p>
+                    <h1 class="text-h1 text-gray-900">Your Matches</h1>
+                </div>
+                <!-- Stats -->
+                <div class="flex items-center gap-6" id="stats-bar">
+                    <div class="flex items-center gap-2">
+                        <span class="status-dot status-dot-active"></span>
+                        <span class="text-small text-gray-600"><strong id="stat-candidates">-</strong> Candidates</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="status-dot status-dot-pending"></span>
+                        <span class="text-small text-gray-600"><strong id="stat-jobs">-</strong> Jobs</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="status-dot" style="background: var(--color-primary)"></span>
+                        <span class="text-small text-gray-600"><strong id="stat-matches">-</strong> Matches</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Layout: Sidebar + Main -->
+            <div class="grid lg:grid-cols-4 gap-6">
+                <!-- Sidebar: Jobs -->
+                <div class="lg:col-span-1">
+                    <div class="card p-5 sticky top-24">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-h3 text-gray-900">Jobs</h3>
+                            <a href="/hm-onboarding.html" class="text-brand text-sm font-medium hover:text-brand-dark transition">+ New</a>
+                        </div>
+                        <div id="jobs-list" class="space-y-2">
+                            <p class="text-small text-gray-400">Loading...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main: Matches -->
+                <div class="lg:col-span-3">
+                    <div id="matches-container" class="space-y-4">
+                        <div class="card p-12 text-center">
+                            <p class="text-small text-gray-400">Loading matches...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Match Detail Modal -->
+    <div id="match-modal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto animate-slide-up">
+            <div class="p-8">
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <p class="text-overline text-gray-400 mb-1">Match Detail</p>
+                        <h3 class="text-h2 text-gray-900" id="modal-title">-</h3>
+                    </div>
+                    <button onclick="closeModal()" class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition text-gray-500">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <div id="modal-content"></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        await new Promise(r => setTimeout(r, 150));
+        if (!APP.isAuthenticated()) {
+            window.location.href = '/auth.html?redirect=/job-command-center.html';
+            return;
+        }
+        loadStatus();
+        loadMatches();
+        loadJobs();
+    });
+
+    async function loadStatus() {
+        try {
+            const data = await APP.api('/a2a/status');
+            if (data && !data.detail) {
+                document.getElementById('stat-candidates').textContent = data.candidates || 0;
+                document.getElementById('stat-jobs').textContent = data.jobs || 0;
+                document.getElementById('stat-matches').textContent = data.matches || 0;
+            }
+        } catch (e) {}
+    }
+
+    async function loadJobs() {
+        try {
+            const data = await APP.api('/jobs/list');
+            if (!data || !data.jobs || !data.jobs.length) {
+                document.getElementById('jobs-list').innerHTML = `
+                    <p class="text-small text-gray-400 mb-3">No jobs yet.</p>
+                    <a href="/hm-onboarding.html" class="btn btn-secondary text-sm w-full">Create First Job</a>
+                `;
+                return;
+            }
+            document.getElementById('jobs-list').innerHTML = data.jobs.map(job => {
+                const profile = job.profile || {};
+                return `
+                    <div class="p-3 rounded-lg border border-gray-100 hover:border-brand/30 transition cursor-pointer group">
+                        <p class="text-sm font-medium text-gray-900 group-hover:text-brand transition">${profile.title || 'Untitled'}</p>
+                        <p class="text-caption text-gray-400">${profile.company || ''} ${profile.industry ? '· ' + profile.industry : ''}</p>
+                    </div>
+                `;
+            }).join('');
+        } catch (e) {
+            document.getElementById('jobs-list').innerHTML = '<p class="text-small text-red-500">Connection error</p>';
+        }
+    }
+
+    async function loadMatches() {
+        try {
+            const data = await APP.api('/master-ai/matches');
+            if (!data || data.detail) {
+                document.getElementById('matches-container').innerHTML = `
+                    <div class="card p-12 text-center">
+                        <p class="text-small text-gray-500">${data?.detail || 'No matches available'}</p>
+                    </div>
+                `;
+                return;
+            }
+            renderMatches(data.matches || []);
+        } catch (e) {
+            document.getElementById('matches-container').innerHTML = `
+                <div class="card p-12 text-center">
+                    <p class="text-small text-gray-400">Run matching to find candidates for your jobs.</p>
+                    <button onclick="runMatching()" class="btn btn-primary mt-4">Run A2A Matching</button>
+                </div>
+            `;
+        }
+    }
+
+    function renderMatches(matches) {
+        if (!matches.length) {
+            document.getElementById('matches-container').innerHTML = `
+                <div class="card p-12 text-center">
+                    <div class="w-12 h-12 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </div>
+                    <p class="text-body text-gray-600 font-medium mb-1">No matches yet</p>
+                    <p class="text-small text-gray-400 mb-5">Run A2A matching to find candidates for your roles.</p>
+                    <button onclick="runMatching()" class="btn btn-primary">Run Matching</button>
+                </div>
+            `;
+            return;
+        }
+
+        document.getElementById('matches-container').innerHTML = matches.map(match => {
+            const score = match.score || 0;
+            const level = match.match_level || 'unknown';
+            const hmSynopsis = match.hiring_manager_synopsis || {};
+            const alignments = (hmSynopsis.key_alignments || []).slice(0, 3);
+            const concerns = (hmSynopsis.concerns || []).slice(0, 2);
+
+            const scoreColor = score >= 80 ? 'text-green-600' : score >= 60 ? 'text-brand' : 'text-amber-600';
+            const levelBadge = {
+                'exceptional_match': 'badge-success',
+                'strong_match': 'badge-primary',
+                'moderate_match': 'badge-warning',
+                'weak_match': 'badge-danger',
+            }[level] || '';
+
+            return `
+                <div class="card card-interactive p-6" onclick="viewMatch('${match.id}')">
+                    <div class="flex items-start gap-5">
+                        <!-- Score -->
+                        <div class="flex-shrink-0 w-16 text-center">
+                            <p class="text-h2 ${scoreColor}">${score}%</p>
+                            <p class="text-caption text-gray-400 mt-1">score</p>
+                        </div>
+                        <!-- Content -->
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="badge ${levelBadge}">${level.replace(/_/g, ' ')}</span>
+                                ${match.status === 'mutual_agreement' ? '<span class="badge badge-success">Mutual</span>' : ''}
+                                ${match.status === 'pending_consensus' ? '<span class="badge badge-warning">Pending</span>' : ''}
+                            </div>
+                            <p class="text-body text-gray-700 mb-3">${hmSynopsis.summary || 'No synopsis available'}</p>
+                            <div class="flex flex-wrap gap-1.5">
+                                ${alignments.map(a => `<span class="text-xs px-2 py-0.5 rounded-md bg-green-50 text-green-700 border border-green-100">${a}</span>`).join('')}
+                                ${concerns.map(c => `<span class="text-xs px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-100">${c}</span>`).join('')}
+                            </div>
+                        </div>
+                        <!-- Arrow -->
+                        <div class="flex-shrink-0 text-gray-300 group-hover:text-brand transition">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5l7 7-7 7"/></svg>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    async function viewMatch(matchId) {
+        try {
+            const match = await APP.api(`/a2a/match/${matchId}`);
+            if (!match) return;
+            showMatchModal(match);
+        } catch (e) {}
+    }
+
+    function showMatchModal(match) {
+        const hmSynopsis = match.hiring_manager_synopsis || {};
+        const candidateSynopsis = match.candidate_synopsis || {};
+        const scoreColor = (match.score || 0) >= 80 ? 'text-green-600' : 'text-brand';
+
+        document.getElementById('modal-title').textContent = `${match.score}% Match`;
+        document.getElementById('modal-content').innerHTML = `
+            <div class="space-y-5">
+                <!-- HM View -->
+                <div class="rounded-lg border border-gray-100 p-5">
+                    <p class="text-overline text-brand mb-3">Your Agent's Assessment</p>
+                    <p class="text-body text-gray-700 mb-4">${hmSynopsis.summary || 'N/A'}</p>
+                    ${(hmSynopsis.key_alignments || []).length ? `
+                        <div class="mb-3">
+                            <p class="text-caption text-gray-500 font-medium mb-2">Strengths</p>
+                            <div class="flex flex-wrap gap-1.5">
+                                ${(hmSynopsis.key_alignments || []).map(a => `<span class="badge badge-success">${a}</span>`).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                    ${(hmSynopsis.concerns || []).length ? `
+                        <div class="mb-3">
+                            <p class="text-caption text-gray-500 font-medium mb-2">Areas to Explore</p>
+                            <div class="flex flex-wrap gap-1.5">
+                                ${(hmSynopsis.concerns || []).map(c => `<span class="badge badge-warning">${c}</span>`).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                    ${(hmSynopsis.recommended_questions || []).length ? `
+                        <div>
+                            <p class="text-caption text-gray-500 font-medium mb-2">Suggested Interview Questions</p>
+                            <ul class="space-y-1.5">
+                                ${(hmSynopsis.recommended_questions || []).map(q => `<li class="text-small text-gray-600 flex gap-2"><span class="text-brand">-</span>${q}</li>`).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                </div>
+
+                <!-- Candidate View -->
+                <div class="rounded-lg border border-gray-100 p-5 bg-gray-50/50">
+                    <p class="text-overline text-gray-400 mb-3">Candidate Agent's Perspective</p>
+                    <div class="space-y-2 text-small text-gray-600">
+                        <p><strong class="text-gray-700">Assessment:</strong> ${candidateSynopsis.my_take || 'N/A'}</p>
+                        <p><strong class="text-gray-700">Heads Up:</strong> ${candidateSynopsis.heads_up || 'N/A'}</p>
+                        <p><strong class="text-gray-700">Question:</strong> ${candidateSynopsis.question_to_consider || 'N/A'}</p>
+                    </div>
+                </div>
+
+                ${match.negotiation_notes ? `
+                    <div class="rounded-lg border border-gray-100 p-5">
+                        <p class="text-caption text-gray-500 font-medium mb-2">Negotiation Notes</p>
+                        <p class="text-small text-gray-600">${match.negotiation_notes}</p>
+                    </div>
+                ` : ''}
+
+                <div class="pt-4 border-t border-gray-100 flex justify-between items-center">
+                    <p class="text-caption text-gray-400">
+                        Candidate: ${(match.candidate_id || '').slice(0, 8)}... | Job: ${(match.job_id || '').slice(0, 8)}...
+                    </p>
+                    <button onclick="closeModal()" class="btn btn-secondary text-sm">Close</button>
+                </div>
+            </div>
+        `;
+        document.getElementById('match-modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+        document.getElementById('match-modal').classList.add('hidden');
+    }
+
+    // Close modal on backdrop click
+    document.getElementById('match-modal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeModal();
+    });
+
+    async function runMatching() {
+        const btn = document.getElementById('match-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Matching...';
+
+        try {
+            const data = await APP.api('/a2a/run-matching', { method: 'POST', body: {} });
+            if (data && !data.detail) {
+                loadMatches();
+                loadStatus();
+            }
+        } catch (e) {
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = 'Run Matching';
+        }
+    }
+</script>
+</body>
+</html>
