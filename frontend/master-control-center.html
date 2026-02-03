@@ -603,7 +603,8 @@
         }
 
         async function refreshDashboard() {
-            const data = await fetch(API + '/master-ai/control-center').then(r => r.json());
+            const r = await fetch(API + '/master-ai/control-center');
+            const data = r.ok ? await r.json() : {};
             renderOverview(data);
         }
 
