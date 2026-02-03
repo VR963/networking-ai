@@ -258,7 +258,9 @@ async def get_control_center_dashboard():
     """Full Master AI Control Center dashboard data."""
     try:
         return await master_ai_control_center.get_full_dashboard()
-    except Exception:
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
         return demo_data.get_demo_dashboard()
 
 
