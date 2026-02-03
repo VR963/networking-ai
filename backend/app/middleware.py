@@ -196,6 +196,10 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         if APP_ENV == "production":
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
+        # Cache control for static files - prevent stale JavaScript in development
+        if APP_ENV != "production" and path.endswith((".html", ".js", ".css")):
+            response.headers["Cache-Control"] = "no-cache, must-revalidate"
+
         return response
 
 

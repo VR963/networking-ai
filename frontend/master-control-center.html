@@ -603,8 +603,15 @@
         }
 
         async function refreshDashboard() {
-            const r = await fetch(API + '/master-ai/control-center');
-            const data = r.ok ? await r.json() : {};
+            let data = {};
+            try {
+                const r = await fetch(API + '/master-ai/control-center');
+                if (r.ok) {
+                    data = await r.json();
+                }
+            } catch (e) {
+                console.warn('Dashboard fetch error:', e);
+            }
             renderOverview(data);
         }
 
