@@ -53,12 +53,9 @@ HM_PROFILE = {
     },
 }
 
-_now = datetime.now(timezone.utc)
-
-
 def get_demo_dashboard():
     return {
-        "timestamp": _now.isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "network_health": {
             "status": "healthy",
             "agents": {
