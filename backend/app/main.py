@@ -28,6 +28,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import ALLOWED_ORIGINS, APP_ENV, WORKERS, validate_config
 from app.database import get_db, get_pool_stats
+from app.exceptions import CV2Error, ValidationError as CV2ValidationError
 from app.middleware import (
     RateLimitMiddleware,
     SecurityMiddleware,
@@ -174,6 +175,17 @@ def _error_response(status_code: int, detail: str, error_type: str = "error", re
     if request and hasattr(request, "state") and hasattr(request.state, "request_id"):
         body["request_id"] = request.state.request_id
     return JSONResponse(status_code=status_code, content=body)
+
+
+@app.exception_handler(CV2ValidationError)
+async def validation_error_handler(request: Request, exc: CV2ValidationError):
+    return _error_response(400, str(exc), exc.code, request)
+
+
+@app.exception_handler(CV2Error)
+async def cv2_error_handler(request: Request, exc: CV2Error):
+    logger.warning("CV2Error on %s: [%s] %s", request.url.path, exc.code, str(exc)[:200])
+    return _error_response(422, str(exc), exc.code, request)
 
 
 @app.exception_handler(RuntimeError)
