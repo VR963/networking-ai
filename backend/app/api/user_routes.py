@@ -1,9 +1,18 @@
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from app.database import get_db
+from app.validation import (
+    validate_user_id,
+    validate_filename,
+    validate_cv_text,
+    validate_doc_type,
+    validate_industry,
+    validate_url,
+    sanitize_for_prompt,
+)
 
 router = APIRouter()
 
@@ -36,6 +45,26 @@ class DocumentUploadRequest(BaseModel):
     filename: str
     content_text: str  # Extracted text content from the document
     doc_type: str = "cv"  # cv, certificate, portfolio, other
+
+    @field_validator("user_id")
+    @classmethod
+    def check_user_id(cls, v):
+        return validate_user_id(v)
+
+    @field_validator("filename")
+    @classmethod
+    def check_filename(cls, v):
+        return validate_filename(v)
+
+    @field_validator("content_text")
+    @classmethod
+    def check_content_text(cls, v):
+        return validate_cv_text(v)
+
+    @field_validator("doc_type")
+    @classmethod
+    def check_doc_type(cls, v):
+        return validate_doc_type(v)
 
 
 class SocialLinksRequest(BaseModel):

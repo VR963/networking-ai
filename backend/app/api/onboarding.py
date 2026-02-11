@@ -20,9 +20,10 @@ import uuid
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from app.database import get_db
+from app.validation import validate_user_id, validate_interview_answer, validate_industry
 from app.services.interview_service import interview_service
 from app.services.auto_activation import auto_activation
 
@@ -42,11 +43,31 @@ class TalentStartRequest(BaseModel):
     user_id: str
     industry: str = "general"
 
+    @field_validator("user_id")
+    @classmethod
+    def check_user_id(cls, v):
+        return validate_user_id(v)
+
+    @field_validator("industry")
+    @classmethod
+    def check_industry(cls, v):
+        return validate_industry(v)
+
 
 class HMStartRequest(BaseModel):
     user_id: str
     job_id: str
     industry: str = "general"
+
+    @field_validator("user_id")
+    @classmethod
+    def check_user_id(cls, v):
+        return validate_user_id(v)
+
+    @field_validator("industry")
+    @classmethod
+    def check_industry(cls, v):
+        return validate_industry(v)
 
 
 class AnswerRequest(BaseModel):
@@ -54,6 +75,16 @@ class AnswerRequest(BaseModel):
     interview_id: str
     question_index: int
     answer: str
+
+    @field_validator("user_id")
+    @classmethod
+    def check_user_id(cls, v):
+        return validate_user_id(v)
+
+    @field_validator("answer")
+    @classmethod
+    def check_answer(cls, v):
+        return validate_interview_answer(v)
 
 
 # --- TALENT FLOW ---

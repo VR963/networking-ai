@@ -15,12 +15,13 @@ The 6 categories mirror the talent side:
 """
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 import json
 
 import anthropic
 from app.config import ANTHROPIC_API_KEY, QUALITY_THRESHOLD
 from app.database import get_db
+from app.validation import validate_user_id, sanitize_for_prompt
 from app.services.conversation_logger import conversation_logger
 from app.services.quality_analyzer import quality_analyzer
 from app.services.dspy_learning import dspy_learning
@@ -32,6 +33,23 @@ class HMChatRequest(BaseModel):
     user_id: str
     messages: list[dict]
     context: dict = {}
+
+    @field_validator("user_id")
+    @classmethod
+    def check_user_id(cls, v):
+        return validate_user_id(v)
+
+    @field_validator("messages")
+    @classmethod
+    def check_messages(cls, v):
+        if not v:
+            raise ValueError("At least one message is required")
+        if len(v) > 100:
+            v = v[-100:]
+        for msg in v:
+            if "content" in msg and isinstance(msg["content"], str):
+                msg["content"] = sanitize_for_prompt(msg["content"])
+        return v
 
 
 class HMChatResponse(BaseModel):
