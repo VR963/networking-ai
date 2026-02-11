@@ -9,13 +9,15 @@ Architecture:
 - Rate limiting + security middleware stack
 
 Middleware order (outermost first):
-1. RequestLogging - timing and audit trail
+1. RequestLogging - timing, audit trail, correlation IDs
 2. Security - headers, body size, API key validation
 3. RateLimit - per-IP sliding window
 4. CORS - cross-origin access control
 """
 
 import os
+import uuid
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -24,7 +26,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config import ALLOWED_ORIGINS, APP_ENV, WORKERS
+from app.config import ALLOWED_ORIGINS, APP_ENV, WORKERS, validate_config
 from app.database import get_db, get_pool_stats
 from app.middleware import (
     RateLimitMiddleware,
@@ -61,23 +63,58 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("CV 2.0 Platform starting (env=%s, workers=%d)", APP_ENV, WORKERS)
 
-    # Validate database connection
-    db = get_db()
-    if db:
-        logger.info("Database connection established")
-    else:
-        logger.warning("Database not configured - running in limited mode")
+    # Validate configuration
+    config_status = validate_config()
+    app.state.config_status = config_status
+    if not config_status["valid"]:
+        logger.warning("Configuration has issues — some features may be unavailable")
+
+    # Database connection with retry
+    db = None
+    for attempt in range(3):
+        db = get_db()
+        if db:
+            logger.info("Database connection established")
+            break
+        if attempt < 2:
+            wait = 2 ** attempt
+            logger.warning("Database connection failed, retrying in %ds (attempt %d/3)", wait, attempt + 1)
+            await asyncio.sleep(wait)
+    if not db:
+        logger.warning("Database not configured — running in limited mode")
 
     yield
 
     # Shutdown
-    logger.info("CV 2.0 Platform shutting down")
-    # Flush any pending cost records
+    logger.info("CV 2.0 Platform shutting down — draining tasks...")
+
+    # Wait for active tasks to complete (up to 10s)
+    active = task_queue.get_active_tasks()
+    if active:
+        logger.info("Waiting for %d active tasks to complete...", len(active))
+        for _ in range(20):  # 20 x 0.5s = 10s max
+            if not task_queue.get_active_tasks():
+                break
+            await asyncio.sleep(0.5)
+        remaining = task_queue.get_active_tasks()
+        if remaining:
+            logger.warning("Shutdown with %d tasks still active", len(remaining))
+
+    # Flush cost records
     try:
         from app.services.cost_tracker import cost_tracker
         cost_tracker.flush()
     except Exception:
         pass
+
+    # Clear auth cache
+    try:
+        from app.auth import clear_auth_cache
+        clear_auth_cache()
+    except Exception:
+        pass
+
+    logger.info("CV 2.0 Platform shutdown complete")
 
 
 # --- App Initialization ---
@@ -100,6 +137,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["X-Request-ID"],
 )
 
 # 2. Rate limiting
@@ -112,12 +150,36 @@ app.add_middleware(SecurityMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
 
 
+# --- Correlation ID Middleware ---
+
+@app.middleware("http")
+async def add_correlation_id(request: Request, call_next):
+    """Attach a unique request ID for tracing across logs and responses."""
+    request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())[:12]
+    request.state.request_id = request_id
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
+    return response
+
+
 # --- Exception Handlers ---
+
+def _error_response(status_code: int, detail: str, error_type: str = "error", request: Request = None) -> JSONResponse:
+    """Build a consistent error response."""
+    body = {
+        "error": error_type,
+        "detail": detail,
+        "status": status_code,
+    }
+    if request and hasattr(request, "state") and hasattr(request.state, "request_id"):
+        body["request_id"] = request.state.request_id
+    return JSONResponse(status_code=status_code, content=body)
+
 
 @app.exception_handler(RuntimeError)
 async def runtime_error_handler(request: Request, exc: RuntimeError):
     logger.error("RuntimeError on %s: %s", request.url.path, str(exc)[:200])
-    return JSONResponse(status_code=503, content={"detail": "Service temporarily unavailable."})
+    return _error_response(503, "Service temporarily unavailable.", "runtime_error", request)
 
 
 @app.exception_handler(Exception)
@@ -126,18 +188,12 @@ async def general_exception_handler(request: Request, exc: Exception):
     logger.error("Unhandled %s on %s: %s", error_type, request.url.path, str(exc)[:200])
 
     if "supabase" in error_type.lower() or "supabase" in str(exc).lower():
-        return JSONResponse(
-            status_code=503,
-            content={"detail": "Database service unavailable."},
-        )
+        return _error_response(503, "Database service unavailable.", "database_error", request)
     if "api_key" in str(exc).lower() or "auth" in str(exc).lower():
-        return JSONResponse(
-            status_code=503,
-            content={"detail": "AI service not configured."},
-        )
-    # Don't leak implementation details in production
+        return _error_response(503, "AI service not configured.", "ai_error", request)
+
     detail = f"Internal error: {error_type}" if APP_ENV != "production" else "Internal server error."
-    return JSONResponse(status_code=500, content={"detail": detail})
+    return _error_response(500, detail, "internal_error", request)
 
 
 # --- API Routes ---
@@ -160,6 +216,7 @@ async def health_check():
     """Comprehensive health check including dependencies."""
     pool_stats = get_pool_stats()
     tasks = task_queue.get_queue_stats()
+    config_status = getattr(app.state, "config_status", {})
 
     status = "healthy"
     if not pool_stats["db_available"]:
@@ -169,6 +226,7 @@ async def health_check():
         "status": status,
         "version": "2.0.0",
         "environment": APP_ENV,
+        "capabilities": config_status.get("capabilities", {}),
         "database": pool_stats,
         "tasks": tasks,
     }

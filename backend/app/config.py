@@ -1,4 +1,5 @@
 import os
+import logging
 from pathlib import Path
 
 # Load .env file if python-dotenv is available
@@ -42,3 +43,51 @@ MAX_CONCURRENT_AI_CALLS = int(os.environ.get("MAX_CONCURRENT_AI_CALLS", "10"))
 # --- Embedding / RAG Settings ---
 EMBEDDING_DIMENSION = 1024  # Voyage AI / compatible dimension
 SIMILARITY_THRESHOLD = 0.75
+
+logger = logging.getLogger("cv2.config")
+
+
+def validate_config() -> dict:
+    """Validate configuration on startup. Returns a status dict.
+
+    Raises on fatal misconfigurations in production.
+    Logs warnings for degraded capabilities in development.
+    """
+    issues: list[str] = []
+    warnings: list[str] = []
+
+    if not ANTHROPIC_API_KEY:
+        issues.append("ANTHROPIC_API_KEY not set — AI features disabled")
+
+    if not SUPABASE_URL:
+        warnings.append("SUPABASE_URL not set — running in demo/limited mode")
+    elif not SUPABASE_URL.startswith("http"):
+        issues.append(f"SUPABASE_URL looks invalid: {SUPABASE_URL[:30]}...")
+
+    if not SUPABASE_SERVICE_KEY:
+        warnings.append("SUPABASE_SERVICE_KEY not set — database unavailable")
+
+    if not MASTER_API_KEY:
+        warnings.append("MASTER_API_KEY not set — admin endpoints unprotected")
+
+    if APP_ENV not in ("development", "staging", "production"):
+        warnings.append(f"APP_ENV='{APP_ENV}' — expected development|staging|production")
+
+    for w in warnings:
+        logger.warning("CONFIG: %s", w)
+    for i in issues:
+        logger.error("CONFIG: %s", i)
+
+    if APP_ENV == "production" and not ANTHROPIC_API_KEY:
+        raise RuntimeError("ANTHROPIC_API_KEY is required in production")
+
+    return {
+        "valid": len(issues) == 0,
+        "issues": issues,
+        "warnings": warnings,
+        "capabilities": {
+            "ai": bool(ANTHROPIC_API_KEY),
+            "database": bool(SUPABASE_URL and SUPABASE_SERVICE_KEY),
+            "admin": bool(MASTER_API_KEY),
+        },
+    }
